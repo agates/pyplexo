@@ -70,10 +70,8 @@ class DomainTypeGroupPathway:
         listen_future.add_done_callback(listen_done)
 
     async def send(self, message):
-        compressed = gzip.compress(message, compresslevel=4)
-        self.transport.sendto(compressed, (self.multicast_group, self.port))
+        self.transport.sendto(gzip.compress(message, compresslevel=4), (self.multicast_group, self.port))
         logging.debug("Message sent: {}".format(message))
-        logging.debug("Compressed message: {}".format(compressed))
 
     async def send_struct(self, capnproto_object):
         message = DomainTypeGroupMessage(host_id=self.machine_id,
@@ -195,9 +193,9 @@ class DomainTypeSystem:
         with (await self._available_groups_lock):
             self._available_groups.discard(multicast_group)
 
-    async def multicast_group_available(self, multicast_gorup):
+    async def multicast_group_available(self, multicast_group):
         with (await self._available_groups_lock):
-            return multicast_gorup in self._available_groups
+            return multicast_group in self._available_groups
 
     async def register_pathway(self, capnproto_struct, multicast_group=None):
         pathway = None
