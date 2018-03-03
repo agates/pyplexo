@@ -30,6 +30,7 @@ class DomainTypeGroupPathway:
         self.capnproto_struct = capnproto_struct
         self.multicast_group = socket.inet_ntoa(multicast_group)
         self.port = port
+        self.send_addr = (self.multicast_group, self.port)
         self.transport = None
 
         # Store the hashed machine id as bytes
@@ -70,7 +71,7 @@ class DomainTypeGroupPathway:
         listen_future.add_done_callback(listen_done)
 
     async def send(self, message):
-        self.transport.sendto(gzip.compress(message, compresslevel=4), (self.multicast_group, self.port))
+        self.transport.sendto(gzip.compress(message, compresslevel=4), self.send_addr)
         logging.debug("Message sent: {}".format(message))
 
     async def send_struct(self, capnproto_object):
