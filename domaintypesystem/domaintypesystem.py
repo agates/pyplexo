@@ -180,6 +180,8 @@ class DomainTypeSystem:
 
         loop.run_until_complete(startup_query())
 
+        logging.debug("DomainTypeSystem initialization complete")
+
     async def get_multicast_group(self):
         with (await self._available_groups_lock):
             return self._available_groups.pop()
