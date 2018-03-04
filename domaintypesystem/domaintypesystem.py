@@ -123,68 +123,62 @@ class DomainTypeSystem:
         self._type_group_pathways = dict()
         self._type_group_pathways_lock = asyncio.Lock()
 
-        def handler_startup(future):
-            pathway = future.result()
+        async def startup_query():
+            logging.debug("Sending startup queries")
+            for i in range(3):
+                await pathway.query()
+                await asyncio.sleep(1.5)
 
-            def startup_query(_):
-                async def temp_query():
-                    logging.debug("Sending startup queries")
-                    for i in range(3):
-                        await pathway.query()
-                        await asyncio.sleep(1.5)
-
-                asyncio.ensure_future(temp_query())
-
-            async def handle_membership(domain_type_group_membership):
-                await self.discard_multicast_group(domain_type_group_membership.multicast_group)
-                struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
-                with (await self._type_group_pathways_lock):
-                    if struct_name not in self._type_group_pathways \
-                            or self._type_group_pathways[struct_name][0] \
-                            != domain_type_group_membership.multicast_group:
-                        logging.info("Adding new multicast group: {}:{}".format(
-                            struct_name,
-                            socket.inet_ntoa(domain_type_group_membership.multicast_group)
-                        ))
-                        self._type_group_pathways[struct_name] = (
-                            domain_type_group_membership.multicast_group,
-                            None
-                        )
-                    else:
-                        logging.info("Multicast already group exists for pathway: {}:{}".format(
-                            struct_name,
-                            socket.inet_ntoa(domain_type_group_membership.multicast_group)
-                        ))
-
-            async def handle_query(_):
-                with (await self._type_group_pathways_lock):
-                    pathways = self._type_group_pathways
-                for struct_name, value in pathways.items():
-                    logging.debug("Responding to DomainTypeGroupMembership query: {}:{}".format(
+        async def handle_membership(domain_type_group_membership):
+            await self.discard_multicast_group(domain_type_group_membership.multicast_group)
+            struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
+            with (await self._type_group_pathways_lock):
+                if struct_name not in self._type_group_pathways \
+                        or self._type_group_pathways[struct_name][0] \
+                        != domain_type_group_membership.multicast_group:
+                    logging.info("Adding new multicast group: {}:{}".format(
                         struct_name,
-                        socket.inet_ntoa(value[0])
+                        socket.inet_ntoa(domain_type_group_membership.multicast_group)
                     ))
-                    await pathway.send_struct(DomainTypeGroupMembership(
-                        struct_name=bytes(struct_name, "UTF-8"),
-                        multicast_group=value[0]
+                    self._type_group_pathways[struct_name] = (
+                        domain_type_group_membership.multicast_group,
+                        None
+                    )
+                else:
+                    logging.info("Multicast already group exists for pathway: {}:{}".format(
+                        struct_name,
+                        socket.inet_ntoa(domain_type_group_membership.multicast_group)
                     ))
 
-            handle_future = asyncio.ensure_future(
-                self.handle_type(DomainTypeGroupMembership,
-                                 query_handlers=(
-                                     handle_query,
-                                 ),
-                                 data_handlers=(
-                                     handle_membership,
-                                 )
-                                 ))
-            handle_future.add_done_callback(startup_query)
+        async def handle_query(_):
+            with (await self._type_group_pathways_lock):
+                pathways = self._type_group_pathways
+            for struct_name, value in pathways.items():
+                logging.debug("Responding to DomainTypeGroupMembership query: {}:{}".format(
+                    struct_name,
+                    socket.inet_ntoa(value[0])
+                ))
+                await pathway.send_struct(DomainTypeGroupMembership(
+                    struct_name=bytes(struct_name, "UTF-8"),
+                    multicast_group=value[0]
+                ))
 
-        register_future = asyncio.ensure_future(
+        loop = asyncio.get_event_loop()
+        pathway = loop.run_until_complete(
             self.register_pathway(DomainTypeGroupMembership,
                                   multicast_group=socket.inet_aton('239.255.0.1')))
 
-        register_future.add_done_callback(handler_startup)
+        loop.run_until_complete(
+            self.handle_type(DomainTypeGroupMembership,
+                             query_handlers=(
+                                 handle_query,
+                             ),
+                             data_handlers=(
+                                 handle_membership,
+                             )
+                             ))
+
+        loop.run_until_complete(startup_query())
 
     async def get_multicast_group(self):
         with (await self._available_groups_lock):
