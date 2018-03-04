@@ -7,8 +7,8 @@ import logging
 import socket
 import struct
 
-from schema.domain_type_group_membership import DomainTypeGroupMembership
-from schema.domain_type_group_message import DomainTypeGroupMessage
+from .schema.domain_type_group_membership import DomainTypeGroupMembership
+from .schema.domain_type_group_message import DomainTypeGroupMessage
 
 
 class MulticastServerProtocol:
