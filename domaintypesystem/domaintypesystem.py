@@ -88,7 +88,7 @@ class DomainTypeGroupPathway:
     async def send_struct(self, capnproto_object):
         message = DomainTypeGroupMessage(struct_name=bytes(self.capnproto_struct.__name__, "UTF-8"),
                                          host_id=self.machine_id,
-                                         timestamp=current_timestamp_nanoseconds(),
+                                         timestamp=int(round(current_timestamp_nanoseconds())),
                                          struct=capnproto_object.dumps())
         logging.debug("Sending struct: {}".format(message))
         await self.send(message.dumps())
@@ -96,7 +96,7 @@ class DomainTypeGroupPathway:
     async def query(self):
         message = DomainTypeGroupMessage(struct_name=bytes(self.capnproto_struct.__name__, "UTF-8"),
                                          host_id=self.machine_id,
-                                         timestamp=current_timestamp_nanoseconds(),
+                                         timestamp=int(round(current_timestamp_nanoseconds())),
                                          query=None)
         logging.debug("Sending query: {}".format(message))
         await self.send(message.dumps())
