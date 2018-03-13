@@ -1,14 +1,25 @@
 import asyncio
-import functools
 import gzip
-import hashlib
 import ipaddress
 import logging
 import socket
+from datetime import datetime, timezone
+
+import functools
+import hashlib
 import struct
 
 from .schema.domain_type_group_membership import DomainTypeGroupMembership
 from .schema.domain_type_group_message import DomainTypeGroupMessage
+
+
+def current_timestamp():
+    # returns floating point timestamp in seconds
+    return datetime.utcnow().replace(tzinfo=timezone.utc).timestamp()
+
+
+def current_timestamp_nanoseconds():
+    return current_timestamp() * 1e9
 
 
 class MulticastServerProtocol:
@@ -75,39 +86,52 @@ class DomainTypeGroupPathway:
         logging.debug("Message sent: {}".format(message))
 
     async def send_struct(self, capnproto_object):
-        message = DomainTypeGroupMessage(host_id=self.machine_id,
+        message = DomainTypeGroupMessage(struct_name=bytes(self.capnproto_struct.__name__, "UTF-8"),
+                                         host_id=self.machine_id,
+                                         timestamp=current_timestamp_nanoseconds(),
                                          struct=capnproto_object.dumps())
         logging.debug("Sending struct: {}".format(message))
         await self.send(message.dumps())
 
     async def query(self):
-        message = DomainTypeGroupMessage(host_id=self.machine_id,
+        message = DomainTypeGroupMessage(struct_name=bytes(self.capnproto_struct.__name__, "UTF-8"),
+                                         host_id=self.machine_id,
+                                         timestamp=current_timestamp_nanoseconds(),
                                          query=None)
         logging.debug("Sending query: {}".format(message))
         await self.send(message.dumps())
 
-    async def handle_queue(self, query_handlers=tuple(), data_handlers=tuple()):
+    async def handle_queue(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
         while True:
             data, addr = await self.queue.get()
-            message = DomainTypeGroupMessage.loads(gzip.decompress(data))
+            logging.debug("Handling message")
             try:
-                capnproto_object = self.capnproto_struct.loads(message.struct)
-                logging.debug("Handling struct data from host: {}, host_id: {}".format(
-                    addr,
-                    message.host_id
-                ))
-                await asyncio.gather(*[handler(capnproto_object) for handler in data_handlers])
-            except ValueError:
-                logging.debug("Handling query from host: {}, host_id: {}".format(
-                    addr,
-                    message.host_id
-                ))
-                await asyncio.gather(*[handler(None) for handler in query_handlers])
-            finally:
-                self.queue.task_done()
+                message = DomainTypeGroupMessage.loads(gzip.decompress(data))
 
-    async def handle(self, query_handlers=tuple(), data_handlers=tuple()):
-        asyncio.ensure_future(self.handle_queue(query_handlers, data_handlers))
+                if raw_handlers:
+                    await asyncio.gather(*[handler(message) for handler in raw_handlers])
+                try:
+                    if data_handlers:
+                        capnproto_object = self.capnproto_struct.loads(message.struct)
+                        logging.debug("Handling struct data from host: {}, host_id: {}".format(
+                            addr,
+                            message.host_id
+                        ))
+                        await asyncio.gather(*[handler(capnproto_object) for handler in data_handlers])
+                except ValueError:
+                    if query_handlers:
+                        logging.debug("Handling query from host: {}, host_id: {}".format(
+                            addr,
+                            message.host_id
+                        ))
+                        await asyncio.gather(*[handler(None) for handler in query_handlers])
+                finally:
+                    self.queue.task_done()
+            except Exception as e:
+                logging.debug(e)
+
+    async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
+        asyncio.ensure_future(self.handle_queue(query_handlers, data_handlers, raw_handlers))
 
 
 class DomainTypeSystem:
@@ -259,6 +283,31 @@ class DomainTypeSystem:
         pathway = await self.get_pathway(capnproto_struct)
         await pathway.handle(query_handlers=query_handlers, data_handlers=data_handlers)
         logging.info("Registered handlers for {}".format(capnproto_struct.__name__))
+
+    async def handle_any(self, raw_handlers=tuple()):
+        async def handle_membership(domain_type_group_membership):
+            struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
+            with (await self._type_group_pathways_lock):
+                if struct_name not in self._type_group_pathways \
+                        or self._type_group_pathways[struct_name][0] \
+                        != domain_type_group_membership.multicast_group:
+                    while struct_name not in self._type_group_pathways:
+                        await asyncio.sleep(.1)
+                    new_pathway = await self.register_pathway(key)
+                    await new_pathway.handle(raw_handlers=raw_handlers)
+
+        self.handle_type(DomainTypeGroupMembership,
+                         data_handlers=(
+                             handle_membership,
+                         ))
+
+        with (await self._type_group_pathways_lock):
+            for key, value in self._type_group_pathways.items():
+                if value[1]:
+                    await value[1].handle(raw_handlers=raw_handlers)
+                else:
+                    new_pathway = await self.register_pathway(key)
+                    await new_pathway.handle(raw_handlers=raw_handlers)
 
     async def query_type(self, capnproto_struct):
         pathway = await self.get_pathway(capnproto_struct)

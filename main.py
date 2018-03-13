@@ -12,6 +12,8 @@ loop = asyncio.get_event_loop()
 
 dts = DomainTypeSystem()
 
+asyncio.ensure_future(dts.handle_any(lambda x: print(x)))
+
 try:
     loop.run_forever()
 except KeyboardInterrupt:

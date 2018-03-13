@@ -1,10 +1,15 @@
 @0xb1c8ca3cc964cf2b;
 
+# Nanoseconds since the epoch.
+using TimePointInNs = UInt64;
+
 struct DomainTypeGroupMessage {
-    hostId @0 :Data;
+    structName @0 :Text;
+    hostId @1 :Data;
+    timestamp @2 :TimePointInNs;
 
     union {
-        struct @1: Data;
-        query @2: Void;
+        struct @3: Data;
+        query @4: Text;
     }
 }
