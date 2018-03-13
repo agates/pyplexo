@@ -292,9 +292,9 @@ class DomainTypeSystem:
         with (await self._type_group_pathways_lock):
             return self._type_group_pathways[capnproto_struct.__name__][1]
 
-    async def handle_type(self, capnproto_struct, query_handlers=tuple(), data_handlers=tuple()):
+    async def handle_type(self, capnproto_struct, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
         pathway = await self.get_pathway(capnproto_struct)
-        await pathway.handle(query_handlers=query_handlers, data_handlers=data_handlers)
+        await pathway.handle(query_handlers=query_handlers, data_handlers=data_handlers, raw_handlers=raw_handlers)
         logging.info("Registered handlers for {}".format(capnproto_struct.__name__))
 
     async def handle_any(self, raw_handlers=tuple()):
