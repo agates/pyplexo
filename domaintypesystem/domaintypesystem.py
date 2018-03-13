@@ -43,6 +43,10 @@ class DomainTypeGroupPathway:
         self.port = port
         self.send_addr = (self.multicast_group, self.port)
         self.transport = None
+        self._raw_handlers = []
+        self._data_handlers = []
+        self._query_handlers = []
+        self._handlers_lock = asyncio.Lock()
 
         # Store the hashed machine id as bytes
         with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
@@ -81,6 +85,8 @@ class DomainTypeGroupPathway:
         listen_future = asyncio.ensure_future(listen)
         listen_future.add_done_callback(listen_done)
 
+        asyncio.ensure_future(self.handle_queue())
+
     async def send(self, message):
         self.transport.sendto(gzip.compress(message, compresslevel=4), self.send_addr)
         logging.debug("Message sent: {}".format(message))
@@ -101,37 +107,39 @@ class DomainTypeGroupPathway:
         logging.debug("Sending query: {}".format(message))
         await self.send(message.dumps())
 
-    async def handle_queue(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
+    async def handle_queue(self):
         while True:
             data, addr = await self.queue.get()
-            logging.debug("Handling message")
-            try:
-                message = DomainTypeGroupMessage.loads(gzip.decompress(data))
-
-                if raw_handlers:
-                    await asyncio.gather(*[handler(message) for handler in raw_handlers])
+            with (await self._handlers_lock):
                 try:
-                    if data_handlers:
-                        capnproto_object = self.capnproto_struct.loads(message.struct)
-                        logging.debug("Handling struct data from host: {}, host_id: {}".format(
-                            addr,
-                            message.host_id
-                        ))
-                        await asyncio.gather(*[handler(capnproto_object) for handler in data_handlers])
-                except ValueError:
-                    if query_handlers:
-                        logging.debug("Handling query from host: {}, host_id: {}".format(
-                            addr,
-                            message.host_id
-                        ))
-                        await asyncio.gather(*[handler(None) for handler in query_handlers])
-                finally:
-                    self.queue.task_done()
-            except Exception as e:
-                logging.debug(e)
+                    message = DomainTypeGroupMessage.loads(gzip.decompress(data))
+                    if self._raw_handlers:
+                        await asyncio.gather(*[handler(message) for handler in self._raw_handlers])
+                    try:
+                        if self._data_handlers:
+                            capnproto_object = self.capnproto_struct.loads(message.struct)
+                            logging.debug("Handling struct data from host: {}, host_id: {}".format(
+                                addr,
+                                message.host_id
+                            ))
+                            await asyncio.gather(*[handler(capnproto_object) for handler in self._data_handlers])
+                    except ValueError:
+                        if self._query_handlers:
+                            logging.debug("Handling query from host: {}, host_id: {}".format(
+                                addr,
+                                message.host_id
+                            ))
+                            await asyncio.gather(*[handler(None) for handler in self._query_handlers])
+                    finally:
+                        self.queue.task_done()
+                except Exception as e:
+                    logging.debug(e)
 
     async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
-        asyncio.ensure_future(self.handle_queue(query_handlers, data_handlers, raw_handlers))
+        with (await self._handlers_lock):
+            self._data_handlers.extend(data_handlers)
+            self._query_handlers.extend(query_handlers)
+            self._raw_handlers.extend(raw_handlers)
 
 
 class DomainTypeSystem:
@@ -146,6 +154,9 @@ class DomainTypeSystem:
 
         self._type_group_pathways = dict()
         self._type_group_pathways_lock = asyncio.Lock()
+
+        self._new_membership_handlers = []
+        self._new_membership_handlers_lock = asyncio.Lock()
 
         async def startup_query():
             logging.debug("Sending startup queries")
@@ -168,6 +179,8 @@ class DomainTypeSystem:
                         domain_type_group_membership.multicast_group,
                         None
                     )
+                    with (await self._new_membership_handlers_lock):
+                        asyncio.gather(*[handler(struct_name) for handler in self._new_membership_handlers])
                 else:
                     logging.info("Multicast already group exists for pathway: {}:{}".format(
                         struct_name,
@@ -189,7 +202,7 @@ class DomainTypeSystem:
 
         loop = asyncio.get_event_loop()
         pathway = loop.run_until_complete(
-            self.register_pathway(DomainTypeGroupMembership,
+            self.register_pathway(capnproto_struct=DomainTypeGroupMembership,
                                   multicast_group=socket.inet_aton('239.255.0.1')))
 
         loop.run_until_complete(
@@ -218,9 +231,9 @@ class DomainTypeSystem:
         with (await self._available_groups_lock):
             return multicast_group in self._available_groups
 
-    async def register_pathway(self, capnproto_struct, multicast_group=None):
+    async def register_pathway(self, capnproto_struct=None, struct_name=None, multicast_group=None):
         pathway = None
-        struct_name = capnproto_struct.__name__
+        struct_name = struct_name or capnproto_struct.__name__
         with (await self._type_group_pathways_lock):
             if multicast_group is not None:
                 if not (await self.multicast_group_available(multicast_group)):
@@ -285,29 +298,21 @@ class DomainTypeSystem:
         logging.info("Registered handlers for {}".format(capnproto_struct.__name__))
 
     async def handle_any(self, raw_handlers=tuple()):
-        async def handle_membership(domain_type_group_membership):
-            struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
-            with (await self._type_group_pathways_lock):
-                if struct_name not in self._type_group_pathways \
-                        or self._type_group_pathways[struct_name][0] \
-                        != domain_type_group_membership.multicast_group:
-                    while struct_name not in self._type_group_pathways:
-                        await asyncio.sleep(.1)
-                    new_pathway = await self.register_pathway(key)
-                    await new_pathway.handle(raw_handlers=raw_handlers)
+        async def handle_new_membership(raw_handlers, struct_name):
+            new_pathway = await self.register_pathway(struct_name=struct_name)
+            await new_pathway.handle(raw_handlers=raw_handlers)
 
-        self.handle_type(DomainTypeGroupMembership,
-                         data_handlers=(
-                             handle_membership,
-                         ))
+        with (await self._new_membership_handlers_lock):
+            self._new_membership_handlers.append(functools.partial(handle_new_membership, raw_handlers))
 
         with (await self._type_group_pathways_lock):
             for key, value in self._type_group_pathways.items():
                 if value[1]:
                     await value[1].handle(raw_handlers=raw_handlers)
                 else:
-                    new_pathway = await self.register_pathway(key)
+                    new_pathway = await self.register_pathway(struct_name=key)
                     await new_pathway.handle(raw_handlers=raw_handlers)
+                logging.info("Registered raw handlers for {}".format(key))
 
     async def query_type(self, capnproto_struct):
         pathway = await self.get_pathway(capnproto_struct)
