@@ -301,6 +301,7 @@ class DomainTypeSystem:
         async def handle_new_membership(raw_handlers, struct_name):
             new_pathway = await self.register_pathway(struct_name=struct_name)
             await new_pathway.handle(raw_handlers=raw_handlers)
+            logging.info("Registered raw handlers for {}".format(struct_name))
 
         with (await self._new_membership_handlers_lock):
             self._new_membership_handlers.append(functools.partial(handle_new_membership, raw_handlers))
