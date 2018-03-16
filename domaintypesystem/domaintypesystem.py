@@ -31,7 +31,7 @@ class MulticastServerProtocol:
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        asyncio.ensure_future(self.queue.put((data, addr)))
+        asyncio.ensure_future(self.queue.put((data, addr, int(round(current_timestamp_nanoseconds())))))
 
 
 class DomainTypeGroupPathway:
@@ -109,12 +109,13 @@ class DomainTypeGroupPathway:
 
     async def handle_queue(self):
         while True:
-            data, addr = await self.queue.get()
+            data, addr, received_timestamp_nanoseconds = await self.queue.get()
             with (await self._handlers_lock):
                 try:
                     message = DomainTypeGroupMessage.loads(gzip.decompress(data))
                     if self._raw_handlers:
-                        await asyncio.gather(*[handler(message) for handler in self._raw_handlers])
+                        await asyncio.gather(*[handler(message, addr, received_timestamp_nanoseconds)
+                                               for handler in self._raw_handlers])
                     try:
                         if self._data_handlers:
                             capnproto_object = self.capnproto_struct.loads(message.struct)
@@ -122,14 +123,20 @@ class DomainTypeGroupPathway:
                                 addr,
                                 message.host_id
                             ))
-                            await asyncio.gather(*[handler(capnproto_object) for handler in self._data_handlers])
+                            await asyncio.gather(*[handler(capnproto_object, addr, received_timestamp_nanoseconds)
+                                                   for handler in self._data_handlers])
                     except ValueError:
                         if self._query_handlers:
                             logging.debug("Handling query from host: {}, host_id: {}".format(
                                 addr,
                                 message.host_id
                             ))
-                            await asyncio.gather(*[handler(None) for handler in self._query_handlers])
+                            if message.query:
+                                query = message.query.decode("UTF-8")
+                            else:
+                                query = None
+                            await asyncio.gather(*[handler(query, addr, received_timestamp_nanoseconds)
+                                                   for handler in self._query_handlers])
                     finally:
                         self.queue.task_done()
                 except Exception as e:
