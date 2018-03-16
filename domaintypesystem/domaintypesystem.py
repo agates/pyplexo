@@ -174,7 +174,7 @@ class DomainTypeSystem:
                 await pathway.query()
                 await asyncio.sleep(1.5)
 
-        async def handle_membership(domain_type_group_membership):
+        async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
             await self.discard_multicast_group(domain_type_group_membership.multicast_group)
             struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
             with (await self._type_group_pathways_lock):
@@ -197,7 +197,7 @@ class DomainTypeSystem:
                         socket.inet_ntoa(domain_type_group_membership.multicast_group)
                     ))
 
-        async def handle_query(_):
+        async def handle_query(query, address, received_timestamp_nanoseconds):
             with (await self._type_group_pathways_lock):
                 pathways = self._type_group_pathways
             for struct_name, value in pathways.items():
