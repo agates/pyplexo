@@ -112,6 +112,9 @@ class DomainTypeGroupPathway:
             data, addr, received_timestamp_nanoseconds = await self.queue.get()
             with (await self._handlers_lock):
                 try:
+                    logging.debug("Handling message from host: {}".format(
+                        addr,
+                    ))
                     message = DomainTypeGroupMessage.loads(gzip.decompress(data))
                     if self._raw_handlers:
                         await asyncio.gather(*[handler(message, addr, received_timestamp_nanoseconds)
@@ -140,7 +143,7 @@ class DomainTypeGroupPathway:
                     finally:
                         self.queue.task_done()
                 except Exception as e:
-                    logging.debug(e)
+                    logging.debug("{0}:handle_queue: {1}".format(self.capnproto_struct, e))
 
     async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
         with (await self._handlers_lock):
