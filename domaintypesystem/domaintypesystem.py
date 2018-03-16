@@ -1,5 +1,5 @@
 import asyncio
-import gzip
+import blosc
 import ipaddress
 import logging
 import socket
@@ -88,7 +88,7 @@ class DomainTypeGroupPathway:
         asyncio.ensure_future(self.handle_queue())
 
     async def send(self, message):
-        self.transport.sendto(gzip.compress(message, compresslevel=4), self.send_addr)
+        self.transport.sendto(blosc.compress(message, cname='blosclz', shuffle=blosc.BITSHUFFLE), self.send_addr)
         logging.debug("Message sent: {}".format(message))
 
     async def send_struct(self, capnproto_object):
@@ -115,7 +115,7 @@ class DomainTypeGroupPathway:
                     logging.debug("Handling message from host: {}".format(
                         addr,
                     ))
-                    message = DomainTypeGroupMessage.loads(gzip.decompress(data))
+                    message = DomainTypeGroupMessage.loads(blosc.decompress(data))
                     if self._raw_handlers:
                         await asyncio.gather(*[handler(message, addr, received_timestamp_nanoseconds)
                                                for handler in self._raw_handlers])
