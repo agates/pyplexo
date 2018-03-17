@@ -317,13 +317,15 @@ class DomainTypeSystem:
             self._new_membership_handlers.append(functools.partial(handle_new_membership, raw_handlers))
 
         with (await self._type_group_pathways_lock):
-            for key, value in self._type_group_pathways.items():
-                if value[1]:
-                    await value[1].handle(raw_handlers=raw_handlers)
-                else:
-                    new_pathway = await self.register_pathway(struct_name=key)
-                    await new_pathway.handle(raw_handlers=raw_handlers)
-                logging.info("Registered raw handlers for {}".format(key))
+            type_group_pathways = self._type_group_pathways.items()
+
+        for key, value in type_group_pathways:
+            if value[1]:
+                await value[1].handle(raw_handlers=raw_handlers)
+            else:
+                new_pathway = await self.register_pathway(struct_name=key)
+                await new_pathway.handle(raw_handlers=raw_handlers)
+            logging.info("Registered raw handlers for {}".format(key))
 
     async def query_type(self, capnproto_struct):
         pathway = await self.get_pathway(capnproto_struct)
