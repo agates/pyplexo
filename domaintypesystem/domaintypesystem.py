@@ -88,7 +88,7 @@ class DomainTypeGroupPathway:
         asyncio.ensure_future(self.handle_queue())
 
     async def send(self, message):
-        self.transport.sendto(blosc.compress(message, cname='blosclz', shuffle=blosc.BITSHUFFLE), self.send_addr)
+        self.transport.sendto(blosc.compress(message), self.send_addr)
         logging.debug("Message sent: {}".format(message))
 
     async def send_struct(self, capnproto_object):
