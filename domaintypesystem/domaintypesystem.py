@@ -288,7 +288,11 @@ class DomainTypeSystem:
                         socket.inet_ntoa(multicast_group)
                     ))
 
-            pathway = DomainTypeGroupPathway(capnproto_struct=capnproto_struct, multicast_group=multicast_group)
+            if capnproto_struct:
+                pathway = DomainTypeGroupPathway(capnproto_struct=capnproto_struct, multicast_group=multicast_group)
+            else:
+                pathway = DomainTypeGroupPathway(struct_name=struct_name, multicast_group=multicast_group)
+
             self._type_group_pathways[struct_name] = (
                 multicast_group,
                 pathway
