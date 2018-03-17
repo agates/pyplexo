@@ -35,10 +35,11 @@ class MulticastServerProtocol:
 
 
 class DomainTypeGroupPathway:
-    def __init__(self, capnproto_struct,
+    def __init__(self, capnproto_struct=None, struct_name=None,
                  multicast_group=socket.inet_aton('239.255.0.1'),
                  port=5555):
         self.capnproto_struct = capnproto_struct
+        self.struct_name = None
         self.multicast_group = socket.inet_ntoa(multicast_group)
         self.port = port
         self.send_addr = (self.multicast_group, self.port)
@@ -47,6 +48,11 @@ class DomainTypeGroupPathway:
         self._data_handlers = []
         self._query_handlers = []
         self._handlers_lock = asyncio.Lock()
+
+        if struct_name:
+            self.struct_name = bytes(struct_name, "UTF-8")
+        else:
+            self.struct_name = bytes(self.capnproto_struct.__name__, "UTF-8")
 
         # Store the hashed machine id as bytes
         with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
@@ -92,7 +98,7 @@ class DomainTypeGroupPathway:
         logging.debug("Message sent: {}".format(message))
 
     async def send_struct(self, capnproto_object):
-        message = DomainTypeGroupMessage(struct_name=bytes(self.capnproto_struct.__name__, "UTF-8"),
+        message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=self.machine_id,
                                          timestamp=int(round(current_timestamp_nanoseconds())),
                                          struct=capnproto_object.dumps())
@@ -100,7 +106,7 @@ class DomainTypeGroupPathway:
         await self.send(message.dumps())
 
     async def query(self):
-        message = DomainTypeGroupMessage(struct_name=bytes(self.capnproto_struct.__name__, "UTF-8"),
+        message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=self.machine_id,
                                          timestamp=int(round(current_timestamp_nanoseconds())),
                                          query=None)
@@ -143,9 +149,11 @@ class DomainTypeGroupPathway:
                     finally:
                         self.queue.task_done()
                 except Exception as e:
-                    logging.debug("{0}:handle_queue: {1}".format(self.capnproto_struct, e))
+                    logging.debug("{0}:handle_queue: {1}".format(self.struct_name, e))
 
-    async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
+    async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple(), capnproto_struct=None):
+        if capnproto_struct and not self.capnproto_struct:
+            self.capnproto_struct = capnproto_struct
         with (await self._handlers_lock):
             self._data_handlers.extend(data_handlers)
             self._query_handlers.extend(query_handlers)
@@ -280,7 +288,7 @@ class DomainTypeSystem:
                         socket.inet_ntoa(multicast_group)
                     ))
 
-            pathway = DomainTypeGroupPathway(capnproto_struct, multicast_group=multicast_group)
+            pathway = DomainTypeGroupPathway(capnproto_struct=capnproto_struct, multicast_group=multicast_group)
             self._type_group_pathways[struct_name] = (
                 multicast_group,
                 pathway
@@ -304,7 +312,8 @@ class DomainTypeSystem:
 
     async def handle_type(self, capnproto_struct, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
         pathway = await self.get_pathway(capnproto_struct)
-        await pathway.handle(query_handlers=query_handlers, data_handlers=data_handlers, raw_handlers=raw_handlers)
+        await pathway.handle(query_handlers=query_handlers, data_handlers=data_handlers, raw_handlers=raw_handlers,
+                             capnproto_struct=capnproto_struct)
         logging.info("Registered handlers for {}".format(capnproto_struct.__name__))
 
     async def handle_any(self, raw_handlers=tuple()):
