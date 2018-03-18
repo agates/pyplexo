@@ -1,6 +1,6 @@
 # THIS FILE HAS BEEN GENERATED AUTOMATICALLY BY capnpy
 # do not edit by hand
-# generated on 2018-03-11 15:25
+# generated on 2018-03-17 20:27
 
 from capnpy.enum import BaseEnum as _BaseEnum
 from capnpy.enum import fill_enum as _fill_enum
@@ -32,7 +32,7 @@ _fill_enum(DomainTypeGroupMessage__tag__)
 
 @DomainTypeGroupMessage.__extend__
 class DomainTypeGroupMessage(_Struct):
-    __static_data_size__ = 2
+    __static_data_size__ = 3
     __static_ptrs_size__ = 3
     
     
@@ -99,40 +99,49 @@ class DomainTypeGroupMessage(_Struct):
     def has_query(self):
         ptr = self._read_fast_ptr(16)
         return ptr != 0
+
+    @property
+    def instance_id(self):
+        # no union check
+        value = self._read_data(16, ord(b'Q'))
+        if 0 != 0:
+            value = value ^ 0
+        return value
     
     @staticmethod
-    def __new(struct_name=None, host_id=None, timestamp=0, struct=_undefined, query=_undefined):
+    def __new(struct_name=None, host_id=None, timestamp=0, struct=_undefined, query=_undefined, instance_id=0):
         builder = _SegmentBuilder()
-        pos = builder.allocate(40)
+        pos = builder.allocate(48)
         anonymous__curtag = None
-        builder.alloc_text(pos + 16, struct_name)
-        builder.alloc_data(pos + 24, host_id)
+        builder.alloc_text(pos + 24, struct_name)
+        builder.alloc_data(pos + 32, host_id)
         builder.write_uint64(pos + 0, timestamp)
         if struct is not _undefined:
             anonymous__curtag = _check_tag(anonymous__curtag, 'struct')
             builder.write_int16(8, 0)
-            builder.alloc_data(pos + 32, struct)
+            builder.alloc_data(pos + 40, struct)
         if query is not _undefined:
             anonymous__curtag = _check_tag(anonymous__curtag, 'query')
             builder.write_int16(8, 1)
-            builder.alloc_text(pos + 32, query)
+            builder.alloc_text(pos + 40, query)
+        builder.write_uint64(pos + 16, instance_id)
         return builder.as_string()
 
-    def __init__(self, struct_name=None, host_id=None, timestamp=0, struct=_undefined, query=_undefined):
-        _buf = DomainTypeGroupMessage.__new(struct_name, host_id, timestamp, struct, query)
-        self._init_from_buffer(_buf, 0, 2, 3)
+    def __init__(self, struct_name=None, host_id=None, timestamp=0, struct=_undefined, query=_undefined, instance_id=0):
+        _buf = DomainTypeGroupMessage.__new(struct_name, host_id, timestamp, struct, query, instance_id)
+        self._init_from_buffer(_buf, 0, 3, 3)
     
     @classmethod
-    def new_struct(cls, struct_name=None, host_id=None, timestamp=0, struct=None):
+    def new_struct(cls, struct_name=None, host_id=None, timestamp=0, struct=None, instance_id=0):
         buf = DomainTypeGroupMessage.__new(struct_name=struct_name, host_id=host_id, timestamp=timestamp, struct=struct,
-                                           query=_undefined)
-        return cls.from_buffer(buf, 0, 2, 3)
+                                           instance_id=instance_id, query=_undefined)
+        return cls.from_buffer(buf, 0, 3, 3)
     
     @classmethod
-    def new_query(cls, struct_name=None, host_id=None, timestamp=0, query=None):
+    def new_query(cls, struct_name=None, host_id=None, timestamp=0, query=None, instance_id=0):
         buf = DomainTypeGroupMessage.__new(struct_name=struct_name, host_id=host_id, timestamp=timestamp, query=query,
-                                           struct=_undefined)
-        return cls.from_buffer(buf, 0, 2, 3)
+                                           instance_id=instance_id, struct=_undefined)
+        return cls.from_buffer(buf, 0, 3, 3)
     
     def shortrepr(self):
         parts = []
@@ -145,6 +154,7 @@ class DomainTypeGroupMessage(_Struct):
         if self.is_query() and (self.has_query() or
                                 not False):
             parts.append("query = %s" % _text_repr(self.get_query()))
+        parts.append("instance_id = %s" % self.instance_id)
         return "(%s)" % ", ".join(parts)
 
 _DomainTypeGroupMessage_list_item_type = _StructItemType(DomainTypeGroupMessage)

@@ -12,4 +12,6 @@ struct DomainTypeGroupMessage {
         struct @3: Data;
         query @4: Text;
     }
+
+    instanceId @5: UInt64;
 }

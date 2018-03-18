@@ -1,16 +1,25 @@
 import asyncio
-import blosc
 import ipaddress
 import logging
 import socket
+import uuid
 from datetime import datetime, timezone
 
+import blosc
 import functools
 import hashlib
 import struct
 
 from .schema.domain_type_group_membership import DomainTypeGroupMembership
 from .schema.domain_type_group_message import DomainTypeGroupMessage
+
+# Store the hashed machine id as bytes
+with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
+    machine_id_hex = machine_id_file.read()
+machine_id = hashlib.sha1(machine_id_hex.rstrip()).digest()
+
+# Unique id for the current DTS instance
+instance_id = uuid.uuid1().int >> 64
 
 
 def current_timestamp():
@@ -54,11 +63,6 @@ class DomainTypeGroupPathway:
         else:
             self.struct_name = bytes(self.capnproto_struct.__name__, "UTF-8")
 
-        # Store the hashed machine id as bytes
-        with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
-            machine_id_hex = machine_id_file.read()
-        self.machine_id = hashlib.sha1(machine_id_hex.rstrip()).digest()
-
         addrinfo = socket.getaddrinfo(self.multicast_group, None)[0]
         sock = socket.socket(addrinfo[0], socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -68,13 +72,13 @@ class DomainTypeGroupPathway:
         if addrinfo[0] == socket.AF_INET:  # IPv4
             sock.bind((self.multicast_group, port))
             mreq = group_bin + struct.pack('=I', socket.INADDR_ANY)
-            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 0)
+            sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_LOOP, 1)
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, mreq)
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
         else:
             sock.bind((self.multicast_group, port))
             mreq = group_bin + struct.pack('@I', 0)
-            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 0)
+            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_LOOP, 1)
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_IF, mreq)
             sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, mreq)
 
@@ -99,7 +103,8 @@ class DomainTypeGroupPathway:
 
     async def send_struct(self, capnproto_object):
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
-                                         host_id=self.machine_id,
+                                         host_id=machine_id,
+                                         instance_id=instance_id,
                                          timestamp=int(round(current_timestamp_nanoseconds())),
                                          struct=capnproto_object.dumps())
         logging.debug("Sending struct: {}".format(message))
@@ -107,7 +112,8 @@ class DomainTypeGroupPathway:
 
     async def query(self):
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
-                                         host_id=self.machine_id,
+                                         host_id=machine_id,
+                                         instance_id=instance_id,
                                          timestamp=int(round(current_timestamp_nanoseconds())),
                                          query=None)
         logging.debug("Sending query: {}".format(message))
@@ -118,10 +124,13 @@ class DomainTypeGroupPathway:
             data, addr, received_timestamp_nanoseconds = await self.queue.get()
             with (await self._handlers_lock):
                 try:
+                    message = DomainTypeGroupMessage.loads(blosc.decompress(data))
+                    if message.host_id == machine_id and message.instance_id == instance_id:
+                        # Ignore messages from current instance
+                        continue
                     logging.debug("Handling message from host: {}".format(
                         addr,
                     ))
-                    message = DomainTypeGroupMessage.loads(blosc.decompress(data))
                     if self._raw_handlers:
                         await asyncio.gather(*[handler(message, addr, received_timestamp_nanoseconds)
                                                for handler in self._raw_handlers])
@@ -163,6 +172,8 @@ class DomainTypeGroupPathway:
 class DomainTypeSystem:
 
     def __init__(self):
+        logging.info("machine_id: {0}".format(machine_id))
+        logging.info("instance_id: {0}".format(instance_id))
         # List of available multicast groups
         self._available_groups = {socket.inet_aton(str(ip_address))
                                   for ip_address in ipaddress.ip_network('239.255.0.0/16').hosts()}
@@ -180,7 +191,7 @@ class DomainTypeSystem:
             logging.debug("Sending startup queries")
             for i in range(3):
                 await pathway.query()
-                await asyncio.sleep(1.5)
+                await asyncio.sleep(.5)
 
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
             await self.discard_multicast_group(domain_type_group_membership.multicast_group)
