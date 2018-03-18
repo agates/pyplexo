@@ -109,12 +109,14 @@ class DomainTypeGroupPathway:
                                          struct=capnproto_object.dumps())
         await self.send(message.dumps())
 
-    async def query(self):
+    async def query(self, query=None):
+        if query:
+            query = bytes(query, 'UTF-8')
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=machine_id,
                                          instance_id=instance_id,
                                          timestamp=int(current_timestamp_nanoseconds()),
-                                         query=None)
+                                         query=query)
         await self.send(message.dumps())
 
     async def handle_queue(self):
@@ -349,9 +351,9 @@ class DomainTypeSystem:
                 await new_pathway.handle(raw_handlers=raw_handlers)
             logging.info("Registered raw handlers for {}".format(key))
 
-    async def query_type(self, capnproto_struct):
+    async def query_type(self, capnproto_struct, query=None):
         pathway = await self.get_pathway(capnproto_struct)
-        await pathway.query()
+        await pathway.query(query=query)
 
     async def send_struct(self, capnproto_object):
         pathway = await self.get_pathway(type(capnproto_object))
