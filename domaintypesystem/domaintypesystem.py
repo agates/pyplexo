@@ -40,7 +40,7 @@ class MulticastServerProtocol:
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        asyncio.ensure_future(self.queue.put((data, addr, int(round(current_timestamp_nanoseconds())))))
+        asyncio.ensure_future(self.queue.put((data, addr, int(current_timestamp_nanoseconds()))))
 
 
 class DomainTypeGroupPathway:
@@ -105,18 +105,16 @@ class DomainTypeGroupPathway:
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=machine_id,
                                          instance_id=instance_id,
-                                         timestamp=int(round(current_timestamp_nanoseconds())),
+                                         timestamp=int(current_timestamp_nanoseconds()),
                                          struct=capnproto_object.dumps())
-        logging.debug("Sending struct: {}".format(message))
         await self.send(message.dumps())
 
     async def query(self):
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=machine_id,
                                          instance_id=instance_id,
-                                         timestamp=int(round(current_timestamp_nanoseconds())),
+                                         timestamp=int(current_timestamp_nanoseconds()),
                                          query=None)
-        logging.debug("Sending query: {}".format(message))
         await self.send(message.dumps())
 
     async def handle_queue(self):
