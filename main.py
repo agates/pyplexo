@@ -12,6 +12,12 @@ loop = asyncio.get_event_loop()
 
 dts = DomainTypeSystem()
 
+
+async def print_handler(data_type_group_message, address, received_timestamp):
+    logging.debug("Print handler: {0}, timestamp: {1}".format(data_type_group_message.struct_name, received_timestamp))
+
+asyncio.ensure_future(dts.handle_any((print_handler,)))
+
 try:
     loop.run_forever()
 except KeyboardInterrupt:
