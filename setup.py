@@ -4,7 +4,7 @@ setup(
     name='domaintypesystem',
     version='0.0.1',
     description='Decentralized type system',
-    license='LGPL-3.0',
+    license='GPL-3.0',
     packages=find_packages(),
     author='Alecks Gates',
     author_email='agates@mail.agates.io',
