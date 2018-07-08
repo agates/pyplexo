@@ -1,2 +1,4 @@
 blosc
 capnpy==0.5.0
+pytest
+pytest-asyncio

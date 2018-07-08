@@ -9,6 +9,11 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="R Skeletons" level="application" />
     <orderEntry type="library" name="R User Library" level="project" />
+    <orderEntry type="module" module-name="dht22_dts" />
+    <orderEntry type="module" module-name="ds18b20_dts" />
+    <orderEntry type="module" module-name="dts-graph" />
+    <orderEntry type="module" module-name="dts_logger" />
+    <orderEntry type="module" module-name="temperature_relay_bridge" />
   </component>
   <component name="TestRunnerService">
     <option name="projectConfiguration" value="py.test" />

@@ -2,7 +2,12 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/../dht22_dts/.idea/dht22_dts.iml" filepath="$PROJECT_DIR$/../dht22_dts/.idea/dht22_dts.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/domain-type-system.iml" filepath="$PROJECT_DIR$/.idea/domain-type-system.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ds18b20_dts/.idea/ds18b20_dts.iml" filepath="$PROJECT_DIR$/../ds18b20_dts/.idea/ds18b20_dts.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../dts-graph/.idea/dts-graph.iml" filepath="$PROJECT_DIR$/../dts-graph/.idea/dts-graph.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../dts_logger/.idea/dts_logger.iml" filepath="$PROJECT_DIR$/../dts_logger/.idea/dts_logger.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../temperature_relay_bridge/.idea/temperature_relay_bridge.iml" filepath="$PROJECT_DIR$/../temperature_relay_bridge/.idea/temperature_relay_bridge.iml" />
     </modules>
   </component>
 </project>
