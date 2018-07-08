@@ -26,6 +26,10 @@ It's also tied to the [capnproto] data interchage format, though there's nothing
 agnostic in the future.  There's no reason it can't support the likes of [JSON], [CBOR], [Ion], [MessagePack],
 [Protocol Buffers], [XML], [Python Pickles], or even raw bytes, for example.
 
+Only small data structures can be sent right now (anything that fits into a typical <1500 byte packet, minus DTS
+overhead). This is only because large amounts of data weren't needed for our purposes during development, but this will
+change in the future.
+
 
 [domain type system]: https://gitlab.com/agates/domain-type-system
 [capnproto]: https://capnproto.org/
