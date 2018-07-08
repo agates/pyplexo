@@ -1,14 +1,15 @@
 import asyncio
+import functools
+import hashlib
 import ipaddress
 import logging
 import socket
+import struct
 import uuid
 from datetime import datetime, timezone
+from timeit import default_timer as timer
 
 import blosc
-import functools
-import hashlib
-import struct
 
 from .schema.domain_type_group_membership import DomainTypeGroupMembership
 from .schema.domain_type_group_message import DomainTypeGroupMessage
@@ -190,8 +191,16 @@ class DomainTypeSystem:
         async def startup_query():
             logging.debug("Sending startup queries")
             for i in range(3):
+                start_time = timer()
                 await pathway.query()
-                await asyncio.sleep(.5)
+                await asyncio.sleep(.5 - (timer() - start_time))
+
+        async def periodic_query():
+            while True:
+                start_time = timer()
+                logging.debug("Sending periodic query")
+                await pathway.query()
+                await asyncio.sleep(10 - (timer() - start_time))
 
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
             await self.discard_multicast_group(domain_type_group_membership.multicast_group)
@@ -245,6 +254,8 @@ class DomainTypeSystem:
                              ))
 
         loop.run_until_complete(startup_query())
+
+        asyncio.ensure_future(periodic_query(), loop=loop)
 
         logging.debug("DomainTypeSystem initialization complete")
 
