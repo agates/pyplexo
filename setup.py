@@ -5,11 +5,10 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='domaintypesystem',
-    version='0.0.1',
+    version='0.0.2',
     description='Decentralized type system',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    packages=find_packages(),
     author='Alecks Gates',
     author_email='agates@mail.agates.io',
     keywords=[],
@@ -34,7 +33,8 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
     install_requires=[
-        'blosc',
-        'capnpy==0.5.0'
-    ]
+        'blosc~=1.5',
+        'capnpy~=0.5'
+    ],
+    packages=find_packages(),
 )
