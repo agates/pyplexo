@@ -5,12 +5,13 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='domaintypesystem',
-    version='0.0.2',
+    version='0.0.2r1',
     description='Decentralized type system',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Alecks Gates',
     author_email='agates@mail.agates.io',
+    license='GPLv3+',
     keywords=[],
     url='https://gitlab.com/agates/domain-type-system',
     python_requires='>=3.5',
@@ -36,5 +37,11 @@ setup(
         'blosc~=1.5',
         'capnpy~=0.5'
     ],
-    packages=find_packages(),
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
+    package_data={'domaintypesystem': ['schema/*']},
+    entry_points={
+        'console_scripts': [
+        ],
+    }
 )

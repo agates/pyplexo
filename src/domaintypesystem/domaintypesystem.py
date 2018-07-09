@@ -32,9 +32,9 @@ import uuid
 from datetime import datetime, timezone
 
 DomainTypeGroupMembership = capnpy.load_schema(
-    'domaintypesystem.schema.domain_type_group_membership').DomainTypeGroupMembership
+    'src.domaintypesystem.schema.domain_type_group_membership').DomainTypeGroupMembership
 DomainTypeGroupMessage = capnpy.load_schema(
-    'domaintypesystem.schema.domain_type_group_message').DomainTypeGroupMessage
+    'src.domaintypesystem.schema.domain_type_group_message').DomainTypeGroupMessage
 
 # Store the hashed machine id as bytes
 with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
