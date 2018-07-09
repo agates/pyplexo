@@ -1,4 +1,4 @@
-_This is a **highly experimental** project in a pre-alpha state.  Use at your own risk._
+_This is a **highly experimental** project in a planning state.  Use at your own risk._
 
 # Domain Type System
 The [Domain Type System] (DTS) is the first draft and implementation of the concept of a flexible 
