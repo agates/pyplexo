@@ -18,20 +18,23 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-import functools
 import hashlib
 import ipaddress
 import logging
 import socket
 import struct
-import uuid
-from datetime import datetime, timezone
 from timeit import default_timer as timer
 
 import blosc
+import capnpy
+import functools
+import uuid
+from datetime import datetime, timezone
 
-from .schema.domain_type_group_membership import DomainTypeGroupMembership
-from .schema.domain_type_group_message import DomainTypeGroupMessage
+DomainTypeGroupMembership = capnpy.load_schema(
+    'domaintypesystem.schema.domain_type_group_membership').DomainTypeGroupMembership
+DomainTypeGroupMessage = capnpy.load_schema(
+    'domaintypesystem.schema.domain_type_group_message').DomainTypeGroupMessage
 
 # Store the hashed machine id as bytes
 with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:

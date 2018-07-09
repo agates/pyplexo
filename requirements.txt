@@ -1,4 +1,4 @@
-blosc
-capnpy==0.5.0
+blosc~=1.5
+capnpy~=0.5
 pytest
 pytest-asyncio
