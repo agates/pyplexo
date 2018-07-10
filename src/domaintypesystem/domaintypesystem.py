@@ -308,6 +308,7 @@ class DomainTypeSystem:
                                 socket.inet_ntoa(multicast_group)
                             ))
                             return
+                await self.discard_multicast_group(multicast_group)
                 logging.info("Registering pathway to requested multicast group: {}:{}".format(
                     struct_name,
                     socket.inet_ntoa(multicast_group)
