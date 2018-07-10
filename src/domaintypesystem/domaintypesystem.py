@@ -242,7 +242,7 @@ class DomainTypeSystem:
                     with (await self._new_membership_handlers_lock):
                         asyncio.gather(*[handler(struct_name) for handler in self._new_membership_handlers])
                 else:
-                    logging.info("Multicast already group exists for pathway: {}:{}".format(
+                    logging.debug("Multicast already group exists for pathway: {}:{}".format(
                         struct_name,
                         socket.inet_ntoa(domain_type_group_membership.multicast_group)
                     ))
