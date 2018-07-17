@@ -259,6 +259,17 @@ class DomainTypeSystem:
                     multicast_group=value[0]
                 ))
 
+        self.announcement_queue = asyncio.Queue()
+
+        async def announce_new_pathways():
+            while True:
+                new_pathway_struct, new_pathway_multicast_group = await self.announcement_queue.get()
+                await (await pathway).send_struct(DomainTypeGroupMembership(
+                    struct_name=bytes(new_pathway_struct, "UTF-8"),
+                    multicast_group=new_pathway_multicast_group
+                ))
+                self.announcement_queue.task_done()
+
         loop = asyncio.get_event_loop()
         pathway = loop.run_until_complete(
             self.register_pathway(capnproto_struct=DomainTypeGroupMembership,
@@ -277,6 +288,7 @@ class DomainTypeSystem:
         loop.run_until_complete(startup_query())
 
         asyncio.ensure_future(periodic_query(), loop=loop)
+        loop.create_task(announce_new_pathways())
 
         logging.debug("DomainTypeSystem initialization complete")
 
@@ -346,11 +358,8 @@ class DomainTypeSystem:
             ))
 
             while pathway.transport is None:
-                await asyncio.sleep(.1)
-            await pathway.send_struct(DomainTypeGroupMembership(
-                struct_name=bytes(struct_name, "UTF-8"),
-                multicast_group=multicast_group
-            ))
+                await asyncio.sleep(.01)
+            await self.announcement_queue.put((struct_name, multicast_group))
 
         return pathway
 
