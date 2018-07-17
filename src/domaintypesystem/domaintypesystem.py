@@ -40,9 +40,6 @@ with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
     machine_id_hex = machine_id_file.read()
 machine_id = hashlib.sha1(machine_id_hex.rstrip()).digest()
 
-# Unique id for the current DTS instance
-instance_id = uuid.uuid1().int >> 64
-
 
 def current_timestamp():
     # returns floating point timestamp in seconds
@@ -68,7 +65,8 @@ class MulticastServerProtocol:
 class DomainTypeGroupPathway:
     def __init__(self, capnproto_struct=None, struct_name=None,
                  multicast_group=socket.inet_aton('239.255.0.1'),
-                 port=5555):
+                 port=5555,
+                 loop=None):
         self.capnproto_struct = capnproto_struct
         self.struct_name = None
         self.multicast_group = socket.inet_ntoa(multicast_group)
@@ -79,6 +77,9 @@ class DomainTypeGroupPathway:
         self._data_handlers = []
         self._query_handlers = []
         self._handlers_lock = asyncio.Lock()
+
+        # Unique id for the current DTS instance
+        self.instance_id = uuid.uuid1().int >> 64
 
         if struct_name:
             self.struct_name = bytes(struct_name, "UTF-8")
@@ -106,18 +107,21 @@ class DomainTypeGroupPathway:
 
         self.queue = asyncio.Queue()
 
-        listen = asyncio.get_event_loop().create_datagram_endpoint(
+        if not loop:
+            loop = asyncio.get_event_loop()
+
+        endpoint_task = loop.create_task(loop.create_datagram_endpoint(
             functools.partial(MulticastServerProtocol, self.queue),
             sock=sock
-        )
+        ))
 
-        def listen_done(future):
-            self.transport, self.protocol = future.result()
+        async def endpoint_done():
+            self.transport, self.protocol = await endpoint_task
 
-        listen_future = asyncio.ensure_future(listen)
-        listen_future.add_done_callback(listen_done)
+        loop.create_task(endpoint_done())
+        loop.create_task(self.handle_queue())
 
-        asyncio.ensure_future(self.handle_queue())
+        self.loop = loop
 
     async def send(self, message):
         self.transport.sendto(blosc.compress(message), self.send_addr)
@@ -126,7 +130,7 @@ class DomainTypeGroupPathway:
     async def send_struct(self, capnproto_object):
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=machine_id,
-                                         instance_id=instance_id,
+                                         instance_id=self.instance_id,
                                          timestamp=int(current_timestamp_nanoseconds()),
                                          struct=capnproto_object.dumps())
         await self.send(message.dumps())
@@ -136,7 +140,7 @@ class DomainTypeGroupPathway:
             query = bytes(query, 'UTF-8')
         message = DomainTypeGroupMessage(struct_name=self.struct_name,
                                          host_id=machine_id,
-                                         instance_id=instance_id,
+                                         instance_id=self.instance_id,
                                          timestamp=int(current_timestamp_nanoseconds()),
                                          query=query)
         await self.send(message.dumps())
@@ -147,7 +151,7 @@ class DomainTypeGroupPathway:
             with (await self._handlers_lock):
                 try:
                     message = DomainTypeGroupMessage.loads(blosc.decompress(data))
-                    if message.host_id == machine_id and message.instance_id == instance_id:
+                    if message.host_id == machine_id and message.instance_id == self.instance_id:
                         # Ignore messages from current instance
                         continue
                     logging.debug("Handling message from host: {}".format(
@@ -155,7 +159,8 @@ class DomainTypeGroupPathway:
                     ))
                     if self._raw_handlers:
                         await asyncio.gather(*[handler(message, addr, received_timestamp_nanoseconds)
-                                               for handler in self._raw_handlers])
+                                               for handler in self._raw_handlers],
+                                             loop=self.loop)
                     try:
                         if self._data_handlers:
                             capnproto_object = self.capnproto_struct.loads(message.struct)
@@ -164,7 +169,8 @@ class DomainTypeGroupPathway:
                                 message.host_id
                             ))
                             await asyncio.gather(*[handler(capnproto_object, addr, received_timestamp_nanoseconds)
-                                                   for handler in self._data_handlers])
+                                                   for handler in self._data_handlers],
+                                                 loop=self.loop)
                     except ValueError:
                         if self._query_handlers:
                             logging.debug("Handling query from host: {}, host_id: {}".format(
@@ -176,7 +182,8 @@ class DomainTypeGroupPathway:
                             else:
                                 query = None
                             await asyncio.gather(*[handler(query, addr, received_timestamp_nanoseconds)
-                                                   for handler in self._query_handlers])
+                                                   for handler in self._query_handlers],
+                                                 loop=self.loop)
                     finally:
                         self.queue.task_done()
                 except Exception as e:
@@ -193,9 +200,9 @@ class DomainTypeGroupPathway:
 
 class DomainTypeSystem:
 
-    def __init__(self):
+    def __init__(self, loop=None):
         logging.info("machine_id: {0}".format(machine_id))
-        logging.info("instance_id: {0}".format(instance_id))
+        #logging.info("instance_id: {0}".format(instance_id))
         # List of available multicast groups
         self._available_groups = {socket.inet_aton(str(ip_address))
                                   for ip_address in ipaddress.ip_network('239.255.0.0/16').hosts()}
@@ -213,14 +220,14 @@ class DomainTypeSystem:
             logging.debug("Sending startup queries")
             for i in range(3):
                 start_time = timer()
-                await pathway.query()
+                await (await pathway).query()
                 await asyncio.sleep(.5 - (timer() - start_time))
 
         async def periodic_query():
             while True:
                 start_time = timer()
                 logging.debug("Sending periodic query")
-                await pathway.query()
+                await (await pathway).query()
                 await asyncio.sleep(10 - (timer() - start_time))
 
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
@@ -254,7 +261,7 @@ class DomainTypeSystem:
                     struct_name,
                     socket.inet_ntoa(value[0])
                 ))
-                await pathway.send_struct(DomainTypeGroupMembership(
+                await (await pathway).send_struct(DomainTypeGroupMembership(
                     struct_name=bytes(struct_name, "UTF-8"),
                     multicast_group=value[0]
                 ))
@@ -270,12 +277,16 @@ class DomainTypeSystem:
                 ))
                 self.announcement_queue.task_done()
 
-        loop = asyncio.get_event_loop()
-        pathway = loop.run_until_complete(
-            self.register_pathway(capnproto_struct=DomainTypeGroupMembership,
-                                  multicast_group=socket.inet_aton('239.255.0.1')))
+        if not loop:
+            loop = asyncio.get_event_loop()
 
-        loop.run_until_complete(
+        pathway = loop.create_task(
+            self.register_pathway(capnproto_struct=DomainTypeGroupMembership,
+                                  multicast_group=socket.inet_aton('239.255.0.1')
+                                  )
+        )
+
+        loop.create_task(
             self.handle_type(DomainTypeGroupMembership,
                              query_handlers=(
                                  handle_query,
@@ -283,11 +294,11 @@ class DomainTypeSystem:
                              data_handlers=(
                                  handle_membership,
                              )
-                             ))
+                             )
+        )
 
-        loop.run_until_complete(startup_query())
-
-        asyncio.ensure_future(periodic_query(), loop=loop)
+        loop.create_task(startup_query())
+        loop.create_task(periodic_query())
         loop.create_task(announce_new_pathways())
 
         logging.debug("DomainTypeSystem initialization complete")
