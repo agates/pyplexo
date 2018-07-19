@@ -31,9 +31,9 @@ import uuid
 from datetime import datetime, timezone
 
 DomainTypeGroupMembership = capnpy.load_schema(
-    'src.domaintypesystem.schema.domain_type_group_membership').DomainTypeGroupMembership
+    'domaintypesystem.schema.domain_type_group_membership').DomainTypeGroupMembership
 DomainTypeGroupMessage = capnpy.load_schema(
-    'src.domaintypesystem.schema.domain_type_group_message').DomainTypeGroupMessage
+    'domaintypesystem.schema.domain_type_group_message').DomainTypeGroupMessage
 
 # Store the hashed machine id as bytes
 with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
@@ -224,6 +224,7 @@ class DomainTypeSystem:
                 await asyncio.sleep(.5 - (timer() - start_time))
 
         async def periodic_query():
+            await asyncio.sleep(10)
             while True:
                 start_time = timer()
                 logging.debug("Sending periodic query")
