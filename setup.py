@@ -5,18 +5,17 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='domaintypesystem',
-    version='0.1.1',
+    version='0.1.1r1',
     description='Decentralized type system',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Alecks Gates',
     author_email='agates@mail.agates.io',
-    license='GPLv3+',
     keywords=[],
     url='https://gitlab.com/agates/domain-type-system',
     python_requires='>=3.5',
     classifiers=(
-        'Development Status :: 1 - Planning',
+        'Development Status :: 2 - Pre-Alpha',
         'Framework :: AsyncIO',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
