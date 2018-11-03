@@ -20,6 +20,7 @@ import asyncio
 import hashlib
 import ipaddress
 import logging
+import signal
 import socket
 import struct
 from timeit import default_timer as timer
@@ -147,7 +148,10 @@ class DomainTypeGroupPathway:
 
     async def handle_queue(self):
         while True:
-            data, addr, received_timestamp_nanoseconds = await self.queue.get()
+            try:
+                data, addr, received_timestamp_nanoseconds = await self.queue.get()
+            except asyncio.CancelledError as e:
+                raise e
             with (await self._handlers_lock):
                 try:
                     message = DomainTypeGroupMessage.loads(blosc.decompress(data))
@@ -217,19 +221,25 @@ class DomainTypeSystem:
         self._new_membership_handlers_lock = asyncio.Lock()
 
         async def startup_query():
-            logging.debug("Sending startup queries")
-            for i in range(3):
-                start_time = timer()
-                await (await pathway).query()
-                await asyncio.sleep(.5 - (timer() - start_time))
+            try:
+                logging.debug("Sending startup queries")
+                for i in range(3):
+                    start_time = timer()
+                    await (await pathway).query()
+                    await asyncio.sleep(.5 - (timer() - start_time))
+            except asyncio.CancelledError as e:
+                raise e
 
         async def periodic_query():
-            await asyncio.sleep(10)
-            while True:
-                start_time = timer()
-                logging.debug("Sending periodic query")
-                await (await pathway).query()
-                await asyncio.sleep(10 - (timer() - start_time))
+            try:
+                await asyncio.sleep(10)
+                while True:
+                    start_time = timer()
+                    logging.debug("Sending periodic query")
+                    await (await pathway).query()
+                    await asyncio.sleep(10 - (timer() - start_time))
+            except asyncio.CancelledError as e:
+                raise e
 
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
             await self.discard_multicast_group(domain_type_group_membership.multicast_group)
@@ -271,15 +281,26 @@ class DomainTypeSystem:
 
         async def announce_new_pathways():
             while True:
-                new_pathway_struct, new_pathway_multicast_group = await self.announcement_queue.get()
-                await (await pathway).send_struct(DomainTypeGroupMembership(
-                    struct_name=bytes(new_pathway_struct, "UTF-8"),
-                    multicast_group=new_pathway_multicast_group
-                ))
-                self.announcement_queue.task_done()
+                try:
+                    new_pathway_struct, new_pathway_multicast_group = await self.announcement_queue.get()
+                    await (await pathway).send_struct(DomainTypeGroupMembership(
+                        struct_name=bytes(new_pathway_struct, "UTF-8"),
+                        multicast_group=new_pathway_multicast_group
+                    ))
+                    self.announcement_queue.task_done()
+                except asyncio.CancelledError as e:
+                    raise e
 
         if not loop:
             loop = asyncio.get_event_loop()
+
+            def ask_exit():
+                for task in asyncio.Task.all_tasks(loop=loop):
+                    task.cancel()
+
+            # If we make our own loop, try to handle task cancellation
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                loop.add_signal_handler(sig, ask_exit)
 
         pathway = loop.create_task(
             self.register_pathway(capnproto_struct=DomainTypeGroupMembership,
