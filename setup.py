@@ -5,7 +5,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='domaintypesystem',
-    version='0.1.2',
+    version='0.1.3',
     description='Decentralized type system',
     long_description=long_description,
     long_description_content_type='text/markdown',
