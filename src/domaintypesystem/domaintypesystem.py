@@ -79,6 +79,8 @@ class DomainTypeGroupPathway:
         self._query_handlers = []
         self._handlers_lock = asyncio.Lock()
 
+        self.tasks = []
+
         # Unique id for the current DTS instance
         self.instance_id = uuid.uuid1().int >> 64
 
@@ -116,13 +118,19 @@ class DomainTypeGroupPathway:
             sock=sock
         ))
 
+        self.tasks.append(endpoint_task)
+
         async def endpoint_done():
             self.transport, self.protocol = await endpoint_task
 
-        loop.create_task(endpoint_done())
-        loop.create_task(self.handle_queue())
+        self.tasks.append(loop.create_task(endpoint_done()))
+        self.tasks.append(loop.create_task(self.handle_queue()))
 
         self.loop = loop
+
+    def __del__(self):
+        for task in self.tasks:
+            task.cancel()
 
     async def send(self, message):
         self.transport.sendto(blosc.compress(message), self.send_addr)
@@ -221,6 +229,8 @@ class DomainTypeSystem:
         self._new_membership_handlers = []
         self._new_membership_handlers_lock = asyncio.Lock()
 
+        self.tasks = []
+
         async def startup_query():
             try:
                 logging.debug("Sending startup queries")
@@ -304,7 +314,9 @@ class DomainTypeSystem:
                                   )
         )
 
-        loop.create_task(
+        self.tasks.append(pathway)
+
+        self.tasks.append(loop.create_task(
             self.handle_type(DomainTypeGroupMembership,
                              query_handlers=(
                                  handle_query,
@@ -313,13 +325,17 @@ class DomainTypeSystem:
                                  handle_membership,
                              )
                              )
-        )
+        ))
 
-        loop.create_task(startup_query())
-        loop.create_task(periodic_query())
-        loop.create_task(announce_new_pathways())
+        self.tasks.append(loop.create_task(startup_query()))
+        self.tasks.append(loop.create_task(periodic_query()))
+        self.tasks.append(loop.create_task(announce_new_pathways()))
 
         logging.debug("DomainTypeSystem initialization complete")
+
+    def __del__(self):
+        for task in self.tasks:
+            task.cancel()
 
     async def get_multicast_group(self):
         with (await self._available_groups_lock):
