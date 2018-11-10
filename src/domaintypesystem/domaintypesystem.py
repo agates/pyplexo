@@ -180,7 +180,7 @@ class DomainTypeGroupPathway:
         handlers = deque()
         while True:
             data, addr, received_timestamp_nanoseconds = await queue.get()
-            with (await handlers_lock):
+            async with handlers_lock:
                 try:
                     message = DomainTypeGroupMessage.loads(blosc.decompress(data))
                 except Exception as e:
@@ -229,7 +229,7 @@ class DomainTypeGroupPathway:
     async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple(), capnproto_struct=None):
         if capnproto_struct and not self.capnproto_struct:
             self.capnproto_struct = capnproto_struct
-        with (await self._handlers_lock):
+        async with self._handlers_lock:
             self._data_handlers.extend(data_handlers)
             self._query_handlers.extend(query_handlers)
             self._raw_handlers.extend(raw_handlers)
@@ -274,7 +274,7 @@ class DomainTypeSystem:
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
             await self.discard_multicast_group(domain_type_group_membership.multicast_group)
             struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
-            with (await self._type_group_pathways_lock):
+            async with self._type_group_pathways_lock:
                 if struct_name not in self._type_group_pathways \
                         or self._type_group_pathways[struct_name][0] \
                         != domain_type_group_membership.multicast_group:
@@ -286,7 +286,7 @@ class DomainTypeSystem:
                         domain_type_group_membership.multicast_group,
                         None
                     )
-                    with (await self._new_membership_handlers_lock):
+                    async with self._new_membership_handlers_lock:
                         handlers = deque()
                         for handler in self._new_membership_handlers:
                             handlers.append(loop.create_task(
@@ -299,7 +299,7 @@ class DomainTypeSystem:
                     ))
 
         async def handle_query(query, address, received_timestamp_nanoseconds):
-            with (await self._type_group_pathways_lock):
+            async with self._type_group_pathways_lock:
                 pathways = self._type_group_pathways
             for struct_name, value in pathways.items():
                 logging.debug("Responding to DomainTypeGroupMembership query: {}:{}".format(
@@ -374,21 +374,21 @@ class DomainTypeSystem:
             pass
 
     async def get_multicast_group(self):
-        with (await self._available_groups_lock):
+        async with self._available_groups_lock:
             return self._available_groups.pop()
 
     async def discard_multicast_group(self, multicast_group):
-        with (await self._available_groups_lock):
+        async with self._available_groups_lock:
             self._available_groups.discard(multicast_group)
 
     async def multicast_group_available(self, multicast_group):
-        with (await self._available_groups_lock):
+        async with self._available_groups_lock:
             return multicast_group in self._available_groups
 
     async def register_pathway(self, capnproto_struct=None, struct_name=None, multicast_group=None):
         pathway = None
         struct_name = struct_name or capnproto_struct.__name__
-        with (await self._type_group_pathways_lock):
+        async with self._type_group_pathways_lock:
             if multicast_group is not None:
                 if not (await self.multicast_group_available(multicast_group)):
                     if struct_name in self._type_group_pathways:
@@ -447,7 +447,7 @@ class DomainTypeSystem:
         return pathway
 
     async def get_pathway(self, capnproto_struct):
-        with (await self._type_group_pathways_lock):
+        async with self._type_group_pathways_lock:
             return self._type_group_pathways[capnproto_struct.__name__][1]
 
     async def handle_type(self, capnproto_struct, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple()):
@@ -462,10 +462,10 @@ class DomainTypeSystem:
             await new_pathway.handle(raw_handlers=raw_handlers)
             logging.info("Registered raw handlers for {}".format(struct_name))
 
-        with (await self._new_membership_handlers_lock):
+        async with self._new_membership_handlers_lock:
             self._new_membership_handlers.append(functools.partial(handle_new_membership, raw_handlers))
 
-        with (await self._type_group_pathways_lock):
+        async with self._type_group_pathways_lock:
             type_group_pathways = self._type_group_pathways.items()
 
         for key, value in type_group_pathways:

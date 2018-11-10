@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../dht22_dts" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../ds18b20_dts" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../dts-graph" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../dts_logger" vcs="Git" />
