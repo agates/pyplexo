@@ -33,9 +33,9 @@ import blosc
 import capnpy
 
 DomainTypeGroupMembership = capnpy.load_schema(
-    'domaintypesystem.schema.domain_type_group_membership').DomainTypeGroupMembership
+    'domaintypesystem.schema.domain_type_group_membership', pyx=False).DomainTypeGroupMembership
 DomainTypeGroupMessage = capnpy.load_schema(
-    'domaintypesystem.schema.domain_type_group_message').DomainTypeGroupMessage
+    'domaintypesystem.schema.domain_type_group_message', pyx=False).DomainTypeGroupMessage
 
 # Store the hashed machine id as bytes
 with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
