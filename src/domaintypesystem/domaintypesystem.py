@@ -32,6 +32,8 @@ import uuid
 import blosc
 import capnpy
 
+import multicastgroups
+
 DomainTypeGroupMembership = capnpy.load_schema(
     'domaintypesystem.schema.domain_type_group_membership', pyx=False).DomainTypeGroupMembership
 DomainTypeGroupMessage = capnpy.load_schema(
@@ -185,10 +187,12 @@ class DomainTypeGroupPathway:
                     message = DomainTypeGroupMessage.loads(blosc.decompress(data))
                 except Exception as e:
                     logging.debug("{0}:handle_queue: {1}".format(struct_name, e))
+                    queue.task_done()
                     continue
 
                 if message.host_id == machine_id and message.instance_id == instance_id:
                     # Ignore messages from current instance
+                    queue.task_done()
                     continue
                 logging.debug("Handling message from host: {}".format(
                     addr,
@@ -208,7 +212,7 @@ class DomainTypeGroupPathway:
                         for handler in data_handlers:
                             handlers.append(loop.create_task(
                                 handler(capnproto_object, addr, received_timestamp_nanoseconds)))
-                except ValueError:
+                except ValueError as e:
                     if query_handlers:
                         logging.debug("Handling query from host: {}, host_id: {}".format(
                             addr,
@@ -219,7 +223,7 @@ class DomainTypeGroupPathway:
                         else:
                             query = None
                         for handler in query_handlers:
-                            handler.append(loop.create_task(
+                            handlers.append(loop.create_task(
                                 handler(query, addr, received_timestamp_nanoseconds)))
                 finally:
                     await asyncio.wait(handlers, loop=loop, return_when=asyncio.ALL_COMPLETED)
@@ -240,12 +244,6 @@ class DomainTypeSystem:
     def __init__(self, loop=None):
         logging.info("machine_id: {0}".format(machine_id))
         # logging.info("instance_id: {0}".format(instance_id))
-        # List of available multicast groups
-        self._available_groups = {socket.inet_aton(str(ip_address))
-                                  for ip_address in ipaddress.ip_network('239.255.0.0/16').hosts()}
-        self._available_groups_lock = asyncio.Lock()
-        # Remove the first ip address, 239.255.0.0, since it's unusable
-        self._available_groups.discard(socket.inet_aton('239.255.0.0'))
 
         self._type_group_pathways = dict()
         self._type_group_pathways_lock = asyncio.Lock()
@@ -272,7 +270,7 @@ class DomainTypeSystem:
                 await asyncio.sleep(10 - (timer() - start_time))
 
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
-            await self.discard_multicast_group(domain_type_group_membership.multicast_group)
+            await multicastgroups.discard_multicast_group(domain_type_group_membership.multicast_group)
             struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
             async with self._type_group_pathways_lock:
                 if struct_name not in self._type_group_pathways \
@@ -373,24 +371,12 @@ class DomainTypeSystem:
         except RuntimeError:
             pass
 
-    async def get_multicast_group(self):
-        async with self._available_groups_lock:
-            return self._available_groups.pop()
-
-    async def discard_multicast_group(self, multicast_group):
-        async with self._available_groups_lock:
-            self._available_groups.discard(multicast_group)
-
-    async def multicast_group_available(self, multicast_group):
-        async with self._available_groups_lock:
-            return multicast_group in self._available_groups
-
     async def register_pathway(self, capnproto_struct=None, struct_name=None, multicast_group=None):
         pathway = None
         struct_name = struct_name or capnproto_struct.__name__
         async with self._type_group_pathways_lock:
             if multicast_group is not None:
-                if not (await self.multicast_group_available(multicast_group)):
+                if not (await multicastgroups.multicast_group_available(multicast_group)):
                     if struct_name in self._type_group_pathways:
                         if self._type_group_pathways[struct_name][0] != multicast_group:
                             raise ValueError("Given multicast is assigned to another struct")
@@ -400,14 +386,14 @@ class DomainTypeSystem:
                                 socket.inet_ntoa(multicast_group)
                             ))
                             return
-                await self.discard_multicast_group(multicast_group)
+                await multicastgroups.discard_multicast_group(multicast_group)
                 logging.info("Registering pathway to requested multicast group: {}:{}".format(
                     struct_name,
                     socket.inet_ntoa(multicast_group)
                 ))
             else:
                 if struct_name not in self._type_group_pathways:
-                    multicast_group = await self.get_multicast_group()
+                    multicast_group = await multicastgroups.get_multicast_group()
                     logging.info("Registering pathway to new multicast group: {}:{}".format(
                         struct_name,
                         socket.inet_ntoa(multicast_group)
