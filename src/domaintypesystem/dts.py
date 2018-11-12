@@ -21,7 +21,6 @@ from collections import deque
 from datetime import datetime, timezone
 import functools
 import hashlib
-import ipaddress
 import logging
 import signal
 import socket
@@ -32,7 +31,7 @@ import uuid
 import blosc
 import capnpy
 
-import multicastgroups
+import domaintypesystem.multicastgroups as multicastgroups
 
 DomainTypeGroupMembership = capnpy.load_schema(
     'domaintypesystem.schema.domain_type_group_membership', pyx=False).DomainTypeGroupMembership
