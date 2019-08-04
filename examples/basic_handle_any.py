@@ -19,6 +19,7 @@
 
 import asyncio
 import logging
+import signal
 
 from domaintypesystem import DomainTypeSystem
 
@@ -26,17 +27,21 @@ logging.basicConfig(level=logging.DEBUG)
 
 loop = asyncio.get_event_loop()
 
-dts = DomainTypeSystem()
+dts = DomainTypeSystem(loop=loop)
 
 
 async def print_handler(data_type_group_message, address, received_timestamp):
-    logging.debug("Print handler: {0}, address: {1}, timestamp: {2}".format(
-        data_type_group_message.struct_name, address, received_timestamp))
+    try:
+        logging.debug("Print handler: {0}, address: {1}, timestamp: {2}".format(
+            data_type_group_message.struct_name, address, received_timestamp))
+    except Exception as e:
+        logging.error(e)
 
 
 asyncio.ensure_future(dts.handle_any((print_handler,)))
 
 try:
+    signal.signal(signal.SIGINT, signal.default_int_handler)
     loop.run_forever()
 except KeyboardInterrupt:
     pass
