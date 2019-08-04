@@ -130,9 +130,6 @@ class DomainTypeGroupPathway:
 
         self.loop = loop
 
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, self.__del__)
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
@@ -179,28 +176,30 @@ class DomainTypeGroupPathway:
         data_handlers = self._data_handlers
         query_handlers = self._query_handlers
         handlers = deque()
+
         while True:
             data, addr, received_timestamp_nanoseconds = await queue.get()
+
+            try:
+                message = DomainTypeGroupMessage.loads(blosc.decompress(data))
+            except Exception as e:
+                logging.debug("{}:handle_queue: {}".format(struct_name, e))
+                queue.task_done()
+                continue
+
+            if message.host_id == machine_id and message.instance_id == instance_id:
+                # Ignore messages from current instance
+                queue.task_done()
+                continue
+            logging.debug("Handling message from host: {}".format(
+                addr,
+            ))
+
             async with handlers_lock:
-                try:
-                    message = DomainTypeGroupMessage.loads(blosc.decompress(data))
-                except Exception as e:
-                    logging.debug("{0}:handle_queue: {1}".format(struct_name, e))
-                    queue.task_done()
-                    continue
-
-                if message.host_id == machine_id and message.instance_id == instance_id:
-                    # Ignore messages from current instance
-                    queue.task_done()
-                    continue
-                logging.debug("Handling message from host: {}".format(
-                    addr,
-                ))
-
                 if raw_handlers:
-                    for handler in raw_handlers:
-                        handlers.append(loop.create_task(
-                            handler(message, addr, received_timestamp_nanoseconds)))
+                    logging.debug("Have {} raw_handlers".format(len(raw_handlers)))
+                    handlers.extend(handler(message, addr, received_timestamp_nanoseconds)
+                                    for handler in raw_handlers)
                 try:
                     if data_handlers:
                         capnproto_object = capnproto_struct.loads(message.struct)
@@ -208,10 +207,10 @@ class DomainTypeGroupPathway:
                             addr,
                             message.host_id
                         ))
-                        for handler in data_handlers:
-                            handlers.append(loop.create_task(
-                                handler(capnproto_object, addr, received_timestamp_nanoseconds)))
-                except ValueError as e:
+                        logging.debug("Have {} data_handlers".format(len(data_handlers)))
+                        handlers.extend(handler(capnproto_object, addr, received_timestamp_nanoseconds)
+                                        for handler in data_handlers)
+                except ValueError:
                     if query_handlers:
                         logging.debug("Handling query from host: {}, host_id: {}".format(
                             addr,
@@ -221,13 +220,14 @@ class DomainTypeGroupPathway:
                             query = message.query.decode("UTF-8")
                         else:
                             query = None
-                        for handler in query_handlers:
-                            handlers.append(loop.create_task(
-                                handler(query, addr, received_timestamp_nanoseconds)))
-                finally:
-                    await asyncio.wait(handlers, loop=loop, return_when=asyncio.ALL_COMPLETED)
-                    queue.task_done()
-                    handlers.clear()
+                        logging.debug("Have {} query_handlers".format(len(query_handlers)))
+                        handlers.extend(handler(query, addr, received_timestamp_nanoseconds)
+                                        for handler in query_handlers)
+            logging.debug("Awaiting {} handlers: {}".format(len(handlers), handlers))
+            await asyncio.wait(handlers, loop=loop)
+            logging.debug("Finished awaiting handlers")
+            handlers.clear()
+            queue.task_done()
 
     async def handle(self, query_handlers=tuple(), data_handlers=tuple(), raw_handlers=tuple(), capnproto_struct=None):
         if capnproto_struct and not self.capnproto_struct:
@@ -261,7 +261,7 @@ class DomainTypeSystem:
                 await asyncio.sleep(.5 - (timer() - start_time))
 
         async def periodic_query():
-            await asyncio.sleep(10)
+            await asyncio.sleep(10, loop=loop)
             while True:
                 start_time = timer()
                 logging.debug("Sending periodic query")
