@@ -35,7 +35,7 @@ setup(
     ),
     install_requires=[
         'blosc~=1.5',
-        'capnpy~=0.5'
+        'capnpy~=0.6'
     ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
