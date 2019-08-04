@@ -271,6 +271,7 @@ class DomainTypeSystem:
         async def handle_membership(domain_type_group_membership, address, received_timestamp_nanoseconds):
             await multicastgroups.discard_multicast_group(domain_type_group_membership.multicast_group)
             struct_name = domain_type_group_membership.struct_name.decode("UTF-8")
+            new_group = False
             async with self._type_group_pathways_lock:
                 if struct_name not in self._type_group_pathways \
                         or self._type_group_pathways[struct_name][0] \
@@ -283,30 +284,35 @@ class DomainTypeSystem:
                         domain_type_group_membership.multicast_group,
                         None
                     )
-                    async with self._new_membership_handlers_lock:
-                        handlers = deque()
-                        for handler in self._new_membership_handlers:
-                            handlers.append(loop.create_task(
-                                handler(struct_name)))
-                        await asyncio.wait(handlers, loop=loop, return_when=asyncio.ALL_COMPLETED)
+                    new_group = True
                 else:
                     logging.debug("Multicast already group exists for pathway: {}:{}".format(
                         struct_name,
                         socket.inet_ntoa(domain_type_group_membership.multicast_group)
                     ))
+            if new_group:
+                logging.debug("Sending new multicast group {0}:{1} to new_membership_handlers")
+                logging.debug("Acquiring _new_membership_handlers_lock")
+                async with self._new_membership_handlers_lock:
+                    logging.debug("Acquired _new_membership_handlers_lock")
+                    handlers = [handler(struct_name)
+                                for handler in self._new_membership_handlers]
+                    logging.debug("Awaiting new_membership_handlers: {}".format(handlers))
+                    await asyncio.wait(handlers, loop=loop, return_when=asyncio.ALL_COMPLETED)
+                    logging.debug("Finished awaiting new_membership_handlers")
 
         async def handle_query(query, address, received_timestamp_nanoseconds):
             async with self._type_group_pathways_lock:
                 pathways = self._type_group_pathways
-            for struct_name, value in pathways.items():
-                logging.debug("Responding to DomainTypeGroupMembership query: {}:{}".format(
-                    struct_name,
-                    socket.inet_ntoa(value[0])
-                ))
-                await (await pathway).send_struct(DomainTypeGroupMembership(
-                    struct_name=bytes(struct_name, "UTF-8"),
-                    multicast_group=value[0]
-                ))
+                for struct_name, value in pathways.items():
+                    logging.debug("Responding to DomainTypeGroupMembership query: {}:{}".format(
+                        struct_name,
+                        socket.inet_ntoa(value[0])
+                    ))
+                    await (await pathway).send_struct(DomainTypeGroupMembership(
+                        struct_name=bytes(struct_name, "UTF-8"),
+                        multicast_group=value[0]
+                    ))
 
         self.announcement_queue = asyncio.Queue()
 
