@@ -30,6 +30,19 @@ Only small data structures can be sent right now (anything that fits into a typi
 overhead). This is only because large amounts of data weren't needed for our purposes during development, but this will
 change in the future.
 
+## Running in Docker
+
+As this project currently requires multicast, you either need to route multicast traffic to the appropriate docker
+interface or run the docker container with `--net=host`.
+
+The following command enables routing of the multicast CIDR block DTS will use to the default docker interface:
+
+    # ip route add 239.255.0.0/16 dev docker0
+
+Without additional setup, this will affect the container's routing to other networks (including the internet).  If this
+is problematic, check out [pipework](https://github.com/jpetazzo/pipework) for many well-tested use-cases.
+
+[pimd](https://github.com/troglobit/pimd/), a multicast router, may also be of interest.
 
 [domain type system]: https://gitlab.com/agates/domain-type-system
 [capnproto]: https://capnproto.org/
