@@ -34,7 +34,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
     install_requires=[
-        'blosc~=1.5',
+        'blosc~=1.5.0',
         'capnpy~=0.6'
     ],
     packages=find_packages(where='src'),
