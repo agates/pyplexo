@@ -5,7 +5,7 @@ with open('README.md', 'r') as fh:
 
 setup(
     name='domaintypesystem',
-    version='0.1.8',
+    version='0.1.9',
     description='Decentralized type system',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -34,7 +34,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
     install_requires=[
-        'blosc~=1.5',
+        'blosc~=1.5.0',
         'capnpy~=0.6'
     ],
     packages=find_packages(where='src'),
