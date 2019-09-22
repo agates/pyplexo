@@ -19,15 +19,8 @@
 
 import asyncio
 import logging
-import signal
 
-from domaintypesystem import DomainTypeSystem
-
-logging.basicConfig(level=logging.DEBUG)
-
-loop = asyncio.get_event_loop()
-
-dts = DomainTypeSystem(loop=loop)
+from domaintypesystem import create_receptor, create_synapse, create_transmitter
 
 
 async def print_handler(data_type_group_message, address, received_timestamp):
@@ -38,12 +31,32 @@ async def print_handler(data_type_group_message, address, received_timestamp):
         logging.error(e)
 
 
-asyncio.ensure_future(dts.handle_any((print_handler,)))
+def run(dts=None, loop=None):
+    logging.basicConfig(level=logging.INFO)
 
-try:
-    signal.signal(signal.SIGINT, signal.default_int_handler)
-    loop.run_forever()
-except KeyboardInterrupt:
-    pass
-finally:
-    loop.close()
+    if not loop:  # pragma: no cover
+        loop = asyncio.new_event_loop()
+
+    if not dts:  # pragma: no cover
+        dts = DomainTypeSystem(loop=loop)
+
+    handle_coro = asyncio.ensure_future(dts.react_to_all((print_handler,)))
+
+    if not loop.is_running():  # pragma: no cover
+        loop.run_until_complete(handle_coro)
+        try:
+            #signal.signal(signal.SIGINT, signal.default_int_handler)
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            loop.close()
+    else:
+        return loop.create_task(handle_coro)
+
+    if not dts:  # pragma: no cover
+        dts.close()
+
+
+if __name__ == "main":
+    run()

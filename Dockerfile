@@ -22,6 +22,6 @@ RUN pipenv install --system --deploy --ignore-pipfile \
 
 USER appuser
 
-EXPOSE 5555
+#EXPOSE 5555
 
 CMD ["pypy3", "examples/basic_handle_any.py"]
