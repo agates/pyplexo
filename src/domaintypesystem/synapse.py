@@ -17,23 +17,17 @@ from abc import ABC, abstractmethod
 import asyncio
 from asyncio import Lock, Queue
 from collections import deque
-from typing import Generic, Type, TypeVar
+from typing import Generic
 
 from domaintypesystem.receptor import DTSReceptorBase
+from domaintypesystem.types import EncodedDataType
 
-EncodedDataType = TypeVar('EncodedDataType')
 
-
-class DTSSynapse(ABC, Generic[EncodedDataType]):
-    def __init__(self, name: str) -> None:
-        self._name = name
+class DTSSynapseBase(ABC, Generic[EncodedDataType]):
+    def __init__(self) -> None:
         self._queue = Queue()
         self._receptors = deque()
         self._receptors_lock = Lock()
-
-    @property
-    def name(self) -> str:
-        return self._name
 
     async def add_receptor(self, receptor: DTSReceptorBase):
         with self._receptors_lock:
@@ -44,11 +38,7 @@ class DTSSynapse(ABC, Generic[EncodedDataType]):
         pass
 
 
-class InProcessSynapse(DTSSynapse):
+class DTSInProcessSynapse(DTSSynapseBase):
     async def pass_data(self, data: EncodedDataType) -> None:
         with self._receptors_lock:
-            await asyncio.wait([receptor(data) for receptor in self._receptors])
-
-
-def create_synapse(name: str, synapse_type: Type[DTSSynapse]) -> DTSSynapse:
-    return synapse_type(name)
+            await asyncio.wait([receptor.activate(data) for receptor in self._receptors])

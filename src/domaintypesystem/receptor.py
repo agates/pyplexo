@@ -15,22 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
 from codecs import Codec
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, Generic
 
-from domaintypesystem.transmitter import UnencodedDataType
-from domaintypesystem.synapse import DTSSynapse
-
-EncodedDataType = TypeVar('EncodedDataType')
+from domaintypesystem.types import EncodedDataType, UnencodedDataType
 
 
 class DTSReceptorBase(ABC, Generic[EncodedDataType]):
-    def __init__(self, synapse: DTSSynapse, _callable: Callable[[UnencodedDataType], Any]) -> None:
-        self._synapse = synapse
+    def __init__(self, _callable: Callable[[UnencodedDataType], Any]) -> None:
         self._callable = _callable
-
-    @property
-    def synapse(self) -> DTSSynapse:
-        return self._synapse
 
     @abstractmethod
     async def activate(self, data) -> None:
@@ -38,10 +30,10 @@ class DTSReceptorBase(ABC, Generic[EncodedDataType]):
 
 
 class DTSReceptor(DTSReceptorBase):
-    def __init__(self, synapse: DTSSynapse, _callable: Callable[[UnencodedDataType], Any], codec: Codec) -> None:
-        super().__init__(synapse, _callable)
+    def __init__(self, _callable: Callable[[UnencodedDataType], Any], codec: Codec) -> None:
+        super().__init__(_callable)
         self._codec = codec
 
-    def activate(self, data: EncodedDataType) -> None:
+    async def activate(self, data: EncodedDataType) -> None:
         decoded, length = self._codec.decode(data)
-        self._callable(decoded)
+        await self._callable(decoded)

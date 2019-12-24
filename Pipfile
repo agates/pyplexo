@@ -5,16 +5,20 @@ verify_ssl = true
 
 [dev-packages]
 domain-type-system = {editable = true,path="."}
+flake8 = "*"
+mypy = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
 pytest-mock = "*"
 pytest-trio = "*"
 tox = "*"
+wemake-python-styleguide = "*"
 
 [packages]
 blosc = "~=1.5.0"
 capnpy = "~=0.6"
+returns = "~=0.12"
 
 [requires]
 python_version = "3.7"

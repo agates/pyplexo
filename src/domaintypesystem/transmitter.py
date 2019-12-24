@@ -15,19 +15,18 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
 from codecs import Codec
-from typing import Generic, TypeVar
+from typing import Generic
 
-from domaintypesystem.synapse import DTSSynapse
-
-UnencodedDataType = TypeVar('UnencodedDataType')
+from domaintypesystem.synapse import DTSSynapseBase
+from domaintypesystem.types import UnencodedDataType
 
 
 class DTSTransmitterBase(ABC, Generic[UnencodedDataType]):
-    def __init__(self, synapse: DTSSynapse) -> None:
+    def __init__(self, synapse: DTSSynapseBase) -> None:
         self._synapse = synapse
 
     @property
-    def synapse(self) -> DTSSynapse:
+    def synapse(self) -> DTSSynapseBase:
         return self._synapse
 
     @abstractmethod
@@ -36,7 +35,7 @@ class DTSTransmitterBase(ABC, Generic[UnencodedDataType]):
 
 
 class DTSTransmitter(DTSTransmitterBase):
-    def __init__(self, synapse: DTSSynapse, codec: Codec) -> None:
+    def __init__(self, synapse: DTSSynapseBase, codec: Codec) -> None:
         super().__init__(synapse)
         self._codec = codec
 
