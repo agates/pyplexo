@@ -14,31 +14,30 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
-from codecs import Codec
-from typing import Generic
+from asyncio import Future
+from typing import Generic, Set, Tuple
 
 from domaintypesystem.synapse import DTSSynapseBase
-from domaintypesystem.types import UnencodedDataType
+from domaintypesystem.types import EncodedDataType, UnencodedDataType, EncoderProtocol
 
 
-class DTSTransmitterBase(ABC, Generic[UnencodedDataType]):
-    def __init__(self, synapse: DTSSynapseBase) -> None:
+class DTSTransmitterBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
+    def __init__(self, synapse: DTSSynapseBase[EncodedDataType]) -> None:
         self._synapse = synapse
 
     @property
-    def synapse(self) -> DTSSynapseBase:
+    def synapse(self) -> DTSSynapseBase[EncodedDataType]:
         return self._synapse
 
     @abstractmethod
-    async def transmit(self, data) -> None:
-        pass
+    async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]: ...
 
 
 class DTSTransmitter(DTSTransmitterBase):
-    def __init__(self, synapse: DTSSynapseBase, codec: Codec) -> None:
+    def __init__(self, synapse: DTSSynapseBase[EncodedDataType], encoder: EncoderProtocol) -> None:
         super().__init__(synapse)
-        self._codec = codec
+        self._encoder = encoder
 
-    async def transmit(self, data: UnencodedDataType) -> None:
-        encoded, length = self._codec.encode(data)
-        await self.synapse.pass_data(encoded)
+    async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]:
+        encoded = self._encoder.encode(data)
+        return await self.synapse.pass_data(encoded)

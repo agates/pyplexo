@@ -15,30 +15,28 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
 import asyncio
-from asyncio import Lock, Queue
+from asyncio import Lock, Future
 from collections import deque
-from typing import Generic
+from typing import Generic, Iterable, Tuple, Set
 
 from domaintypesystem.receptor import DTSReceptorBase
-from domaintypesystem.types import EncodedDataType
+from domaintypesystem.types import EncodedDataType, UnencodedDataType
 
 
 class DTSSynapseBase(ABC, Generic[EncodedDataType]):
-    def __init__(self) -> None:
-        self._queue = Queue()
-        self._receptors = deque()
+    def __init__(self, receptors: Iterable[DTSReceptorBase] = ()) -> None:
+        self._receptors = deque(receptors)
         self._receptors_lock = Lock()
 
-    async def add_receptor(self, receptor: DTSReceptorBase):
-        with self._receptors_lock:
+    async def add_receptor(self, receptor: DTSReceptorBase[EncodedDataType, UnencodedDataType]) -> None:
+        async with self._receptors_lock:
             self._receptors.append(receptor)
 
     @abstractmethod
-    async def pass_data(self, data: EncodedDataType) -> None:
-        pass
+    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]: ...
 
 
 class DTSInProcessSynapse(DTSSynapseBase):
-    async def pass_data(self, data: EncodedDataType) -> None:
-        with self._receptors_lock:
-            await asyncio.wait([receptor.activate(data) for receptor in self._receptors])
+    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+        async with self._receptors_lock:
+            return await asyncio.wait([receptor.activate(data) for receptor in self._receptors])

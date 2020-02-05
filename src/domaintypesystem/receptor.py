@@ -14,26 +14,24 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
-from codecs import Codec
 from typing import Any, Callable, Generic
 
-from domaintypesystem.types import EncodedDataType, UnencodedDataType
+from domaintypesystem.types import EncodedDataType, UnencodedDataType, DecoderProtocol
 
 
-class DTSReceptorBase(ABC, Generic[EncodedDataType]):
+class DTSReceptorBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
     def __init__(self, _callable: Callable[[UnencodedDataType], Any]) -> None:
         self._callable = _callable
 
     @abstractmethod
-    async def activate(self, data) -> None:
-        pass
+    async def activate(self, data: EncodedDataType) -> Any: ...
 
 
 class DTSReceptor(DTSReceptorBase):
-    def __init__(self, _callable: Callable[[UnencodedDataType], Any], codec: Codec) -> None:
+    def __init__(self, _callable: Callable[[UnencodedDataType], Any], decoder: DecoderProtocol) -> None:
         super().__init__(_callable)
-        self._codec = codec
+        self._decoder = decoder
 
-    async def activate(self, data: EncodedDataType) -> None:
-        decoded, length = self._codec.decode(data)
-        await self._callable(decoded)
+    async def activate(self, data: EncodedDataType) -> Any:
+        decoded = self._decoder.decode(data)
+        return await self._callable(decoded)
