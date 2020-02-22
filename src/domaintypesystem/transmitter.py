@@ -21,23 +21,20 @@ from domaintypesystem.synapse import DTSSynapseBase
 from domaintypesystem.types import EncodedDataType, UnencodedDataType, EncoderProtocol
 
 
-class DTSTransmitterBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
-    def __init__(self, synapse: DTSSynapseBase[EncodedDataType]) -> None:
+class DTSTransmitterBase(ABC, Generic[UnencodedDataType, EncodedDataType]):
+    def __init__(self, synapse: DTSSynapseBase, encoder: EncoderProtocol) -> None:
         self._synapse = synapse
+        self._encoder = encoder
 
     @property
-    def synapse(self) -> DTSSynapseBase[EncodedDataType]:
+    def synapse(self) -> DTSSynapseBase:
         return self._synapse
 
     @abstractmethod
-    async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]: ...
+    async def transmit(self, data): ...
 
 
-class DTSTransmitter(DTSTransmitterBase):
-    def __init__(self, synapse: DTSSynapseBase[EncodedDataType], encoder: EncoderProtocol) -> None:
-        super().__init__(synapse)
-        self._encoder = encoder
-
+class DTSTransmitter(DTSTransmitterBase, Generic[UnencodedDataType, EncodedDataType]):
     async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]:
         encoded = self._encoder.encode(data)
         return await self.synapse.pass_data(encoded)

@@ -14,24 +14,25 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Generic
+import asyncio
+from asyncio import Future
+from typing import Any, Callable, Generic, Iterable, Tuple, Set
+
+from pyrsistent import pvector
 
 from domaintypesystem.types import EncodedDataType, UnencodedDataType, DecoderProtocol
 
 
 class DTSReceptorBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
-    def __init__(self, _callable: Callable[[UnencodedDataType], Any]) -> None:
-        self._callable = _callable
-
-    @abstractmethod
-    async def activate(self, data: EncodedDataType) -> Any: ...
-
-
-class DTSReceptor(DTSReceptorBase):
-    def __init__(self, _callable: Callable[[UnencodedDataType], Any], decoder: DecoderProtocol) -> None:
-        super().__init__(_callable)
+    def __init__(self, _callables: Iterable[Callable[[UnencodedDataType], Any]], decoder: DecoderProtocol) -> None:
+        self._callables = pvector(_callables)
         self._decoder = decoder
 
-    async def activate(self, data: EncodedDataType) -> Any:
+    @abstractmethod
+    async def activate(self, data): ...
+
+
+class DTSReceptor(DTSReceptorBase, Generic[EncodedDataType, UnencodedDataType]):
+    async def activate(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
         decoded = self._decoder.decode(data)
-        return await self._callable(decoded)
+        return await asyncio.wait([_callable(decoded) for _callable in self._callables])

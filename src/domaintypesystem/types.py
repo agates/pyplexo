@@ -26,3 +26,7 @@ class EncoderProtocol(Protocol):
 
 class DecoderProtocol(Protocol):
     def decode(self, s: EncodedDataType): ...
+
+
+class ReceptorProtocol(Protocol):
+    async def activate(self, data: EncodedDataType): ...

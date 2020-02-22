@@ -17,6 +17,10 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .dts import DomainTypeSystem
+from .receptor import *
+from .synapse import *
+from .transmitter import *
+from .types import *
 
 import logging
 
