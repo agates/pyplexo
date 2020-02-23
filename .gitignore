@@ -136,3 +136,4 @@ fabric.properties
 
 # KDE Dolphin crap
 .directory
+.dmypy.json
