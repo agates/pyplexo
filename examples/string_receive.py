@@ -20,6 +20,7 @@
 import asyncio
 import ipaddress
 import logging
+from timeit import default_timer as timer
 
 from domaintypesystem.receptor import DTSReceptor
 from domaintypesystem.synapse import DTSZmqEpgmSynapse
@@ -28,9 +29,18 @@ from domaintypesystem.synapse import DTSZmqEpgmSynapse
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
 test_port = 6000
 
+start_time = timer()
+messages_lock = asyncio.Lock()
+messages = {"received": 0}
+
 
 async def print_handler(data: str):
-    logging.debug("Print handler: {0}".format(data))
+    async with messages_lock:
+        messages["received"] += 1
+        logging.info("Print handler: {0} - {1} messages/s".format(
+            data,
+            messages["received"]/(timer()-start_time))
+        )
 
 
 def run(dts=None, loop=None):
@@ -56,6 +66,7 @@ def run(dts=None, loop=None):
         #loop.run_until_complete(handle_coro)
         try:
             #signal.signal(signal.SIGINT, signal.default_int_handler)
+            logging.info("Running asyncio loop")
             loop.run_forever()
         except KeyboardInterrupt:
             pass

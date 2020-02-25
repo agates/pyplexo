@@ -20,6 +20,7 @@
 import asyncio
 import ipaddress
 import logging
+from timeit import default_timer as timer
 
 from domaintypesystem.synapse import DTSZmqEpgmSynapse
 from domaintypesystem.transmitter import DTSTransmitter, DTSTransmitterBase
@@ -31,11 +32,12 @@ test_port = 6000
 async def send_hello_str(transmitter: DTSTransmitterBase):
     i = 1
     while True:
+        start_time = timer()
         message = "Hello, DTS+EPGM {} …".format(i)
         logging.info("Sending message: {}".format(message))
         await transmitter.transmit(message)
-        i += i
-        await asyncio.sleep(1)
+        i += 1
+        await asyncio.sleep(1/(60-(start_time-timer())))
 
 
 def run(dts=None, loop=None):
