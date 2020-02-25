@@ -13,10 +13,10 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import TypeVar
+from typing import TypeVar, ByteString
 from typing_extensions import Protocol
 
-EncodedDataType = TypeVar('EncodedDataType')
+
 UnencodedDataType = TypeVar('UnencodedDataType')
 
 
@@ -25,8 +25,4 @@ class EncoderProtocol(Protocol):
 
 
 class DecoderProtocol(Protocol):
-    def decode(self, s: EncodedDataType): ...
-
-
-class ReceptorProtocol(Protocol):
-    async def activate(self, data: EncodedDataType): ...
+    def decode(self, s: ByteString): ...

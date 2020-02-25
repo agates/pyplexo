@@ -16,14 +16,14 @@
 from abc import ABC, abstractmethod
 import asyncio
 from asyncio import Future
-from typing import Any, Callable, Generic, Iterable, Tuple, Set
+from typing import Any, Callable, Generic, Iterable, Tuple, Set, ByteString
 
 from pyrsistent import pvector
 
-from domaintypesystem.types import EncodedDataType, UnencodedDataType, DecoderProtocol
+from domaintypesystem.types import UnencodedDataType, DecoderProtocol
 
 
-class DTSReceptorBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
+class DTSReceptorBase(ABC, Generic[UnencodedDataType]):
     def __init__(self, _callables: Iterable[Callable[[UnencodedDataType], Any]],
                  decoder: DecoderProtocol,
                  loop=None) -> None:
@@ -36,10 +36,10 @@ class DTSReceptorBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
         self._loop = loop
 
     @abstractmethod
-    async def activate(self, data): ...
+    async def activate(self, data: ByteString): ...
 
 
-class DTSReceptor(DTSReceptorBase, Generic[EncodedDataType, UnencodedDataType]):
-    async def activate(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+class DTSReceptor(DTSReceptorBase, Generic[UnencodedDataType]):
+    async def activate(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
         decoded = self._decoder.decode(data)
         return await asyncio.wait([_callable(decoded) for _callable in self._callables], loop=self._loop)

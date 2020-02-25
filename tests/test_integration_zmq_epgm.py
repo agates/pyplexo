@@ -23,7 +23,6 @@ from domaintypesystem.receptor import DTSReceptor
 from domaintypesystem.synapse import DTSZmqEpgmSynapse
 from domaintypesystem.transmitter import DTSTransmitter
 
-
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
 test_port = 6000
 
@@ -48,13 +47,13 @@ async def test_zmq_epgm_receptor(event_loop):
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = DTSReceptor[bytes, dict]((receptor_queue,), json_decoder, loop=event_loop)
-    ipc_synapse = DTSZmqEpgmSynapse[bytes]("test",
-                                           ip_address=test_ip_address,
-                                           port=test_port,
-                                           receptors=(receptor,),
-                                           loop=event_loop)
-    transmitter = DTSTransmitter[dict, bytes](ipc_synapse, json_encoder)
+    receptor = DTSReceptor[dict]((receptor_queue,), json_decoder, loop=event_loop)
+    synapse = DTSZmqEpgmSynapse[dict]("test",
+                                      ip_address=test_ip_address,
+                                      port=test_port,
+                                      receptors=(receptor,),
+                                      loop=event_loop)
+    transmitter = DTSTransmitter[dict](synapse, json_encoder)
 
     await asyncio.sleep(.5)
 

@@ -42,9 +42,9 @@ async def test_zmq_ipc_receptor(event_loop):
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = DTSReceptor[bytes, dict]((receptor_queue,), json_decoder, loop=event_loop)
-    ipc_synapse = DTSZmqIpcSynapse[bytes]("test", receptors=(receptor,), loop=event_loop)
-    transmitter = DTSTransmitter[dict, bytes](ipc_synapse, json_encoder)
+    receptor = DTSReceptor[dict]((receptor_queue,), json_decoder, loop=event_loop)
+    synapse = DTSZmqIpcSynapse[dict]("test", receptors=(receptor,), loop=event_loop)
+    transmitter = DTSTransmitter[dict](synapse, json_encoder)
 
     await asyncio.sleep(.5)
 

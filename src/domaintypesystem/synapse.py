@@ -18,23 +18,24 @@ import asyncio
 from asyncio import Future
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
-from typing import Iterable, Set, Tuple, Generic, Union
+from typing import Iterable, Set, Tuple, Union, ByteString, Generic
 
 from pyrsistent import pvector
 import zmq
 import zmq.asyncio
 
-from domaintypesystem.types import EncodedDataType, ReceptorProtocol
+from domaintypesystem import DTSReceptorBase
+from domaintypesystem.types import UnencodedDataType
 
 
-class DTSSynapseBase(ABC):
+class DTSSynapseBase(ABC, Generic[UnencodedDataType]):
     def __init__(self, topic: str,
-                 receptors: Iterable[ReceptorProtocol] = ()) -> None:
+                 receptors: Iterable[DTSReceptorBase[UnencodedDataType]] = ()) -> None:
         self._topic = topic
         self._receptors = pvector(receptors)
         self._receptors_lock = asyncio.Lock()
 
-    async def add_receptor(self, receptor: ReceptorProtocol) -> None:
+    async def add_receptor(self, receptor: DTSReceptorBase[UnencodedDataType]) -> None:
         async with self._receptors_lock:
             self._receptors = self._receptors.append(receptor)
 
@@ -42,15 +43,15 @@ class DTSSynapseBase(ABC):
     async def pass_data(self, data): ...
 
 
-class DTSInProcessSynapse(DTSSynapseBase, Generic[EncodedDataType]):
-    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+class DTSInProcessSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
+    async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
         async with self._receptors_lock:
             return await asyncio.wait([receptor.activate(data) for receptor in self._receptors])
 
 
-class DTSZmqIpcSynapse(DTSSynapseBase, Generic[EncodedDataType]):
+class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
     def __init__(self, topic: str,
-                 receptors: Iterable[ReceptorProtocol] = (),
+                 receptors: Iterable[DTSReceptorBase[UnencodedDataType]] = (),
                  directory: Path = None,
                  loop=None) -> None:
         super(DTSZmqIpcSynapse, self).__init__(topic, receptors)
@@ -83,7 +84,7 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[EncodedDataType]):
         task = self._recv_loop()
         loop.create_task(task)
 
-    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+    async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
         return await self._socket_pub.send(data)
 
     async def _recv_loop(self):
@@ -97,11 +98,11 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[EncodedDataType]):
                 await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)
 
 
-class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[EncodedDataType]):
+class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
     def __init__(self, topic: str,
                  ip_address: Union[IPv4Address, IPv6Address],
                  port: int = 5555,
-                 receptors: Iterable[ReceptorProtocol] = (),
+                 receptors: Iterable[DTSReceptorBase[UnencodedDataType]] = (),
                  loop=None) -> None:
         super(DTSZmqEpgmSynapse, self).__init__(topic, receptors)
 
@@ -127,7 +128,7 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[EncodedDataType]):
         task = self._recv_loop()
         loop.create_task(task)
 
-    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+    async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
         return await self._socket_pub.send(data, copy=False)
 
     async def _recv_loop(self):

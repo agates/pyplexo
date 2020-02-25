@@ -18,10 +18,10 @@ from asyncio import Future
 from typing import Generic, Set, Tuple
 
 from domaintypesystem.synapse import DTSSynapseBase
-from domaintypesystem.types import EncodedDataType, UnencodedDataType, EncoderProtocol
+from domaintypesystem.types import UnencodedDataType, EncoderProtocol
 
 
-class DTSTransmitterBase(ABC, Generic[UnencodedDataType, EncodedDataType]):
+class DTSTransmitterBase(ABC, Generic[UnencodedDataType]):
     def __init__(self, synapse: DTSSynapseBase, encoder: EncoderProtocol) -> None:
         self._synapse = synapse
         self._encoder = encoder
@@ -34,7 +34,7 @@ class DTSTransmitterBase(ABC, Generic[UnencodedDataType, EncodedDataType]):
     async def transmit(self, data): ...
 
 
-class DTSTransmitter(DTSTransmitterBase, Generic[UnencodedDataType, EncodedDataType]):
+class DTSTransmitter(DTSTransmitterBase, Generic[UnencodedDataType]):
     async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]:
         encoded = self._encoder.encode(data)
         return await self.synapse.pass_data(encoded)
