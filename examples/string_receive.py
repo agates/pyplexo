@@ -18,17 +18,19 @@
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
+import ipaddress
 import logging
 
-from domaintypesystem import create_receptor, create_synapse, create_transmitter
+from domaintypesystem.receptor import DTSReceptor
+from domaintypesystem.synapse import DTSZmqEpgmSynapse
 
 
-async def print_handler(data_type_group_message, address, received_timestamp):
-    try:
-        logging.debug("Print handler: {0}, address: {1}, timestamp: {2}".format(
-            data_type_group_message.struct_name, address, received_timestamp))
-    except Exception as e:
-        logging.error(e)
+test_ip_address = ipaddress.IPv4Address('239.255.0.1')
+test_port = 6000
+
+
+async def print_handler(data: str):
+    logging.debug("Print handler: {0}".format(data))
 
 
 def run(dts=None, loop=None):
@@ -38,12 +40,20 @@ def run(dts=None, loop=None):
         loop = asyncio.new_event_loop()
 
     if not dts:  # pragma: no cover
-        dts = DomainTypeSystem(loop=loop)
+        #dts = DomainTypeSystem(loop=loop)
+        pass
 
-    handle_coro = asyncio.ensure_future(dts.react_to_all((print_handler,)))
+    #handle_coro = asyncio.ensure_future(dts.react_to_all((print_handler,)))
+
+    receptor = DTSReceptor[str]((print_handler,), bytes.decode, loop=loop)
+    synapse = DTSZmqEpgmSynapse[str]("example_string",
+                                     ip_address=test_ip_address,
+                                     port=test_port,
+                                     receptors=(receptor,),
+                                     loop=loop)
 
     if not loop.is_running():  # pragma: no cover
-        loop.run_until_complete(handle_coro)
+        #loop.run_until_complete(handle_coro)
         try:
             #signal.signal(signal.SIGINT, signal.default_int_handler)
             loop.run_forever()
@@ -51,11 +61,10 @@ def run(dts=None, loop=None):
             pass
         finally:
             loop.close()
-    else:
-        return loop.create_task(handle_coro)
 
     if not dts:  # pragma: no cover
-        dts.close()
+        #dts.close()
+        pass
 
 
 if __name__ == "main":
