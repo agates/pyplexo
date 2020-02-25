@@ -116,16 +116,12 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
 
         # noinspection PyUnresolvedReferences
         self._socket_pub = context.socket(zmq.PUB, io_loop=loop)
-        #self._socket_pub.set_hwm(1)
         self._socket_pub.connect("epgm://{}:{}".format(ip_address.compressed, port))
 
         # noinspection PyUnresolvedReferences
         self._socket_sub = context.socket(zmq.SUB, io_loop=loop)
         # noinspection PyUnresolvedReferences
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
-        #self._socket_sub.set_hwm(1)
-        #self._socket_sub.setsockopt(zmq.RCVBUF, 2 * 1024)
-        #self._socket_sub.setsockopt(zmq.CONFLATE, 1)
         self._socket_sub.bind("epgm://{}:{}".format(ip_address.compressed, port))
 
         if not loop:
@@ -141,8 +137,6 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
         topic = self._topic
         loop = self.loop
         socket_sub = self._socket_sub
-
-        await asyncio.sleep(1e-1)
 
         while True:
             try:
