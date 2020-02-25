@@ -16,15 +16,21 @@
 from abc import ABC, abstractmethod
 import asyncio
 from asyncio import Future
-from typing import Iterable, Set, Tuple, Generic
+from ipaddress import IPv4Address, IPv6Address
+from pathlib import Path
+from typing import Iterable, Set, Tuple, Generic, Union
 
 from pyrsistent import pvector
+import zmq
+import zmq.asyncio
 
 from domaintypesystem.types import EncodedDataType, ReceptorProtocol
 
 
 class DTSSynapseBase(ABC):
-    def __init__(self, receptors: Iterable[ReceptorProtocol] = ()) -> None:
+    def __init__(self, topic: str,
+                 receptors: Iterable[ReceptorProtocol] = ()) -> None:
+        self._topic = topic
         self._receptors = pvector(receptors)
         self._receptors_lock = asyncio.Lock()
 
@@ -40,3 +46,96 @@ class DTSInProcessSynapse(DTSSynapseBase, Generic[EncodedDataType]):
     async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
         async with self._receptors_lock:
             return await asyncio.wait([receptor.activate(data) for receptor in self._receptors])
+
+
+class DTSZmqIpcSynapse(DTSSynapseBase, Generic[EncodedDataType]):
+    def __init__(self, topic: str,
+                 receptors: Iterable[ReceptorProtocol] = (),
+                 directory: Path = None,
+                 loop=None) -> None:
+        super(DTSZmqIpcSynapse, self).__init__(topic, receptors)
+
+        if not directory:
+            directory = Path("/tmp/dts/zmq")
+
+        directory.mkdir(parents=True, exist_ok=True)
+
+        if not directory.is_dir():
+            raise Exception("Given path is not a directory")
+
+        self._directory = directory
+        topic_uri = "ipc://{0}/{1}".format(directory, topic)
+
+        context = zmq.asyncio.Context()
+
+        # noinspection PyUnresolvedReferences
+        self._socket_pub = context.socket(zmq.PUB)
+        self._socket_pub.connect(topic_uri)
+        # noinspection PyUnresolvedReferences
+        self._socket_sub = context.socket(zmq.SUB)
+        self._socket_sub.bind(topic_uri)
+        # noinspection PyUnresolvedReferences
+        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
+
+        if not loop:
+            loop = asyncio.get_event_loop()
+        self.loop = loop
+        task = self._recv_loop()
+        loop.create_task(task)
+
+    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+        return await self._socket_pub.send(data)
+
+    async def _recv_loop(self):
+        loop = self.loop
+        receptors_lock = self._receptors_lock
+        socket_sub = self._socket_sub
+
+        while True:
+            data = await socket_sub.recv()
+            async with receptors_lock:
+                await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)
+
+
+class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[EncodedDataType]):
+    def __init__(self, topic: str,
+                 ip_address: Union[IPv4Address, IPv6Address],
+                 port: int = 5555,
+                 receptors: Iterable[ReceptorProtocol] = (),
+                 loop=None) -> None:
+        super(DTSZmqEpgmSynapse, self).__init__(topic, receptors)
+
+        if not ip_address.is_multicast:
+            raise Exception("Specified ip_address is not a multicast ip address")
+
+        self.multicast_group = ip_address
+
+        context = zmq.asyncio.Context()
+
+        # noinspection PyUnresolvedReferences
+        self._socket_pub = context.socket(zmq.PUB)
+        self._socket_pub.connect("epgm://{}:{}".format(ip_address.compressed, port))
+        # noinspection PyUnresolvedReferences
+        self._socket_sub = context.socket(zmq.SUB)
+        self._socket_sub.bind("epgm://{}:{}".format(ip_address.compressed, port))
+        # noinspection PyUnresolvedReferences
+        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
+
+        if not loop:
+            loop = asyncio.get_event_loop()
+        self.loop = loop
+        task = self._recv_loop()
+        loop.create_task(task)
+
+    async def pass_data(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
+        return await self._socket_pub.send(data, copy=False)
+
+    async def _recv_loop(self):
+        loop = self.loop
+        receptors_lock = self._receptors_lock
+        socket_sub = self._socket_sub
+
+        while True:
+            data = await socket_sub.recv(copy=False)
+            async with receptors_lock:
+                await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)

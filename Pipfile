@@ -19,7 +19,7 @@ wemake-python-styleguide = "*"
 blosc = "~=1.5.0"
 capnpy = "~=0.6"
 pyrsistent = "~=0.15"
-returns = "~=0.12"
+pyzmq = "~=18.1"
 typing_extensions = "~=3.7"
 
 [requires]

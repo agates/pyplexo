@@ -17,7 +17,7 @@
 import pytest
 
 
-@pytest.mark.asyncio
-@pytest.mark.skip
-async def test_create_synapse(mocker):
-    assert False
+#@pytest.mark.asyncio
+#@pytest.mark.skip
+#async def test_create_synapse(mocker):
+#    assert False

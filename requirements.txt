@@ -3,4 +3,5 @@ capnpy~=0.6
 pyrsistent~=0.15
 pytest
 pytest-asyncio
+pyzmq~=18.1
 typing_extensions~=3.7

@@ -24,9 +24,16 @@ from domaintypesystem.types import EncodedDataType, UnencodedDataType, DecoderPr
 
 
 class DTSReceptorBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
-    def __init__(self, _callables: Iterable[Callable[[UnencodedDataType], Any]], decoder: DecoderProtocol) -> None:
+    def __init__(self, _callables: Iterable[Callable[[UnencodedDataType], Any]],
+                 decoder: DecoderProtocol,
+                 loop=None) -> None:
         self._callables = pvector(_callables)
         self._decoder = decoder
+
+        if not loop:
+            loop = asyncio.get_event_loop()
+
+        self._loop = loop
 
     @abstractmethod
     async def activate(self, data): ...
@@ -35,4 +42,4 @@ class DTSReceptorBase(ABC, Generic[EncodedDataType, UnencodedDataType]):
 class DTSReceptor(DTSReceptorBase, Generic[EncodedDataType, UnencodedDataType]):
     async def activate(self, data: EncodedDataType) -> Tuple[Set[Future], Set[Future]]:
         decoded = self._decoder.decode(data)
-        return await asyncio.wait([_callable(decoded) for _callable in self._callables])
+        return await asyncio.wait([_callable(decoded) for _callable in self._callables], loop=self._loop)

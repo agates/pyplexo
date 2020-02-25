@@ -22,8 +22,8 @@ import pytest
 from domaintypesystem.transmitter import DTSTransmitter
 
 
-@pytest.mark.asyncio
-@pytest.mark.skip
-async def test_create_transmitter(mocker):
-    DTSTransmitter(JSONEncoder(), JSONEncoder())
-    assert False
+#@pytest.mark.asyncio
+#@pytest.mark.skip
+#async def test_create_transmitter(mocker):
+#    DTSTransmitter(JSONEncoder(), JSONEncoder())
+#    assert False

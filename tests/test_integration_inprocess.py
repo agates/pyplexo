@@ -27,7 +27,7 @@ from domaintypesystem.transmitter import DTSTransmitter
 @pytest.mark.parametrize("stub_count,transmit_count",
                          tuple((n, m) for n in range(1, 5) for m in range(1, 5))
                          )
-async def test_ipc_receptor_transmit_multiple(mocker, stub_count, transmit_count):
+async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit_count):
     json_decoder = json.JSONDecoder()
     json_encoder = json.JSONEncoder()
 
@@ -38,8 +38,8 @@ async def test_ipc_receptor_transmit_multiple(mocker, stub_count, transmit_count
         return stub_async
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
-    receptor = DTSReceptor[dict, str]((make_stub_async(stub) for stub in stubs), json_decoder)
-    ipc_synapse = DTSInProcessSynapse[str](receptors=(receptor,))
+    receptor = DTSReceptor[str, dict]((make_stub_async(stub) for stub in stubs), json_decoder)
+    ipc_synapse = DTSInProcessSynapse[str]("test", receptors=(receptor,))
     transmitter = DTSTransmitter[dict, str](ipc_synapse, json_encoder)
 
     foo_bar_dict = {"foo": "bar"}
@@ -54,7 +54,7 @@ async def test_ipc_receptor_transmit_multiple(mocker, stub_count, transmit_count
 @pytest.mark.parametrize("stub_count,transmitter_count",
                          tuple((n, m) for n in range(1, 5) for m in range(1, 5))
                          )
-async def test_ipc_receptor_many_transmitters(mocker, stub_count, transmitter_count):
+async def test_inprocess_receptor_many_transmitters(mocker, stub_count, transmitter_count):
     json_decoder = json.JSONDecoder()
     json_encoder = json.JSONEncoder()
 
@@ -65,8 +65,8 @@ async def test_ipc_receptor_many_transmitters(mocker, stub_count, transmitter_co
         return stub_async
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
-    receptor = DTSReceptor[dict, str]((make_stub_async(stub) for stub in stubs), json_decoder)
-    ipc_synapse = DTSInProcessSynapse[str](receptors=(receptor,))
+    receptor = DTSReceptor[str, dict]((make_stub_async(stub) for stub in stubs), json_decoder)
+    ipc_synapse = DTSInProcessSynapse[str]("test", receptors=(receptor,))
     transmitters = (DTSTransmitter[dict, str](ipc_synapse, json_encoder) for _ in range(transmitter_count))
 
     foo_bar_dict = {"foo": "bar"}
@@ -81,7 +81,7 @@ async def test_ipc_receptor_many_transmitters(mocker, stub_count, transmitter_co
 @pytest.mark.parametrize("stub_count,transmit_count",
                          tuple((n, m) for n in range(1, 5) for m in range(1, 5))
                          )
-async def test_ipc_many_receptors_transmit_multiple(mocker, stub_count, transmit_count):
+async def test_inprocess_many_receptors_transmit_multiple(mocker, stub_count, transmit_count):
     json_decoder = json.JSONDecoder()
     json_encoder = json.JSONEncoder()
 
@@ -89,11 +89,11 @@ async def test_ipc_many_receptors_transmit_multiple(mocker, stub_count, transmit
         async def stub_async(_):
             return stub(_)
 
-        return DTSReceptor[dict, str]((stub_async,), json_decoder)
+        return DTSReceptor[str, dict]((stub_async,), json_decoder)
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
     receptors = (generate_receptor(stub) for stub in stubs)
-    ipc_synapse = DTSInProcessSynapse[str](receptors=receptors)
+    ipc_synapse = DTSInProcessSynapse[str]("test", receptors=receptors)
     transmitter = DTSTransmitter[dict, str](ipc_synapse, json_encoder)
 
     foo_bar_dict = {"foo": "bar"}
@@ -108,7 +108,7 @@ async def test_ipc_many_receptors_transmit_multiple(mocker, stub_count, transmit
 @pytest.mark.parametrize("stub_count,transmitter_count",
                          tuple((n, m) for n in range(1, 5) for m in range(1, 5))
                          )
-async def test_ipc_many_receptors_many_transmitters(mocker, stub_count, transmitter_count):
+async def test_inprocess_many_receptors_many_transmitters(mocker, stub_count, transmitter_count):
     json_decoder = json.JSONDecoder()
     json_encoder = json.JSONEncoder()
 
@@ -116,11 +116,11 @@ async def test_ipc_many_receptors_many_transmitters(mocker, stub_count, transmit
         async def stub_async(_):
             return stub(_)
 
-        return DTSReceptor[dict, str]((stub_async,), json_decoder)
+        return DTSReceptor[str, dict]((stub_async,), json_decoder)
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
     receptors = (generate_receptor(stub) for stub in stubs)
-    ipc_synapse = DTSInProcessSynapse[str](receptors=receptors)
+    ipc_synapse = DTSInProcessSynapse[str]("test", receptors=receptors)
     transmitters = (DTSTransmitter[dict, str](ipc_synapse, json_encoder) for _ in range(transmitter_count))
 
     foo_bar_dict = {"foo": "bar"}
