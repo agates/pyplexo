@@ -32,10 +32,10 @@ async def send_hello_str(transmitter: DTSTransmitterBase):
     i = 1
     while True:
         message = "Hello, DTS+EPGM {} …".format(i)
-        print("Sending message: {}".format(message))
+        logging.info("Sending message: {}".format(message))
         await transmitter.transmit(message)
         i += i
-        await asyncio.sleep(1/60)
+        await asyncio.sleep(1)
 
 
 def run(dts=None, loop=None):
@@ -54,9 +54,9 @@ def run(dts=None, loop=None):
                                      ip_address=test_ip_address,
                                      port=test_port,
                                      loop=loop)
-    transmitter = DTSTransmitter[str](synapse, str.encode)
+    transmitter = DTSTransmitter[str](synapse, str)
 
-    send_hello_str_coro = loop.ensure_future(send_hello_str(transmitter))
+    loop.create_task(send_hello_str(transmitter))
 
     if not loop.is_running():  # pragma: no cover
         #loop.run_until_complete(handle_coro)
@@ -67,13 +67,11 @@ def run(dts=None, loop=None):
             pass
         finally:
             loop.close()
-    else:
-        loop.create_task(send_hello_str_coro)
 
     if not dts:  # pragma: no cover
         #dts.close()
         pass
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     run()

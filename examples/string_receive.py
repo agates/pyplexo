@@ -45,7 +45,7 @@ def run(dts=None, loop=None):
 
     #handle_coro = asyncio.ensure_future(dts.react_to_all((print_handler,)))
 
-    receptor = DTSReceptor[str]((print_handler,), bytes.decode, loop=loop)
+    receptor = DTSReceptor[str]((print_handler,), bytes, loop=loop)
     synapse = DTSZmqEpgmSynapse[str]("example_string",
                                      ip_address=test_ip_address,
                                      port=test_port,
@@ -67,5 +67,5 @@ def run(dts=None, loop=None):
         pass
 
 
-if __name__ == "main":
+if __name__ == "__main__":
     run()
