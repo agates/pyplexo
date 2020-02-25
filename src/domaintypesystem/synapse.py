@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 from abc import ABC, abstractmethod
 import asyncio
 from asyncio import Future
@@ -70,10 +71,10 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
         context = zmq.asyncio.Context()
 
         # noinspection PyUnresolvedReferences
-        self._socket_pub = context.socket(zmq.PUB)
+        self._socket_pub = context.socket(zmq.PUB, io_loop=loop)
         self._socket_pub.connect(topic_uri)
         # noinspection PyUnresolvedReferences
-        self._socket_sub = context.socket(zmq.SUB)
+        self._socket_sub = context.socket(zmq.SUB, io_loop=loop)
         self._socket_sub.bind(topic_uri)
         # noinspection PyUnresolvedReferences
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
@@ -114,13 +115,18 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
         context = zmq.asyncio.Context()
 
         # noinspection PyUnresolvedReferences
-        self._socket_pub = context.socket(zmq.PUB)
+        self._socket_pub = context.socket(zmq.PUB, io_loop=loop)
+        #self._socket_pub.set_hwm(1)
         self._socket_pub.connect("epgm://{}:{}".format(ip_address.compressed, port))
+
         # noinspection PyUnresolvedReferences
-        self._socket_sub = context.socket(zmq.SUB)
-        self._socket_sub.bind("epgm://{}:{}".format(ip_address.compressed, port))
+        self._socket_sub = context.socket(zmq.SUB, io_loop=loop)
         # noinspection PyUnresolvedReferences
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
+        #self._socket_sub.set_hwm(1)
+        #self._socket_sub.setsockopt(zmq.RCVBUF, 2 * 1024)
+        #self._socket_sub.setsockopt(zmq.CONFLATE, 1)
+        self._socket_sub.bind("epgm://{}:{}".format(ip_address.compressed, port))
 
         if not loop:
             loop = asyncio.get_event_loop()
@@ -129,14 +135,19 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
         loop.create_task(task)
 
     async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        return await self._socket_pub.send(data, copy=False)
+        return await self._socket_pub.send(data)
 
     async def _recv_loop(self):
+        topic = self._topic
         loop = self.loop
-        receptors_lock = self._receptors_lock
         socket_sub = self._socket_sub
 
+        await asyncio.sleep(1e-1)
+
         while True:
-            data = await socket_sub.recv(copy=False)
-            async with receptors_lock:
+            try:
+                data = await socket_sub.recv()
                 await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)
+            except Exception as e:
+                logging.debug("{}:_recv_loop: {}".format(topic, e))
+                continue
