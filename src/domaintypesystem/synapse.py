@@ -154,7 +154,11 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
             bind_interface = get_primary_ip()
 
         self.bind_interface = bind_interface
+        logging.info("DTSZmqEpgmSynapse:{}:Binding to interface {}".format(topic, bind_interface))
         self.multicast_address = multicast_address
+        logging.info("DTSZmqEpgmSynapse:{}:Binding to multicast_address {}".format(topic, multicast_address))
+        self.port = port
+        logging.info("DTSZmqEpgmSynapse:{}:Binding to port {}".format(topic, port))
 
         zmq_context = zmq.asyncio.Context()
         self._zmq_context = zmq_context
