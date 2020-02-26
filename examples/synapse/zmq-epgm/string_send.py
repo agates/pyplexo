@@ -22,60 +22,47 @@ import ipaddress
 import logging
 from timeit import default_timer as timer
 
-from domaintypesystem.receptor import DTSReceptor
 from domaintypesystem.synapse import DTSZmqEpgmSynapse
-
+from domaintypesystem.transmitter import DTSTransmitter, DTSTransmitterBase
 
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
-test_port = 6000
-
-start_time = timer()
-messages_lock = asyncio.Lock()
-messages = {"received": 0}
+test_port = 5561
 
 
-async def print_handler(data: str):
-    async with messages_lock:
-        messages["received"] += 1
-        logging.info("Print handler: {0} - {1} messages/s".format(
-            data,
-            messages["received"]/(timer()-start_time))
-        )
+async def send_hello_str(transmitter: DTSTransmitterBase):
+    i = 1
+    while True:
+        start_time = timer()
+        message = "Hello, DTS+EPGM {} …".format(i)
+        logging.info("Sending message: {}".format(message))
+        await transmitter.transmit(message)
+        i += 1
+        await asyncio.sleep(1-(start_time-timer()))
 
 
-def run(dts=None, loop=None):
+def run(loop=None):
     logging.basicConfig(level=logging.INFO)
 
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    if not dts:  # pragma: no cover
-        #dts = DomainTypeSystem(loop=loop)
-        pass
-
-    #handle_coro = asyncio.ensure_future(dts.react_to_all((print_handler,)))
-
-    receptor = DTSReceptor[str]((print_handler,), bytes, loop=loop)
     synapse = DTSZmqEpgmSynapse[str]("example_string",
-                                     ip_address=test_ip_address,
+                                     multicast_address=test_ip_address,
                                      port=test_port,
-                                     receptors=(receptor,),
                                      loop=loop)
+    transmitter = DTSTransmitter[str](synapse, str)
+
+    loop.create_task(send_hello_str(transmitter))
 
     if not loop.is_running():  # pragma: no cover
-        #loop.run_until_complete(handle_coro)
         try:
-            #signal.signal(signal.SIGINT, signal.default_int_handler)
-            logging.info("Running asyncio loop")
             loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
             loop.close()
 
-    if not dts:  # pragma: no cover
-        #dts.close()
-        pass
+    synapse.close()
 
 
 if __name__ == "__main__":

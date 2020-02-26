@@ -19,6 +19,7 @@ import asyncio
 from asyncio import Future
 from ipaddress import IPv4Address, IPv6Address
 from pathlib import Path
+import socket
 from typing import Iterable, Set, Tuple, Union, ByteString, Generic
 
 from pyrsistent import pvector
@@ -27,6 +28,22 @@ import zmq.asyncio
 
 from domaintypesystem import DTSReceptorBase
 from domaintypesystem.types import UnencodedDataType
+
+
+def get_primary_ip():
+    # from https://stackoverflow.com/a/28950776
+    _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # noinspection PyBroadException
+    try:
+        # doesn't even have to be reachable
+        _socket.connect(('10.255.255.255', 1))
+        ip_address = _socket.getsockname()[0]
+    except:
+        ip_address = '127.0.0.1'
+    finally:
+        _socket.close()
+
+    return ip_address
 
 
 class DTSSynapseBase(ABC, Generic[UnencodedDataType]):
@@ -57,6 +74,8 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
                  loop=None) -> None:
         super(DTSZmqIpcSynapse, self).__init__(topic, receptors)
 
+        self._tasks = []
+
         if not directory:
             directory = Path("/tmp/dts/zmq")
 
@@ -68,28 +87,46 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
         self._directory = directory
         topic_uri = "ipc://{0}/{1}".format(directory, topic)
 
-        context = zmq.asyncio.Context()
+        zmq_context = zmq.asyncio.Context()
+        self._zmq_context = zmq_context
 
         # noinspection PyUnresolvedReferences
-        self._socket_pub = context.socket(zmq.PUB, io_loop=loop)
+        self._socket_pub = zmq_context.socket(zmq.PUB, io_loop=loop)
         self._socket_pub.connect(topic_uri)
         # noinspection PyUnresolvedReferences
-        self._socket_sub = context.socket(zmq.SUB, io_loop=loop)
+        self._socket_sub = zmq_context.socket(zmq.SUB, io_loop=loop)
         self._socket_sub.bind(topic_uri)
         # noinspection PyUnresolvedReferences
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
 
         if not loop:
             loop = asyncio.get_event_loop()
-        self.loop = loop
-        task = self._recv_loop()
-        loop.create_task(task)
+
+        self._loop = loop
+
+        self._tasks.append(self._recv_loop())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        try:
+            for task in self._tasks:
+                task.cancel()
+        except RuntimeError:
+            pass
+        finally:
+            self._socket_sub.close()
+            self._socket_pub.close()
 
     async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
         return await self._socket_pub.send(data)
 
     async def _recv_loop(self):
-        loop = self.loop
+        loop = self._loop
         receptors_lock = self._receptors_lock
         socket_sub = self._socket_sub
 
@@ -101,41 +138,74 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
 
 class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
     def __init__(self, topic: str,
-                 ip_address: Union[IPv4Address, IPv6Address],
-                 port: int = 5555,
+                 multicast_address: Union[IPv4Address, IPv6Address],
+                 bind_interface: str = None,
+                 port: int = 5560,
                  receptors: Iterable[DTSReceptorBase[UnencodedDataType]] = (),
                  loop=None) -> None:
         super(DTSZmqEpgmSynapse, self).__init__(topic, receptors)
 
-        if not ip_address.is_multicast:
+        self._tasks = []
+
+        if not multicast_address.is_multicast:
             raise Exception("Specified ip_address is not a multicast ip address")
 
-        self.multicast_group = ip_address
+        if not bind_interface:
+            bind_interface = get_primary_ip()
 
-        context = zmq.asyncio.Context()
+        self.bind_interface = bind_interface
+        self.multicast_address = multicast_address
+
+        zmq_context = zmq.asyncio.Context()
+        self._zmq_context = zmq_context
 
         # noinspection PyUnresolvedReferences
-        self._socket_pub = context.socket(zmq.PUB, io_loop=loop)
-        self._socket_pub.connect("epgm://{}:{}".format(ip_address.compressed, port))
+        self._socket_pub = zmq_context.socket(zmq.PUB, io_loop=loop)
+        self._socket_pub.connect("epgm://{};{}:{}".format(
+            bind_interface,
+            multicast_address.compressed,
+            port)
+        )
 
         # noinspection PyUnresolvedReferences
-        self._socket_sub = context.socket(zmq.SUB, io_loop=loop)
+        self._socket_sub = zmq_context.socket(zmq.SUB, io_loop=loop)
         # noinspection PyUnresolvedReferences
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
-        self._socket_sub.bind("epgm://{}:{}".format(ip_address.compressed, port))
+        self._socket_sub.bind("epgm://{};{}:{}".format(
+            bind_interface,
+            multicast_address.compressed,
+            port)
+        )
 
         if not loop:
             loop = asyncio.get_event_loop()
-        self.loop = loop
-        task = self._recv_loop()
-        loop.create_task(task)
+
+        self._loop = loop
+
+        self._tasks.append(self._recv_loop())
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+    def __del__(self):
+        self.close()
+
+    def close(self):
+        try:
+            for task in self._tasks:
+                task.cancel()
+        except RuntimeError:
+            pass
+        finally:
+            self._socket_sub.close()
+            self._socket_pub.close()
 
     async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
         return await self._socket_pub.send(data)
 
     async def _recv_loop(self):
         topic = self._topic
-        loop = self.loop
+        loop = self._loop
         socket_sub = self._socket_sub
 
         while True:
@@ -143,5 +213,5 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
                 data = await socket_sub.recv()
                 await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)
             except Exception as e:
-                logging.debug("{}:_recv_loop: {}".format(topic, e))
+                logging.debug("DTSZmqEpgmSynapse:{}:_recv_loop: {}".format(topic, e))
                 continue
