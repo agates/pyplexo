@@ -63,8 +63,7 @@ class DTSSynapseBase(ABC, Generic[UnencodedDataType]):
 
 class DTSInProcessSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
     async def pass_data(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        async with self._receptors_lock:
-            return await asyncio.wait([receptor.activate(data) for receptor in self._receptors])
+        return await asyncio.wait([receptor.activate(data) for receptor in self._receptors])
 
 
 class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
@@ -127,13 +126,11 @@ class DTSZmqIpcSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
 
     async def _recv_loop(self):
         loop = self._loop
-        receptors_lock = self._receptors_lock
         socket_sub = self._socket_sub
 
         while True:
             data = await socket_sub.recv()
-            async with receptors_lock:
-                await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)
+            await asyncio.wait([receptor.activate(data) for receptor in self._receptors], loop=loop)
 
 
 class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
