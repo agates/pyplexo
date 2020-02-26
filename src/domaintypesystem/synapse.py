@@ -186,7 +186,7 @@ class DTSZmqEpgmSynapse(DTSSynapseBase, Generic[UnencodedDataType]):
 
         self._loop = loop
 
-        self._tasks.append(self._recv_loop())
+        self._tasks.append(loop.create_task(self._recv_loop()))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
