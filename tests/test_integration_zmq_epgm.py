@@ -20,45 +20,43 @@ import ipaddress
 import pytest
 
 from domaintypesystem.receptor import DTSReceptor
-from domaintypesystem.synapse import DTSZmqEpgmSynapse
+from domaintypesystem.synapse import DTSSynapseZmqEPGM
 from domaintypesystem.transmitter import DTSTransmitter
 
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
-test_port = 6000
+test_port = 5561
 
 
-class JSONEncoderBytes(json.JSONEncoder):
-    def encode(self, o):
-        return super(JSONEncoderBytes, self).encode(o).encode("UTF-8")
+def encode_json_bytes(o: dict) -> bytes:
+    return json.dumps(o).encode("UTF-8")
 
 
-class JSONDecoderBytes(json.JSONDecoder):
-    def decode(self, s, **kwargs):
-        return super(JSONDecoderBytes, self).decode(s.decode("UTF-8"))
+def decode_json_bytes(s: bytes) -> dict:
+    return json.loads(s.decode("UTF-8"))
 
 
 @pytest.mark.skip
 @pytest.mark.asyncio
 async def test_zmq_epgm_receptor(event_loop):
-    json_encoder = JSONEncoderBytes()
-    json_decoder = JSONDecoderBytes()
     test_queue = asyncio.Queue()
 
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = DTSReceptor[dict]((receptor_queue,), json_decoder, loop=event_loop)
-    synapse = DTSZmqEpgmSynapse[dict]("test",
-                                      ip_address=test_ip_address,
+    receptor = DTSReceptor[dict]((receptor_queue,), decode_json_bytes, loop=event_loop)
+    synapse = DTSSynapseZmqEPGM[dict]("test",
+                                      multicast_address=test_ip_address,
                                       port=test_port,
                                       receptors=(receptor,),
                                       loop=event_loop)
-    transmitter = DTSTransmitter[dict](synapse, json_encoder)
+    transmitter = DTSTransmitter[dict](synapse, encode_json_bytes)
 
-    await asyncio.sleep(.5)
+    await asyncio.sleep(.1)
 
     foo_bar_dict = {"foo": "bar"}
     await transmitter.transmit(foo_bar_dict)
+
+    await asyncio.sleep(.1)
 
     data = await test_queue.get()
     assert data == foo_bar_dict

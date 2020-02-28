@@ -15,20 +15,17 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from abc import ABC, abstractmethod
 from asyncio import Future
-from typing import Generic, Set, Tuple
+from typing import ByteString, Callable, Generic, Set, Tuple
 
-from domaintypesystem.synapse import DTSSynapseBase
-from domaintypesystem.types import UnencodedDataType, EncoderProtocol
+from domaintypesystem.synapse import DTSSynapseBase, DTSSynapseInProcessBase
+from domaintypesystem.typing import UnencodedDataType
 
 
 class DTSTransmitterBase(ABC, Generic[UnencodedDataType]):
-    def __init__(self, synapse: DTSSynapseBase, encoder: EncoderProtocol) -> None:
+    def __init__(self, synapse: DTSSynapseBase,
+                 encoder: Callable[[UnencodedDataType], ByteString]) -> None:
         self._synapse = synapse
         self._encoder = encoder
-
-    @property
-    def synapse(self) -> DTSSynapseBase:
-        return self._synapse
 
     @abstractmethod
     async def transmit(self, data): ...
@@ -36,5 +33,18 @@ class DTSTransmitterBase(ABC, Generic[UnencodedDataType]):
 
 class DTSTransmitter(DTSTransmitterBase, Generic[UnencodedDataType]):
     async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]:
-        encoded = self._encoder.encode(data)
-        return await self.synapse.pass_data(encoded)
+        encoded = self._encoder(data)
+        return await self._synapse.shift(encoded)
+
+
+class DTSTransmitterInProcessBase(ABC, Generic[UnencodedDataType]):
+    def __init__(self, synapse: DTSSynapseInProcessBase) -> None:
+        self._synapse = synapse
+
+    @abstractmethod
+    async def transmit(self, data): ...
+
+
+class DTSTransmitterInProcess(DTSTransmitterInProcessBase, Generic[UnencodedDataType]):
+    async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]:
+        return await self._synapse.shift(data)

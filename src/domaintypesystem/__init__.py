@@ -20,7 +20,7 @@ from .dts import DomainTypeSystem
 from .receptor import *
 from .synapse import *
 from .transmitter import *
-from .types import *
+from .typing import *
 
 import logging
 

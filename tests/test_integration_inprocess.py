@@ -14,27 +14,12 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-import json
 
 import pytest
 
-from domaintypesystem.receptor import DTSReceptor
-from domaintypesystem.synapse import DTSInProcessSynapse
-from domaintypesystem.transmitter import DTSTransmitter
-
-
-class JSONEncoderBytes(json.JSONEncoder):
-    def encode(self, o: dict) -> bytes:
-        return super(JSONEncoderBytes, self).encode(o).encode("UTF-8")
-
-
-class JSONDecoderBytes(json.JSONDecoder):
-    def decode(self, s: bytes, **kwargs) -> dict:
-        return super(JSONDecoderBytes, self).decode(s.decode("UTF-8"))
-
-
-json_encoder = JSONEncoderBytes()
-json_decoder = JSONDecoderBytes()
+from domaintypesystem.receptor import DTSReceptorInProcess
+from domaintypesystem.synapse import DTSSynapseInProcess
+from domaintypesystem.transmitter import DTSTransmitterInProcess
 
 
 @pytest.mark.asyncio
@@ -49,9 +34,9 @@ async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit
         return stub_async
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
-    receptor = DTSReceptor[dict]((make_stub_async(stub) for stub in stubs), json_decoder)
-    synapse = DTSInProcessSynapse[dict]("test", receptors=(receptor,))
-    transmitter = DTSTransmitter[dict](synapse, json_encoder)
+    receptor = DTSReceptorInProcess[dict]((make_stub_async(stub) for stub in stubs))
+    synapse = DTSSynapseInProcess[dict]("test", receptors=(receptor,))
+    transmitter = DTSTransmitterInProcess[dict](synapse)
 
     foo_bar_dict = {"foo": "bar"}
     await asyncio.wait(tuple(transmitter.transmit(foo_bar_dict) for _ in range(transmit_count)))
@@ -73,9 +58,9 @@ async def test_inprocess_receptor_many_transmitters(mocker, stub_count, transmit
         return stub_async
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
-    receptor = DTSReceptor[dict]((make_stub_async(stub) for stub in stubs), json_decoder)
-    synapse = DTSInProcessSynapse[dict]("test", receptors=(receptor,))
-    transmitters = (DTSTransmitter[dict](synapse, json_encoder) for _ in range(transmitter_count))
+    receptor = DTSReceptorInProcess[dict]((make_stub_async(stub) for stub in stubs))
+    synapse = DTSSynapseInProcess[dict]("test", receptors=(receptor,))
+    transmitters = (DTSTransmitterInProcess[dict](synapse) for _ in range(transmitter_count))
 
     foo_bar_dict = {"foo": "bar"}
     await asyncio.wait(tuple(transmitter.transmit(foo_bar_dict) for transmitter in transmitters))
@@ -94,12 +79,12 @@ async def test_inprocess_many_receptors_transmit_multiple(mocker, stub_count, tr
         async def stub_async(_):
             return stub(_)
 
-        return DTSReceptor[dict]((stub_async,), json_decoder)
+        return DTSReceptorInProcess[dict]((stub_async,))
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
     receptors = (generate_receptor(stub) for stub in stubs)
-    synapse = DTSInProcessSynapse[dict]("test", receptors=receptors)
-    transmitter = DTSTransmitter[dict](synapse, json_encoder)
+    synapse = DTSSynapseInProcess[dict]("test", receptors=receptors)
+    transmitter = DTSTransmitterInProcess[dict](synapse)
 
     foo_bar_dict = {"foo": "bar"}
     await asyncio.wait(tuple(transmitter.transmit(foo_bar_dict) for _ in range(transmit_count)))
@@ -118,12 +103,12 @@ async def test_inprocess_many_receptors_many_transmitters(mocker, stub_count, tr
         async def stub_async(_):
             return stub(_)
 
-        return DTSReceptor[dict]((stub_async,), json_decoder)
+        return DTSReceptorInProcess[dict]((stub_async,))
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
     receptors = (generate_receptor(stub) for stub in stubs)
-    synapse = DTSInProcessSynapse[dict]("test", receptors=receptors)
-    transmitters = (DTSTransmitter[dict](synapse, json_encoder) for _ in range(transmitter_count))
+    synapse = DTSSynapseInProcess[dict]("test", receptors=receptors)
+    transmitters = (DTSTransmitterInProcess[dict](synapse) for _ in range(transmitter_count))
 
     foo_bar_dict = {"foo": "bar"}
     await asyncio.wait(tuple(transmitter.transmit(foo_bar_dict) for transmitter in transmitters))

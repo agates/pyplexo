@@ -22,7 +22,7 @@ import ipaddress
 import logging
 from timeit import default_timer as timer
 
-from domaintypesystem.synapse import DTSZmqEpgmSynapse
+from domaintypesystem.synapse import DTSSynapseZmqEPGM
 from domaintypesystem.transmitter import DTSTransmitter, DTSTransmitterBase
 
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
@@ -46,11 +46,11 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    synapse = DTSZmqEpgmSynapse[str]("example_string",
+    synapse = DTSSynapseZmqEPGM[str]("example_string",
                                      multicast_address=test_ip_address,
                                      port=test_port,
                                      loop=loop)
-    transmitter = DTSTransmitter[str](synapse, str)
+    transmitter = DTSTransmitter[str](synapse, str.encode)
 
     loop.create_task(send_hello_str(transmitter))
 

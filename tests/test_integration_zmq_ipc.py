@@ -19,37 +19,35 @@ import json
 import pytest
 
 from domaintypesystem.receptor import DTSReceptor
-from domaintypesystem.synapse import DTSZmqIpcSynapse
+from domaintypesystem.synapse import DTSSynapseZmqIPC
 from domaintypesystem.transmitter import DTSTransmitter
 
 
-class JSONEncoderBytes(json.JSONEncoder):
-    def encode(self, o):
-        return super(JSONEncoderBytes, self).encode(o).encode("UTF-8")
+def encode_json_bytes(o: dict) -> bytes:
+    return json.dumps(o).encode("UTF-8")
 
 
-class JSONDecoderBytes(json.JSONDecoder):
-    def decode(self, s, **kwargs):
-        return super(JSONDecoderBytes, self).decode(s.decode("UTF-8"))
+def decode_json_bytes(s: bytes) -> dict:
+    return json.loads(s.decode("UTF-8"))
 
 
 @pytest.mark.asyncio
-async def test_zmq_ipc_receptor(event_loop):
-    json_encoder = JSONEncoderBytes()
-    json_decoder = JSONDecoderBytes()
+async def test_zmq_ipc_synapse(event_loop):
     test_queue = asyncio.Queue()
 
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = DTSReceptor[dict]((receptor_queue,), json_decoder, loop=event_loop)
-    synapse = DTSZmqIpcSynapse[dict]("test", receptors=(receptor,), loop=event_loop)
-    transmitter = DTSTransmitter[dict](synapse, json_encoder)
+    receptor = DTSReceptor[dict]((receptor_queue,), decode_json_bytes, loop=event_loop)
+    synapse = DTSSynapseZmqIPC[dict]("test", receptors=(receptor,), loop=event_loop)
+    transmitter = DTSTransmitter[dict](synapse, encode_json_bytes)
 
-    await asyncio.sleep(.5)
+    await asyncio.sleep(.25)
 
     foo_bar_dict = {"foo": "bar"}
     await transmitter.transmit(foo_bar_dict)
+
+    await asyncio.sleep(.25)
 
     data = await test_queue.get()
     assert data == foo_bar_dict

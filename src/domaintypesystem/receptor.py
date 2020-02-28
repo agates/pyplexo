@@ -16,18 +16,19 @@
 from abc import ABC, abstractmethod
 import asyncio
 from asyncio import Future
-from typing import Any, Callable, Generic, Iterable, Tuple, Set, ByteString
+from typing import Any, ByteString, Callable, Generic, Iterable, Set, Tuple
 
 from pyrsistent import pvector
 
-from domaintypesystem.types import UnencodedDataType, DecoderProtocol
+from domaintypesystem.typing import UnencodedDataType
 
 
 class DTSReceptorBase(ABC, Generic[UnencodedDataType]):
-    def __init__(self, _callables: Iterable[Callable[[UnencodedDataType], Any]],
-                 decoder: DecoderProtocol,
+    def __init__(self, reactants: Iterable[Callable[[UnencodedDataType], Any]],
+                 decoder: Callable[[ByteString], UnencodedDataType],
                  loop=None) -> None:
-        self._callables = pvector(_callables)
+        self.reactants = pvector(reactants)
+        self.reactants_lock = asyncio.Lock()
         self._decoder = decoder
 
         if not loop:
@@ -38,8 +39,38 @@ class DTSReceptorBase(ABC, Generic[UnencodedDataType]):
     @abstractmethod
     async def activate(self, data: ByteString): ...
 
+    async def add_reactant(self, reactant: Callable[[UnencodedDataType], Any]) -> None:
+        async with self.reactants_lock:
+            self.reactants = self.reactants.append(reactant)
+
 
 class DTSReceptor(DTSReceptorBase, Generic[UnencodedDataType]):
     async def activate(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        decoded = self._decoder.decode(data)
-        return await asyncio.wait([_callable(decoded) for _callable in self._callables], loop=self._loop)
+        decoded = self._decoder(data)
+        async with self.reactants_lock:
+            return await asyncio.wait([reactant(decoded) for reactant in self.reactants], loop=self._loop)
+
+
+class DTSReceptorInProcessBase(ABC, Generic[UnencodedDataType]):
+    def __init__(self, reactants: Iterable[Callable[[UnencodedDataType], Any]],
+                 loop=None) -> None:
+        self.reactants = pvector(reactants)
+        self.reactants_lock = asyncio.Lock()
+
+        if not loop:
+            loop = asyncio.get_event_loop()
+
+        self._loop = loop
+
+    @abstractmethod
+    async def activate(self, data: Any): ...
+
+    async def add_reactant(self, reactant: Callable[[UnencodedDataType], Any]) -> None:
+        async with self.reactants_lock:
+            self.reactants = self.reactants.append(reactant)
+
+
+class DTSReceptorInProcess(DTSReceptorInProcessBase, Generic[UnencodedDataType]):
+    async def activate(self, data: Any) -> Tuple[Set[Future], Set[Future]]:
+        async with self.reactants_lock:
+            return await asyncio.wait([reactant(data) for reactant in self.reactants], loop=self._loop)
