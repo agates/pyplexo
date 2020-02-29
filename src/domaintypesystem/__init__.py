@@ -16,7 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .dts import DomainTypeSystem
+#from .dts import DomainTypeSystem
 from .receptor import *
 from .synapse import *
 from .transmitter import *
