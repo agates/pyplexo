@@ -4,15 +4,15 @@ with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setup(
-    name='domaintypesystem',
+    name='plexo',
     version='1.0.0',
-    description='Decentralized type system',
+    description='Decentralized event coordination',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Alecks Gates',
     author_email='agates@mail.agates.io',
     keywords=[],
-    url='https://gitlab.com/agates/domain-type-system',
+    url='https://gitlab.com/agates/pyplexo',
     python_requires='>=3.5',
     classifiers=(
         'Development Status :: 2 - Pre-Alpha',
@@ -35,12 +35,14 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
     install_requires=[
-        #'blosc~=1.5.0',
-        #'capnpy~=0.6'
+        'capnpy~=0.8'
+        'pyrsistent~=0.15'
+        'pyzmq~=18.1'
+        'typing_extensions~=3.7'
     ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
-    package_data={'domaintypesystem': ['schema/*']},
+    package_data={'plexo': ['schema/*']},
     entry_points={
         'console_scripts': [
         ],

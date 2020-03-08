@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#    domaintypesystem
+#    plexo
 #    Copyright (C) 2018  Alecks Gates
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -21,10 +21,10 @@ import asyncio
 import ipaddress
 import logging
 from timeit import default_timer as timer
+from typing import ByteString
 
-from domaintypesystem.receptor import DTSReceptor
-from domaintypesystem.synapse import DTSSynapseZmqEPGM
-
+from plexo.synapse import SynapseZmqEPGM
+from plexo.receptor import create_receptor
 
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
 test_port = 5561
@@ -43,18 +43,22 @@ async def print_handler(data: str):
         )
 
 
+def bytes_decode(b: ByteString):
+    return bytes(b).decode("UTF-8")
+
+
 def run(loop=None):
     logging.basicConfig(level=logging.INFO)
 
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    receptor = DTSReceptor[str]((print_handler,), bytes.decode, loop=loop)
-    synapse = DTSSynapseZmqEPGM[str]("example_string",
-                                     multicast_address=test_ip_address,
-                                     port=test_port,
-                                     receptors=(receptor,),
-                                     loop=loop)
+    receptor = create_receptor(reactants=(print_handler,), decoder=bytes_decode)
+    synapse = SynapseZmqEPGM[str]("example_string",
+                                  multicast_address=test_ip_address,
+                                  port=test_port,
+                                  receptors=(receptor,),
+                                  loop=loop)
 
     if not loop.is_running():  # pragma: no cover
         try:

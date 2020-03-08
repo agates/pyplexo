@@ -1,5 +1,5 @@
-#  domain-type-system
-#   Copyright (C) 2019  Alecks Gates
+#  pyplexo
+#   Copyright (C) 2020  Alecks Gates
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,6 +13,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import TypeVar
 
-UnencodedDataType = TypeVar('UnencodedDataType')
+
+class SynapseExists(RuntimeError):
+    """Raise when a synapse for a type already exists inside a ganglion"""
+
+
+class TransmitterNotFound(KeyError):
+    """Raise when a transmitter is not found inside a ganglion"""

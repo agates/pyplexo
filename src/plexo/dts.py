@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#    domaintypesystem
+#    plexo
 #    Copyright (C) 2018  Alecks Gates
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -31,12 +31,12 @@ import uuid
 import blosc
 import capnpy
 
-import domaintypesystem.multicastgroups as multicastgroups
+import plexo.multicastgroups as multicastgroups
 
 DomainTypeGroupMembership = capnpy.load_schema(
-    'domaintypesystem.schema.domain_type_group_membership', pyx=False).DomainTypeGroupMembership
+    'plexo.schema.domain_type_group_membership', pyx=False).DomainTypeGroupMembership
 DomainTypeGroupMessage = capnpy.load_schema(
-    'domaintypesystem.schema.domain_type_group_message', pyx=False).DomainTypeGroupMessage
+    'plexo.schema.domain_type_group_message', pyx=False).DomainTypeGroupMessage
 
 # Store the hashed machine id as bytes
 with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:

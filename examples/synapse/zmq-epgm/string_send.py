@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#    domaintypesystem
+#    plexo
 #    Copyright (C) 2018  Alecks Gates
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -22,20 +22,20 @@ import ipaddress
 import logging
 from timeit import default_timer as timer
 
-from domaintypesystem.synapse import DTSSynapseZmqEPGM
-from domaintypesystem.transmitter import DTSTransmitter, DTSTransmitterBase
+from plexo.synapse import SynapseZmqEPGM
+from plexo.transmitter import create_transmitter
 
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
 test_port = 5561
 
 
-async def send_hello_str(transmitter: DTSTransmitterBase):
+async def send_hello_str(transmitter):
     i = 1
     while True:
         start_time = timer()
         message = "Hello, DTS+EPGM {} …".format(i)
         logging.info("Sending message: {}".format(message))
-        await transmitter.transmit(message)
+        await transmitter(message)
         i += 1
         await asyncio.sleep(1-(start_time-timer()))
 
@@ -46,11 +46,11 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    synapse = DTSSynapseZmqEPGM[str]("example_string",
-                                     multicast_address=test_ip_address,
-                                     port=test_port,
-                                     loop=loop)
-    transmitter = DTSTransmitter[str](synapse, str.encode)
+    synapse = SynapseZmqEPGM[str]("example_string",
+                                  multicast_address=test_ip_address,
+                                  port=test_port,
+                                  loop=loop)
+    transmitter = create_transmitter((synapse,), str.encode)
 
     loop.create_task(send_hello_str(transmitter))
 

@@ -1,4 +1,4 @@
-#  domain-type-system
+#  pyplexo
 #   Copyright (C) 2019  Alecks Gates
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -16,12 +16,13 @@
 import asyncio
 import json
 import ipaddress
+from typing import ByteString
 
 import pytest
 
-from domaintypesystem.receptor import DTSReceptor
-from domaintypesystem.synapse import DTSSynapseZmqEPGM
-from domaintypesystem.transmitter import DTSTransmitter
+from plexo.receptor import create_receptor
+from plexo.synapse import SynapseZmqEPGM
+from plexo.transmitter import transmit_encode
 
 test_ip_address = ipaddress.IPv4Address('239.255.0.1')
 test_port = 5561
@@ -31,8 +32,8 @@ def encode_json_bytes(o: dict) -> bytes:
     return json.dumps(o).encode("UTF-8")
 
 
-def decode_json_bytes(s: bytes) -> dict:
-    return json.loads(s.decode("UTF-8"))
+def decode_json_bytes(s: ByteString) -> dict:
+    return json.loads(bytes(s).decode("UTF-8"))
 
 
 @pytest.mark.skip
@@ -43,18 +44,17 @@ async def test_zmq_epgm_receptor(event_loop):
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = DTSReceptor[dict]((receptor_queue,), decode_json_bytes, loop=event_loop)
-    synapse = DTSSynapseZmqEPGM[dict]("test",
-                                      multicast_address=test_ip_address,
-                                      port=test_port,
-                                      receptors=(receptor,),
-                                      loop=event_loop)
-    transmitter = DTSTransmitter[dict](synapse, encode_json_bytes)
+    receptor = create_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes)
+    synapse = SynapseZmqEPGM[dict]("test",
+                                   multicast_address=test_ip_address,
+                                   port=test_port,
+                                   receptors=(receptor,),
+                                   loop=event_loop)
 
     await asyncio.sleep(.1)
 
     foo_bar_dict = {"foo": "bar"}
-    await transmitter.transmit(foo_bar_dict)
+    await transmit_encode(synapse, encode_json_bytes, foo_bar_dict)
 
     await asyncio.sleep(.1)
 

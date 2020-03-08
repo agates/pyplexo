@@ -1,4 +1,4 @@
-#  domain-type-system
+#  pyplexo
 #   Copyright (C) 2019  Alecks Gates
 #
 #  This program is free software: you can redistribute it and/or modify
@@ -13,17 +13,6 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
-import asyncio
-from json import JSONEncoder
+from typing import TypeVar
 
-import pytest
-
-from domaintypesystem.transmitter import DTSTransmitter
-
-
-#@pytest.mark.asyncio
-#@pytest.mark.skip
-#async def test_create_transmitter(mocker):
-#    DTSTransmitter(JSONEncoder(), JSONEncoder())
-#    assert False
+UnencodedDataType = TypeVar('UnencodedDataType')

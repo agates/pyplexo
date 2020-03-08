@@ -16,8 +16,7 @@ tox = "*"
 wemake-python-styleguide = "*"
 
 [packages]
-blosc = "~=1.5.0"
-capnpy = "~=0.6"
+capnpy = "~=0.8"
 pyrsistent = "~=0.15"
 pyzmq = "~=18.1"
 typing_extensions = "~=3.7"

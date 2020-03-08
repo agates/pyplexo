@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#    domaintypesystem
+#    plexo
 #    Copyright (C) 2018  Alecks Gates
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -16,10 +16,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#from .dts import DomainTypeSystem
-from .receptor import *
 from .synapse import *
-from .transmitter import *
 from .typing import *
 
 import logging
