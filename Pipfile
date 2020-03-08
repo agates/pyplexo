@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-domain-type-system = {editable = true,path="."}
+plexo = {editable = true,path="."}
 flake8 = "*"
 mypy = "*"
 pytest = "*"
@@ -22,4 +22,4 @@ pyzmq = "~=18.1"
 typing_extensions = "~=3.7"
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"
