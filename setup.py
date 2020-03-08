@@ -37,7 +37,7 @@ setup(
     install_requires=[
         'capnpy~=0.8',
         'pyrsistent~=0.15',
-        'pyzmq~=18.1',
+        'pyzmq~=19.0',
         'typing_extensions~=3.7'
     ],
     packages=find_packages(where='src'),

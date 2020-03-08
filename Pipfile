@@ -4,7 +4,7 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-plexo = {editable = true,path="."}
+plexo = {editable = true, path="."}
 flake8 = "*"
 mypy = "*"
 pytest = "*"
@@ -18,7 +18,7 @@ wemake-python-styleguide = "*"
 [packages]
 capnpy = "~=0.8"
 pyrsistent = "~=0.15"
-pyzmq = "~=18.1"
+pyzmq = "~=19.0"
 typing_extensions = "~=3.7"
 
 [requires]
