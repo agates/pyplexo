@@ -35,9 +35,9 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ),
     install_requires=[
-        'capnpy~=0.8'
-        'pyrsistent~=0.15'
-        'pyzmq~=18.1'
+        'capnpy~=0.8',
+        'pyrsistent~=0.15',
+        'pyzmq~=18.1',
         'typing_extensions~=3.7'
     ],
     packages=find_packages(where='src'),
