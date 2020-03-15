@@ -128,7 +128,7 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
                 data = await socket_sub.recv()
                 await asyncio.wait([receptor(data) for receptor in self.receptors], loop=loop)
             except Exception as e:
-                logging.error("DTSSynapseZmqIPC:{}:_recv_loop: {}".format(topic, e))
+                logging.error("SynapseZmqIPC:{}:_recv_loop: {}".format(topic, e))
                 continue
 
 
@@ -148,11 +148,11 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             bind_interface = get_primary_ip()
 
         self.bind_interface = bind_interface
-        logging.info("DTSZmqEpgmSynapse:{}:Binding to interface {}".format(topic, bind_interface))
+        logging.info("SynapseZmqEPGM:{}:Binding to interface {}".format(topic, bind_interface))
         self.multicast_address = multicast_address
-        logging.info("DTSZmqEpgmSynapse:{}:Binding to multicast_address {}".format(topic, multicast_address))
+        logging.info("SynapseZmqEPGM:{}:Binding to multicast_address {}".format(topic, multicast_address))
         self.port = port
-        logging.info("DTSZmqEpgmSynapse:{}:Binding to port {}".format(topic, port))
+        logging.info("SynapseZmqEPGM:{}:Binding to port {}".format(topic, port))
 
         zmq_context = zmq.asyncio.Context()
         self._zmq_context = zmq_context
@@ -199,7 +199,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
                 data = await socket_sub.recv()
                 await asyncio.wait([receptor(data) for receptor in self.receptors], loop=loop)
             except Exception as e:
-                logging.error("DTSZmqEpgmSynapse:{}:_recv_loop: {}".format(topic, e))
+                logging.error("SynapseZmqEPGM:{}:_recv_loop: {}".format(topic, e))
                 continue
 
 
