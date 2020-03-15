@@ -16,12 +16,12 @@
 import asyncio
 import ipaddress
 import logging
+import random
 import uuid
 from abc import ABC, abstractmethod
 from enum import Enum
 from ipaddress import IPv4Network, IPv6Network
 from itertools import islice
-from random import random
 from typing import Union, Type, Callable, Any, ByteString
 
 import capnpy
@@ -139,14 +139,22 @@ class GanglionMulticast(GanglionBase):
         asyncio.ensure_future(self._startup(), loop=loop)
 
     async def _heartbeat_loop(self):
-        half_interval = self.heartbeat_interval_seconds/2
-        random_sleep_time = random.random() * half_interval + half_interval
         host_ip = self.host_ip
         instance_id = self.instance_id
+        try:
+            half_interval = self.heartbeat_interval_seconds/2
+            random_sleep_time = random.random() * half_interval + half_interval
+        except Exception as e:
+            logging.error(e)
+            random_sleep_time = self.heartbeat_interval_seconds
 
         while True:
-            await self.transmit(PlexoHeartbeat(host_ip=host_ip, instance_id=instance_id))
-            await asyncio.sleep(random_sleep_time)
+            try:
+                logging.debug("Sending heartbeat from host: {}, instance: {}".format(host_ip, instance_id))
+                await self.transmit(PlexoHeartbeat(host_ip=host_ip, instance_id=instance_id))
+                await asyncio.sleep(random_sleep_time)
+            except Exception as e:
+                logging.error(e)
 
     async def _heartbeat_reaction(self, heartbeat):
         logging.info(heartbeat)
