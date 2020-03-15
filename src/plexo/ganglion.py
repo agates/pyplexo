@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import ipaddress
 import logging
 import uuid
 from abc import ABC, abstractmethod
@@ -33,7 +34,7 @@ from plexo.typing import UnencodedDataType
 from plexo.synapse import SynapseZmqEPGM
 from plexo.receptor import create_receptor
 
-PlexoHeartbeat = capnpy.load_schema('plexo.schema.plexo_heartbeat', pyx=False).PlexoHeartbeat
+PlexoHeartbeat = capnpy.load_schema('plexo.schema.plexo_heartbeat').PlexoHeartbeat
 
 
 class GanglionBase(ABC):
@@ -114,7 +115,7 @@ class ReservedMulticastAddress(Enum):
 
 class GanglionMulticast(GanglionBase):
     def __init__(self, bind_interface: str = None,
-                 multicast_cidr: Union[IPv4Network, IPv6Network] = None,
+                 multicast_cidr: Union[IPv4Network, IPv6Network] = ipaddress.ip_network('239.0.0.0/16'),
                  port: int = 5560,
                  heartbeat_interval_seconds: int = 30,
                  loop=None) -> None:
@@ -135,7 +136,7 @@ class GanglionMulticast(GanglionBase):
         # Unique id for the current instance
         self.instance_id = uuid.uuid1().int >> 64
 
-        self._add_task(loop.create_task(self._startup()))
+        asyncio.ensure_future(self._startup(), loop=loop)
 
     async def _heartbeat_loop(self):
         half_interval = self.heartbeat_interval_seconds/2
