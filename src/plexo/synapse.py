@@ -148,11 +148,11 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             bind_interface = get_primary_ip()
 
         self.bind_interface = bind_interface
-        logging.info("SynapseZmqEPGM:{}:Binding to interface {}".format(topic, bind_interface))
+        logging.debug("SynapseZmqEPGM:{}:Binding to interface {}".format(topic, bind_interface))
         self.multicast_address = multicast_address
-        logging.info("SynapseZmqEPGM:{}:Binding to multicast_address {}".format(topic, multicast_address))
+        logging.debug("SynapseZmqEPGM:{}:Binding to multicast_address {}".format(topic, multicast_address))
         self.port = port
-        logging.info("SynapseZmqEPGM:{}:Binding to port {}".format(topic, port))
+        logging.debug("SynapseZmqEPGM:{}:Binding to port {}".format(topic, port))
 
         zmq_context = zmq.asyncio.Context()
         self._zmq_context = zmq_context

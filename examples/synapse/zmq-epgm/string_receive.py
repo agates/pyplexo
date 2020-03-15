@@ -48,7 +48,7 @@ def bytes_decode(b: ByteString):
 
 
 def run(loop=None):
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
