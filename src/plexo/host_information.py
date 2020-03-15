@@ -34,7 +34,7 @@ def get_primary_ip():
 
 
 def get_hashed_primary_ip():
-    hashlib.sha1(get_primary_ip().encode("UTF-8")).digest()
+    return hashlib.sha1(get_primary_ip().encode("UTF-8")).digest()
 
 
 def get_machine_id():
