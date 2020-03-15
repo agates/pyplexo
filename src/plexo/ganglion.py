@@ -98,7 +98,7 @@ class GanglionBase(ABC):
                     reactant: Callable[[UnencodedDataType], Any],
                     decoder: Callable[[ByteString], UnencodedDataType]):
         synapse = await self.get_synapse(_type)
-        await synapse.update_receptors(create_receptor(reactants=(reactant,), decoder=decoder))
+        await synapse.update_receptors((create_receptor(reactants=(reactant,), decoder=decoder),))
 
     async def transmit(self, data: UnencodedDataType):
         _type = type(data)
