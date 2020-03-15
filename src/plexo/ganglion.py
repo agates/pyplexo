@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from ipaddress import IPv4Network, IPv6Network
 from itertools import islice
+from timeit import default_timer as timer
 from typing import Union, Type, Callable, Any, ByteString
 
 import capnpy
@@ -136,6 +137,9 @@ class GanglionMulticast(GanglionBase):
         # Unique id for the current instance
         self.instance_id = uuid.uuid1().int >> 64
 
+        self._heartbeats = pmap()
+        self._heartbeats_lock = asyncio.Lock()
+
         asyncio.ensure_future(self._startup(), loop=loop)
 
     async def _heartbeat_loop(self):
@@ -156,8 +160,15 @@ class GanglionMulticast(GanglionBase):
             except Exception as e:
                 logging.error(e)
 
-    async def _heartbeat_reaction(self, heartbeat):
-        logging.info(heartbeat)
+    async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat):
+        host_info = self.heartbeat_tuple(heartbeat)
+        logging.debug("Received heartbeat from host: {}, instance: {}".format(*host_info))
+        async with self._heartbeats_lock:
+            self._heartbeats = self._heartbeats.set(host_info, timer())
+
+    @staticmethod
+    def heartbeat_tuple(heartbeat: PlexoHeartbeat):
+        return heartbeat.host_ip, heartbeat.instance_id
 
     async def _startup(self):
         await self.create_synapse(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
