@@ -23,20 +23,24 @@ from plexo import UnencodedDataType
 
 
 def create_receptor(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                    decoder: Callable[[ByteString], UnencodedDataType]):
-    return partial(transduce_decode, pdeque(reactants), decoder)
+                    decoder: Callable[[ByteString], UnencodedDataType],
+                    loop=None):
+    return partial(transduce_decode, pdeque(reactants), decoder, loop=loop)
 
 
-def create_receptor_inproc(reactants: Iterable[Callable[[UnencodedDataType], Any]]):
-    return partial(transduce, pdeque(reactants))
+def create_receptor_inproc(reactants: Iterable[Callable[[UnencodedDataType], Any]],
+                           loop=None):
+    return partial(transduce, pdeque(reactants), loop=loop)
 
 
 async def transduce(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                    data: UnencodedDataType):
-    return await asyncio.wait([reactant(data) for reactant in reactants])
+                    data: UnencodedDataType,
+                    loop=None):
+    return await asyncio.wait([reactant(data) for reactant in reactants], loop=loop)
 
 
 async def transduce_decode(reactants: Iterable[Callable[[UnencodedDataType], Any]],
                            decoder: Callable[[ByteString], UnencodedDataType],
-                           data: ByteString):
-    return await transduce(reactants, decoder(data))
+                           data: ByteString,
+                           loop=None):
+    return await transduce(reactants, decoder(data), loop=loop)

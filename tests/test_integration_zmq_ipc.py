@@ -34,20 +34,18 @@ def decode_json_bytes(s: ByteString) -> dict:
 
 @pytest.mark.asyncio
 async def test_zmq_ipc_synapse(event_loop):
-    test_queue = asyncio.Queue()
+    test_queue = asyncio.Queue(loop=event_loop)
 
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = create_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes)
+    receptor = create_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes, loop=event_loop)
     synapse = SynapseZmqIPC[dict]("test", receptors=(receptor,), loop=event_loop)
 
-    await asyncio.sleep(.25)
+    await asyncio.sleep(.25, loop=event_loop)
 
     foo_bar_dict = {"foo": "bar"}
-    await transmit_encode((synapse,), encode_json_bytes, foo_bar_dict)
-
-    await asyncio.sleep(.25)
+    await transmit_encode((synapse,), encode_json_bytes, foo_bar_dict, loop=event_loop)
 
     data = await test_queue.get()
     assert data == foo_bar_dict
