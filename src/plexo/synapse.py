@@ -77,12 +77,12 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
                  receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]] = (),
                  directory: Path = None,
                  loop=None) -> None:
-        super(SynapseZmqIPC, self).__init__(topic, receptors)
+        super(SynapseZmqIPC, self).__init__(topic, receptors, loop=loop)
 
         self._tasks = pdeque()
 
         if not directory:
-            directory = Path("/tmp/dts/zmq")
+            directory = Path("/tmp/plexo/zmq")
 
         directory.mkdir(parents=True, exist_ok=True)
 
@@ -90,21 +90,15 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
             raise Exception("Given path is not a directory")
 
         self._directory = directory
-        topic_uri = "ipc://{0}/{1}".format(directory, topic)
 
-        zmq_context = zmq.asyncio.Context()
-        self._zmq_context = zmq_context
+        self._zmq_context = None
+        self._socket_pub = None
+        self._socket_sub = None
 
-        # noinspection PyUnresolvedReferences
-        self._socket_pub = zmq_context.socket(zmq.PUB, io_loop=loop)
-        self._socket_pub.connect(topic_uri)
-        # noinspection PyUnresolvedReferences
-        self._socket_sub = zmq_context.socket(zmq.SUB, io_loop=loop)
-        self._socket_sub.bind(topic_uri)
-        # noinspection PyUnresolvedReferences
-        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
-
-        self._add_task(loop.create_task(self._recv_loop()))
+        self.connection_string = "ipc://{0}/{1}".format(directory, topic)
+        logging.debug("SynapseZmqIPC:{}:connection_string {}".format(topic, self.connection_string))
+        self._create_socket_pub()
+        self.start_recv_loop_if_needed()
 
     def close(self):
         try:
@@ -115,13 +109,59 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
+    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]]):
+        await super(SynapseZmqIPC, self).update_receptors(receptors)
+        self.start_recv_loop_if_needed()
+
+    @property
+    def zmq_context(self):
+        if not self._zmq_context:
+            self._zmq_context = zmq.asyncio.Context()
+        return self._zmq_context
+
+    @property
+    def socket_pub(self):
+        if not self._socket_pub:
+            self._create_socket_pub()
+
+        return self._socket_pub
+
+    def _create_socket_pub(self):
+        logging.debug("SynapseZmqIPC:{}:Creating publisher".format(self.topic))
+        # noinspection PyUnresolvedReferences
+        self._socket_pub = self.zmq_context.socket(zmq.PUB, io_loop=self._loop)
+        self._socket_pub.connect(self.connection_string)
+
+    @property
+    def socket_sub(self):
+        if not self._socket_sub:
+            self._create_socket_sub()
+
+        return self._socket_sub
+
+    def _create_socket_sub(self):
+        logging.debug("SynapseZmqIPC:{}:Creating subscription".format(self.topic))
+        # noinspection PyUnresolvedReferences
+        self._socket_sub = self.zmq_context.socket(zmq.SUB, io_loop=self._loop)
+        # noinspection PyUnresolvedReferences
+        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
+        self._socket_sub.bind(self.connection_string)
+
     async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        return await self._socket_pub.send(data)
+        return await self.socket_pub.send(data)
+
+    def start_recv_loop_if_needed(self):
+        if len(self.receptors):
+            logging.debug("SynapseZmqIPC:{}:Starting _recv_loop".format(self.topic))
+            self._create_socket_sub()
+            self._add_task(self._loop.create_task(self._recv_loop()))
+        else:
+            logging.debug("SynapseZmqIPC:{}:Not starting _recv_loop - no receptors found".format(self.topic))
 
     async def _recv_loop(self):
-        topic = self.topic
         loop = self._loop
-        socket_sub = self._socket_sub
+        socket_sub = self.socket_sub
+        topic = self.topic
 
         while True:
             try:
@@ -148,34 +188,20 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             bind_interface = get_primary_ip()
 
         self.bind_interface = bind_interface
-        logging.debug("SynapseZmqEPGM:{}:Binding to interface {}".format(topic, bind_interface))
+        logging.debug("SynapseZmqEPGM:{}:bind_interface {}".format(topic, bind_interface))
         self.multicast_address = multicast_address
-        logging.debug("SynapseZmqEPGM:{}:Binding to multicast_address {}".format(topic, multicast_address))
+        logging.debug("SynapseZmqEPGM:{}:multicast_address {}".format(topic, multicast_address))
         self.port = port
-        logging.debug("SynapseZmqEPGM:{}:Binding to port {}".format(topic, port))
+        logging.debug("SynapseZmqEPGM:{}:port {}".format(topic, port))
 
-        zmq_context = zmq.asyncio.Context()
-        self._zmq_context = zmq_context
+        self._zmq_context = None
+        self._socket_pub = None
+        self._socket_sub = None
 
-        # noinspection PyUnresolvedReferences
-        self._socket_pub = zmq_context.socket(zmq.PUB, io_loop=loop)
-        self._socket_pub.connect("epgm://{};{}:{}".format(
-            bind_interface,
-            multicast_address.compressed,
-            port)
-        )
-
-        # noinspection PyUnresolvedReferences
-        self._socket_sub = zmq_context.socket(zmq.SUB, io_loop=loop)
-        # noinspection PyUnresolvedReferences
-        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
-        self._socket_sub.bind("epgm://{};{}:{}".format(
-            bind_interface,
-            multicast_address.compressed,
-            port)
-        )
-
-        self._add_task(loop.create_task(self._recv_loop()))
+        self.connection_string = "epgm://{};{}:{}".format(bind_interface, multicast_address.compressed, port)
+        logging.debug("SynapseZmqEPGM:{}:connection_string {}".format(topic, self.connection_string))
+        self._create_socket_pub()
+        self.start_recv_loop_if_needed()
 
     def close(self):
         try:
@@ -186,13 +212,58 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
+    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]]):
+        await super(SynapseZmqEPGM, self).update_receptors(receptors)
+        self.start_recv_loop_if_needed()
+
+    @property
+    def zmq_context(self):
+        if not self._zmq_context:
+            self._zmq_context = zmq.asyncio.Context()
+        return self._zmq_context
+
+    @property
+    def socket_pub(self):
+        if not self._socket_pub:
+            self._create_socket_pub()
+
+        return self._socket_pub
+
+    def _create_socket_pub(self):
+        logging.debug("SynapseZmqEPGM:{}:Creating publisher".format(self.topic))
+        # noinspection PyUnresolvedReferences
+        self._socket_pub = self.zmq_context.socket(zmq.PUB, io_loop=self._loop)
+        self._socket_pub.connect(self.connection_string)
+
+    @property
+    def socket_sub(self):
+        if not self._socket_sub:
+            self._create_socket_sub()
+
+        return self._socket_sub
+
+    def _create_socket_sub(self):
+        logging.debug("SynapseZmqEPGM:{}:Creating subscription".format(self.topic))
+        # noinspection PyUnresolvedReferences
+        self._socket_sub = self.zmq_context.socket(zmq.SUB, io_loop=self._loop)
+        # noinspection PyUnresolvedReferences
+        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
+        self._socket_sub.bind(self.connection_string)
+
     async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        return await self._socket_pub.send(data)
+        return await self.socket_pub.send(data)
+
+    def start_recv_loop_if_needed(self):
+        if len(self.receptors):
+            logging.debug("SynapseZmqEPGM:{}:Starting _recv_loop".format(self.topic))
+            self._add_task(self._loop.create_task(self._recv_loop()))
+        else:
+            logging.debug("SynapseZmqEPGM:{}:Not starting _recv_loop - no receptors found".format(self.topic))
 
     async def _recv_loop(self):
-        topic = self.topic
         loop = self._loop
-        socket_sub = self._socket_sub
+        socket_sub = self.socket_sub
+        topic = self.topic
 
         while True:
             try:
