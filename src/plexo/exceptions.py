@@ -15,6 +15,22 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+class IpLeaseExists(RuntimeError):
+    """Raise when an ip_address is already leased"""
+
+
+class IpNotFound(KeyError):
+    """Raise when an ip_address is not found"""
+
+
+class IpNotLeased(RuntimeError):
+    """Raise when an ip_address is not leased"""
+
+
+class IpsExhausted(RuntimeError):
+    """Raise when no more ip_addresses are available"""
+
+
 class SynapseExists(RuntimeError):
     """Raise when a synapse for a type already exists inside a ganglion"""
 
