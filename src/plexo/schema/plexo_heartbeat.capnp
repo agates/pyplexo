@@ -1,6 +1,6 @@
-@0xbc16fcac93512f25;
+@0x99587877bc520e62;
 
 struct PlexoHeartbeat {
-    hostIp @0 :Data;
+    hostIpHash @0 :Data;
     instanceId @1 :UInt64;
 }

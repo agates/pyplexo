@@ -20,6 +20,7 @@ import random
 import uuid
 from abc import ABC, abstractmethod
 from enum import Enum
+from functools import reduce
 from ipaddress import IPv4Network, IPv6Network
 from itertools import islice
 from timeit import default_timer as timer
@@ -36,6 +37,10 @@ from plexo.synapse import SynapseZmqEPGM
 from plexo.receptor import create_receptor
 
 PlexoHeartbeat = capnpy.load_schema('plexo.schema.plexo_heartbeat').PlexoHeartbeat
+
+
+def ilen(iterable):
+    return reduce(lambda count, element: count + 1, iterable, 0)
 
 
 class GanglionBase(ABC):
@@ -130,20 +135,20 @@ class GanglionMulticast(GanglionBase):
         # First 10 addresses are reserved for the ganglion
         self._reserved_addresses = plist(islice(multicast_cidr_generator, 0, 10))
 
-        self._usable_addresses = set(multicast_cidr_generator)
+        self.host_ip_hash = get_hashed_primary_ip()
         self._usable_addresses_lock = asyncio.Lock()
 
-        self.host_ip = get_hashed_primary_ip()
         # Unique id for the current instance
         self.instance_id = uuid.uuid1().int >> 64
 
         self._heartbeats = pmap()
         self._heartbeats_lock = asyncio.Lock()
+        self._num_peers = 0
 
         asyncio.ensure_future(self._startup(), loop=loop)
 
     async def _heartbeat_loop(self):
-        host_ip = self.host_ip
+        host_ip_hash = self.host_ip_hash
         instance_id = self.instance_id
         try:
             half_interval = self.heartbeat_interval_seconds/2
@@ -152,23 +157,39 @@ class GanglionMulticast(GanglionBase):
             logging.error(e)
             random_sleep_time = self.heartbeat_interval_seconds
 
+        logging.debug("GanglionMulticast:{}:random_sleep_time - {}".format(instance_id, random_sleep_time))
+
         while True:
             try:
-                logging.debug("Sending heartbeat from host: {}, instance: {}".format(host_ip, instance_id))
-                await self.transmit(PlexoHeartbeat(host_ip=host_ip, instance_id=instance_id))
-                await asyncio.sleep(random_sleep_time)
+                logging.debug("GanglionMulticast:{}:Sending heartbeat".format(instance_id))
+                heartbeat = PlexoHeartbeat(
+                    host_ip_hash=host_ip_hash, instance_id=instance_id
+                )
+                await self.transmit(heartbeat)
             except Exception as e:
                 logging.error(e)
+            finally:
+                await asyncio.sleep(random_sleep_time)
 
     async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat):
-        host_info = self.heartbeat_tuple(heartbeat)
-        logging.debug("Received heartbeat from host: {}, instance: {}".format(*host_info))
+        heartbeat_interval_seconds = self.heartbeat_interval_seconds
+        host_info = self.heartbeat_host(heartbeat)
+        logging.debug(
+            "GanglionMulticast:{}:Received heartbeat from host: {}, instance: {}".format(self.instance_id, *host_info)
+        )
         async with self._heartbeats_lock:
+            current_time = timer()
             self._heartbeats = self._heartbeats.set(host_info, timer())
 
+            self._num_peers = ilen(filter(
+                lambda heartbeat_time: current_time - heartbeat_time <= heartbeat_interval_seconds,
+                self._heartbeats.values()
+            ))
+            logging.debug("GanglionMulticast:{}:num_peers - {}".format(self.instance_id, self._num_peers))
+
     @staticmethod
-    def heartbeat_tuple(heartbeat: PlexoHeartbeat):
-        return heartbeat.host_ip, heartbeat.instance_id
+    def heartbeat_host(heartbeat: PlexoHeartbeat):
+        return heartbeat.host_ip_hash, heartbeat.instance_id
 
     async def _startup(self):
         await self.create_synapse(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
