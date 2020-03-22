@@ -119,25 +119,11 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
             self._zmq_context = zmq.asyncio.Context()
         return self._zmq_context
 
-    @property
-    def socket_pub(self):
-        if not self._socket_pub:
-            self._create_socket_pub()
-
-        return self._socket_pub
-
     def _create_socket_pub(self):
         logging.debug("SynapseZmqIPC:{}:Creating publisher".format(self.topic))
         # noinspection PyUnresolvedReferences
         self._socket_pub = self.zmq_context.socket(zmq.PUB, io_loop=self._loop)
         self._socket_pub.connect(self.connection_string)
-
-    @property
-    def socket_sub(self):
-        if not self._socket_sub:
-            self._create_socket_sub()
-
-        return self._socket_sub
 
     def _create_socket_sub(self):
         logging.debug("SynapseZmqIPC:{}:Creating subscription".format(self.topic))
@@ -147,8 +133,15 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
         self._socket_sub.bind(self.connection_string)
 
+    @property
+    def socket_sub(self):
+        if not self._socket_sub:
+            self._create_socket_sub()
+
+        return self._socket_sub
+
     async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        return await self.socket_pub.send(data)
+        return await self._socket_pub.send(data)
 
     def start_recv_loop_if_needed(self):
         if len(self.receptors):
@@ -222,25 +215,11 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             self._zmq_context = zmq.asyncio.Context()
         return self._zmq_context
 
-    @property
-    def socket_pub(self):
-        if not self._socket_pub:
-            self._create_socket_pub()
-
-        return self._socket_pub
-
     def _create_socket_pub(self):
         logging.debug("SynapseZmqEPGM:{}:Creating publisher".format(self.topic))
         # noinspection PyUnresolvedReferences
         self._socket_pub = self.zmq_context.socket(zmq.PUB, io_loop=self._loop)
         self._socket_pub.connect(self.connection_string)
-
-    @property
-    def socket_sub(self):
-        if not self._socket_sub:
-            self._create_socket_sub()
-
-        return self._socket_sub
 
     def _create_socket_sub(self):
         logging.debug("SynapseZmqEPGM:{}:Creating subscription".format(self.topic))
@@ -250,8 +229,15 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
         self._socket_sub.bind(self.connection_string)
 
+    @property
+    def socket_sub(self):
+        if not self._socket_sub:
+            self._create_socket_sub()
+
+        return self._socket_sub
+
     async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
-        return await self.socket_pub.send(data)
+        return await self._socket_pub.send(data)
 
     def start_recv_loop_if_needed(self):
         if len(self.receptors):
