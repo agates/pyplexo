@@ -244,7 +244,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
 
         while True:
             try:
-                data = await socket_sub.recv()
+                data = (await socket_sub.recv_multipart())[1]
                 await asyncio.wait([receptor(data) for receptor in self.receptors], loop=loop)
             except Exception as e:
                 logging.error("SynapseZmqEPGM:{}:_recv_loop: {}".format(topic, e))
