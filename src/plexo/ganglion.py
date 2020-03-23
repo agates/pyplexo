@@ -175,7 +175,7 @@ class GanglionMulticast(GanglionBase):
         heartbeat_interval_seconds = self.heartbeat_interval_seconds
         host_info = self.heartbeat_host(heartbeat)
         logging.debug(
-            "GanglionMulticast:{}:Received heartbeat from host: {}, instance: {}".format(self.instance_id, *host_info)
+            "GanglionMulticast:{}:Received heartbeat from host: {}".format(self.instance_id, *host_info)
         )
         async with self._heartbeats_lock:
             current_time = timer()
