@@ -172,20 +172,29 @@ class GanglionMulticast(GanglionBase):
                 await asyncio.sleep(random_sleep_time)
 
     async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat):
-        heartbeat_interval_seconds = self.heartbeat_interval_seconds
+
         host_info = self.heartbeat_host(heartbeat)
         logging.debug(
             "GanglionMulticast:{}:Received heartbeat from host: {}".format(self.instance_id, *host_info)
         )
         async with self._heartbeats_lock:
-            current_time = timer()
             self._heartbeats = self._heartbeats.set(host_info, timer())
 
-            self._num_peers = ilen(filter(
-                lambda heartbeat_time: current_time - heartbeat_time <= heartbeat_interval_seconds,
-                self._heartbeats.values()
-            ))
-            logging.debug("GanglionMulticast:{}:num_peers - {}".format(self.instance_id, self._num_peers))
+    async def _num_peers_loop(self):
+        heartbeat_interval_seconds = self.heartbeat_interval_seconds
+
+        while True:
+            try:
+                current_time = timer()
+                self._num_peers = ilen(filter(
+                    lambda heartbeat_time: current_time - heartbeat_time <= heartbeat_interval_seconds,
+                    self._heartbeats.values()
+                ))
+                logging.debug("GanglionMulticast:{}:num_peers - {}".format(self.instance_id, self._num_peers))
+            except Exception as e:
+                logging.error(e)
+            finally:
+                await asyncio.sleep(heartbeat_interval_seconds)
 
     @staticmethod
     def heartbeat_host(heartbeat: PlexoHeartbeat):
@@ -195,9 +204,9 @@ class GanglionMulticast(GanglionBase):
         await self.create_synapse(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
         await self.react(PlexoHeartbeat, self._heartbeat_reaction, PlexoHeartbeat.loads)
         await self.update_transmitter(PlexoHeartbeat, PlexoHeartbeat.dumps)
-        self._add_task(self._loop.create_task(
-            self._heartbeat_loop()
-        ))
+        self._add_task(self._loop.create_task(self._heartbeat_loop()))
+        self._add_task(self._loop.create_task(self._num_peers_loop()))
+
 
     async def create_synapse(self, _type: Type,
                              reserved_address: ReservedMulticastAddress = None):
