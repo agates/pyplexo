@@ -182,6 +182,7 @@ class GanglionMulticast(GanglionBase):
 
     async def _num_peers_loop(self):
         heartbeat_interval_seconds = self.heartbeat_interval_seconds
+        check_seconds = heartbeat_interval_seconds / 2
 
         while True:
             try:
@@ -194,7 +195,7 @@ class GanglionMulticast(GanglionBase):
             except Exception as e:
                 logging.error(e)
             finally:
-                await asyncio.sleep(heartbeat_interval_seconds)
+                await asyncio.sleep(check_seconds)
 
     @staticmethod
     def heartbeat_host(heartbeat: PlexoHeartbeat):
