@@ -136,6 +136,7 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
         return self._socket_sub
 
     async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
+        # noinspection PyUnresolvedReferences
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
         return await self._socket_pub.send(data)
 
@@ -217,7 +218,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
         self._socket_sub = self._zmq_context.socket(zmq.SUB, io_loop=self._loop)
         # noinspection PyUnresolvedReferences
         self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, self.topic)
-        self._socket_sub.connect(self.connection_string)
+        self._socket_sub.bind(self.connection_string)
 
     @property
     def socket_sub(self):
@@ -227,6 +228,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
         return self._socket_sub
 
     async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
+        # noinspection PyUnresolvedReferences
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
         return await self._socket_pub.send(data)
 
