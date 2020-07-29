@@ -38,7 +38,7 @@ def get_hashed_primary_ip():
 
 
 def get_machine_id():
-    with open("/var/lib/dbus/machine-id", "rb") as machine_id_file:
+    with open("/etc/machine-id", "rb") as machine_id_file:
         machine_id_hex = machine_id_file.read()
     return machine_id_hex.rstrip()
 
