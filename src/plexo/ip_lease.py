@@ -14,7 +14,6 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import ipaddress
-import random
 from typing import Union
 
 from pyrsistent import pmap
