@@ -14,6 +14,9 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+class ConsensusNotReached(RuntimeError):
+    """Raise when a multicast ganglion cannot come to a consensus for a type"""
+
 
 class IpLeaseExists(RuntimeError):
     """Raise when an ip_address is already leased"""

@@ -31,7 +31,7 @@ import capnpy
 from plexo.timer import Timer
 from pyrsistent import plist, pmap, pdeque, pvector
 
-from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound
+from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound, ConsensusNotReached
 from plexo.ip_lease import IpLeaseManager
 from plexo.transmitter import create_transmitter
 from plexo.typing import UnencodedDataType
@@ -559,7 +559,7 @@ class GanglionMulticast(GanglionBase):
         if approvals_num >= half_num_peers:
             return multicast_address
         else:
-            raise Exception("Consensus could not be agreed upon for the proposal.")
+            raise ConsensusNotReached("Consensus could not be agreed upon for the proposal.")
 
     async def acquire_address_for_type(self, type_name: str) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
         address = None
@@ -571,7 +571,7 @@ class GanglionMulticast(GanglionBase):
 
             try:
                 address = await self._get_address_from_consensus(type_name)
-            except PreparationRejection:
+            except (PreparationRejection, ConsensusNotReached):
                 pass
             except Exception as e:
                 logging.error("Unable to acquire new address for type {}".format(type_name))
