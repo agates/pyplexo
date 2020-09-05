@@ -103,7 +103,7 @@ class GanglionBase(ABC):
         if type_name_bytes not in self._synapses:
             try:
                 return await self.create_synapse_by_name(type_name)
-            except:
+            except SynapseExists:
                 pass
 
         return self._synapses[type_name_bytes]
@@ -514,7 +514,7 @@ class GanglionMulticast(GanglionBase):
                           self.instance_id, preparation, self._num_peers, half_num_peers, len(promises), rejections_num)
                       )
         if len(promises) < half_num_peers or rejections_num > half_num_peers:
-            raise Exception("Preparation for type {} rejected".format(type_name))
+            raise Exception("Preparation for type {} rejected: {}".format(type_name, preparation))
 
         promises_with_data = pvector(promise for promise in promises if promise.multicast_ip is not None)
         if len(promises_with_data):
@@ -558,12 +558,12 @@ class GanglionMulticast(GanglionBase):
         type_name_bytes = type_name.encode("UTF-8")
         while address is None:
             if type_name_bytes in self._synapses:
-                raise ValueError("Type {} already has an address".format(type_name))
+                raise SynapseExists("Synapse for {} already exists.".format(type_name))
 
             try:
                 address = await self._get_address_from_consensus(type_name)
-            except:
-                pass
+            except Exception as e:
+                logging.debug("Unable to acquire new address for type {}: {}".format(type_name, e))
 
         return address
 
