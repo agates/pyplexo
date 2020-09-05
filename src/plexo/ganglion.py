@@ -101,7 +101,10 @@ class GanglionBase(ABC):
         type_name = _type.__name__
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes not in self._synapses:
-            return await self.create_synapse_by_name(type_name)
+            try:
+                return await self.create_synapse_by_name(type_name)
+            except:
+                pass
 
         return self._synapses[type_name_bytes]
 
@@ -515,11 +518,21 @@ class GanglionMulticast(GanglionBase):
         else:
             raise Exception("Consensus could not be agreed upon for the proposal.")
 
-    async def acquire_address_for_type(self, type_name: str):
-        if type_name.encode("UTF-8") in self._synapses:
-            raise ValueError("Type {} already has an address".format(type_name))
+    async def acquire_address_for_type(self, type_name: str) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
+        address = None
 
-        return await self._get_address_from_consensus(type_name)
+        type_name_bytes = type_name.encode("UTF-8")
+        while address is None:
+            if type_name_bytes in self._synapses:
+                raise ValueError("Type {} already has an address".format(type_name))
+
+            try:
+                address = await self._get_address_from_consensus(type_name)
+            except:
+                pass
+
+        return address
+
 
     async def create_synapse_by_name(self, type_name: str,
                                      reserved_address: ReservedMulticastAddress = None,

@@ -29,14 +29,14 @@ class Foo:
     message: str
 
 
-async def send_foo_hello_str(transmitter):
+async def send_foo_hello_str(ganglion):
     i = 1
     foo = Foo
     while True:
         start_time = timer()
         foo.message = "Hello, Plexo+Multicast {} …".format(i)
         logging.info("Sending Foo: {}".format(foo))
-        await transmitter(foo)
+        await ganglion.transmit(foo)
         i += 1
         await asyncio.sleep(1-(start_time-timer()))
 
@@ -52,9 +52,8 @@ def run(loop=None):
                                  heartbeat_interval_seconds=10,
                                  loop=loop)
 
-    transmitter = await ganglion.update_transmitter(Foo, pickle.dumps)
-
-    loop.create_task(send_foo_hello_str(transmitter))
+    loop.create_task(ganglion.update_transmitter(Foo, pickle.dumps))
+    loop.create_task(send_foo_hello_str(ganglion))
 
     if not loop.is_running():  # pragma: no cover
         try:
