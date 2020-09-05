@@ -270,8 +270,8 @@ class GanglionMulticast(GanglionBase):
                 # instance will make newer proposal
                 # promise not to accept any older proposals, sending current known value if possible
                 current_multicast_ip = current_proposal.multicast_ip if current_proposal else None
-                current_instance_id = current_proposal.instance_id if current_proposal else None
-                current_proposal_id = current_proposal.proposal_id if current_proposal else None
+                current_instance_id = current_proposal.instance_id if current_proposal else 0
+                current_proposal_id = current_proposal.proposal_id if current_proposal else 0
                 promise = PlexoPromise(multicast_ip=current_multicast_ip, accepted_instance_id=current_instance_id,
                                        accepted_proposal_id=current_proposal_id, instance_id=preparation.instance_id,
                                        proposal_id=preparation.proposal_id, type_name=preparation.type_name)
