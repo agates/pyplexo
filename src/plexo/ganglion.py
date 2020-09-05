@@ -509,6 +509,10 @@ class GanglionMulticast(GanglionBase):
                 self._preparation_rejections = self._preparation_rejections.discard(type_name_bytes)
 
         half_num_peers = self._num_peers / 2
+        logging.debug("GanglionMulticast:{}:_get_address_from_consensus:{}:"
+                      "num_peers: {}, half_num_peers: {}, num_promises: {}, num_rejections: {}".format(
+                          self.instance_id, preparation, self._num_peers, half_num_peers, len(promises), rejections_num)
+                      )
         if len(promises) < half_num_peers or rejections_num > half_num_peers:
             raise Exception("Preparation for type {} rejected".format(type_name))
 
