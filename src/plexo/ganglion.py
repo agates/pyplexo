@@ -418,6 +418,7 @@ class GanglionMulticast(GanglionBase):
         await self.react(PlexoApproval, self._approval_reaction, PlexoApproval.loads, ignore_startup=True)
         await self.update_transmitter(PlexoApproval, PlexoApproval.dumps)
 
+        await asyncio.sleep(self.heartbeat_interval_seconds)
         self._startup_done = True
 
     async def _send_preparation(self, type_name: str):
