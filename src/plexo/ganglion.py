@@ -95,10 +95,9 @@ class GanglionBase(ABC):
     async def create_synapse_by_name(self, type_name: str): ...
 
     @abstractmethod
-    async def create_synapse(self, data: UnencodedDataType): ...
+    async def create_synapse(self, _type: Type): ...
 
-    async def get_synapse(self, data: UnencodedDataType):
-        _type = type(data)
+    async def get_synapse(self, _type: Type):
         type_name = _type.__name__
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes not in self._synapses:
@@ -106,10 +105,9 @@ class GanglionBase(ABC):
 
         return self._synapses[type_name_bytes]
 
-    async def update_transmitter(self, data: UnencodedDataType,
+    async def update_transmitter(self, _type: Type,
                                  encoder: Callable[[UnencodedDataType], ByteString]):
-        _type = type(data)
-        synapse = await self.get_synapse(data)
+        synapse = await self.get_synapse(_type)
 
         transmitter = create_transmitter((synapse,), encoder, loop=self._loop)
 
@@ -128,7 +126,6 @@ class GanglionBase(ABC):
     async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
                     decoder: Callable[[ByteString], UnencodedDataType]):
-
         synapse = await self.get_synapse(data)
         await synapse.update_receptors((create_receptor(reactants=(reactant,), decoder=decoder, loop=self._loop),))
 
@@ -550,10 +547,9 @@ class GanglionMulticast(GanglionBase):
 
         return synapse
 
-    async def create_synapse(self, data: UnencodedDataType,
+    async def create_synapse(self, _type: Type,
                              reserved_address: ReservedMulticastAddress = None,
                              multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
-        _type = type(data)
         return await self.create_synapse_by_name(_type.__name__, reserved_address, multicast_address)
 
     async def create_or_update_synapse_by_name(self, type_name: str,
