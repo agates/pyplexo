@@ -443,9 +443,8 @@ class GanglionMulticast(GanglionBase):
             new_proposal_id = current_timestamp_nanoseconds()
             try:
                 proposal = self._proposals[type_name_bytes]
-                new_proposal = PlexoProposal.loads(proposal.dumps())
-                new_proposal.proposal_id = new_proposal_id
-                new_proposal.instance_id = instance_id
+                new_proposal = PlexoProposal(instance_id=instance_id, proposal_id=new_proposal_id,
+                                             type_name=proposal.type_name, multicast_ip=proposal.multicast_ip)
                 if not proposal_is_newer(proposal, new_proposal):
                     raise Exception("Newer proposal for {} already exists".format(type_name))
             except KeyError:
