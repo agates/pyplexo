@@ -309,6 +309,8 @@ class GanglionMulticast(GanglionBase):
                                                              self._num_peers))
         if new_promises_num >= self._num_peers:
             # All of promises received, no reason to wait any longer
+            logging.debug("GanglionMulticast:{}:_promise_reaction:{}:"
+                          "All of promises received, cancelling timer".format(self.instance_id, promise))
             async with self._preparation_timers_lock:
                 try:
                     self._preparation_timers[type_name_bytes].cancel()
@@ -336,8 +338,10 @@ class GanglionMulticast(GanglionBase):
         logging.debug("GanglionMulticast:{}:_rejection_reaction:{}:"
                       "num_rejections {}, num_peers {}".format(self.instance_id, rejection, new_rejections_num,
                                                                self._num_peers))
-        if new_rejections_num >= self._num_peers:
+        if new_rejections_num > self._num_peers / 2:
             # Majority of rejections received, no reason to wait any longer
+            logging.debug("GanglionMulticast:{}:_rejection_reaction:{}:"
+                          "Majority of rejections received, cancelling timer".format(self.instance_id, rejection))
             async with self._preparation_timers_lock:
                 try:
                     self._preparation_timers[type_name_bytes].cancel()
