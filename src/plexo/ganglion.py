@@ -148,7 +148,7 @@ class ReservedMulticastAddress(Enum):
 
 
 def proposal_is_newer(old_proposal, new_proposal):
-    return old_proposal.proposal_id < new_proposal.proposal_id and old_proposal.instance_id < new_proposal.instance_id
+    return old_proposal.proposal_id < new_proposal.proposal_id and old_proposal.instance_id <= new_proposal.instance_id
 
 
 def newest_accepted_proposal(p1, p2):
@@ -480,12 +480,12 @@ class GanglionMulticast(GanglionBase):
         heartbeat_interval_seconds = self.heartbeat_interval_seconds
         type_name_bytes = type_name.encode("UTF-8")
 
+        preparation = await self._send_preparation(type_name)
+
         preparation_timer = Timer(heartbeat_interval_seconds)
         preparation_timer.start()
         async with self._preparation_timers_lock:
             self._preparation_timers = self._preparation_timers.set(type_name_bytes, preparation_timer)
-
-        preparation = await self._send_preparation(type_name)
 
         try:
             await preparation_timer.wait()
@@ -524,12 +524,12 @@ class GanglionMulticast(GanglionBase):
         else:
             multicast_address = self._ip_lease_manager.get_address()
 
+        proposal = await self._send_proposal(preparation, multicast_address)
+
         proposal_timer = Timer(heartbeat_interval_seconds)
         proposal_timer.start()
         async with self._proposal_timers_lock:
             self._proposal_timers = self._proposal_timers.set(type_name_bytes, proposal_timer)
-
-        proposal = await self._send_proposal(preparation, multicast_address)
 
         try:
             await proposal_timer.wait()

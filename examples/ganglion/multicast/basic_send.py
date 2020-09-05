@@ -19,6 +19,7 @@ import logging
 import pickle
 from timeit import default_timer as timer
 
+from plexo.exceptions import TransmitterNotFound
 from plexo.ganglion import GanglionMulticast
 
 test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
@@ -35,8 +36,11 @@ async def send_foo_hello_str(ganglion):
     while True:
         start_time = timer()
         foo.message = "Hello, Plexo+Multicast {} …".format(i)
-        logging.info("Sending Foo: {}".format(foo))
-        await ganglion.transmit(foo)
+        logging.info("Sending Foo with message: {}".format(foo.message))
+        try:
+            await ganglion.transmit(foo)
+        except TransmitterNotFound as e:
+            logging.error(e, exc_info=True)
         i += 1
         await asyncio.sleep(1-(start_time-timer()))
 
