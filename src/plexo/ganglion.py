@@ -305,7 +305,8 @@ class GanglionMulticast(GanglionBase):
             self._preparation_promises = self._preparation_promises.set(type_name_bytes, new_promises)
 
         logging.debug("GanglionMulticast:{}:_promise_reaction:{}:"
-                      "num_promises {}".format(self.instance_id, promise, new_promises_num))
+                      "num_promises {}, num_peers {}".format(self.instance_id, promise, new_promises_num,
+                                                             self._num_peers))
         if new_promises_num >= self._num_peers:
             # All of promises received, no reason to wait any longer
             async with self._preparation_timers_lock:
@@ -333,7 +334,8 @@ class GanglionMulticast(GanglionBase):
             self._preparation_rejections = self._preparation_rejections.set(type_name_bytes, new_rejections_num)
 
         logging.debug("GanglionMulticast:{}:_rejection_reaction:{}:"
-                      "num_rejections {}".format(self.instance_id, rejection, new_rejections_num))
+                      "num_rejections {}, num_peers {}".format(self.instance_id, rejection, new_rejections_num,
+                                                               self._num_peers))
         if new_rejections_num >= self._num_peers:
             # Majority of rejections received, no reason to wait any longer
             async with self._preparation_timers_lock:
@@ -422,7 +424,7 @@ class GanglionMulticast(GanglionBase):
         await self.react(PlexoApproval, self._approval_reaction, PlexoApproval.loads, ignore_startup=True)
         await self.update_transmitter(PlexoApproval, PlexoApproval.dumps)
 
-        await asyncio.sleep(self.heartbeat_interval_seconds)
+        await asyncio.sleep(self.heartbeat_interval_seconds * 1.5)
         self._startup_done = True
 
     async def _send_preparation(self, type_name: str):
