@@ -92,19 +92,24 @@ class GanglionBase(ABC):
         self._tasks = self._tasks.append(task)
 
     @abstractmethod
-    async def create_synapse(self, type_name: str): ...
+    async def create_synapse_by_name(self, type_name: str): ...
 
-    async def get_synapse(self, _type: Type):
+    @abstractmethod
+    async def create_synapse(self, data: UnencodedDataType): ...
+
+    async def get_synapse(self, data: UnencodedDataType):
+        _type = type(data)
         type_name = _type.__name__
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes not in self._synapses:
-            return await self.create_synapse(type_name)
+            return await self.create_synapse_by_name(type_name)
 
         return self._synapses[type_name_bytes]
 
-    async def update_transmitter(self, _type: Type,
+    async def update_transmitter(self, data: UnencodedDataType,
                                  encoder: Callable[[UnencodedDataType], ByteString]):
-        synapse = await self.get_synapse(_type)
+        _type = type(data)
+        synapse = await self.get_synapse(data)
 
         transmitter = create_transmitter((synapse,), encoder, loop=self._loop)
 
@@ -113,21 +118,22 @@ class GanglionBase(ABC):
 
         return transmitter
 
-    def get_transmitter(self, _type: Type):
+    def get_transmitter(self, data: UnencodedDataType):
+        _type = type(data)
         try:
             return self._transmitters[_type]
         except KeyError:
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(_type))
 
-    async def react(self, _type: Type,
+    async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
                     decoder: Callable[[ByteString], UnencodedDataType]):
-        synapse = await self.get_synapse(_type)
+
+        synapse = await self.get_synapse(data)
         await synapse.update_receptors((create_receptor(reactants=(reactant,), decoder=decoder, loop=self._loop),))
 
     async def transmit(self, data: UnencodedDataType):
-        _type = type(data)
-        transmitter = self.get_transmitter(_type)
+        transmitter = self.get_transmitter(data)
 
         return await transmitter(data)
 
@@ -365,7 +371,7 @@ class GanglionMulticast(GanglionBase):
                     self._proposal_timers[type_name_bytes].cancel()
             else:
                 # commit new value
-                await self.create_or_update_synapse(type_name_bytes.decode("UTF-8"))
+                await self.create_or_update_synapse_by_name(type_name_bytes.decode("UTF-8"))
 
     async def _startup(self):
         await self.create_synapse(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
@@ -518,9 +524,9 @@ class GanglionMulticast(GanglionBase):
 
         return await self._get_address_from_consensus(type_name)
 
-    async def create_synapse(self, type_name: str,
-                             reserved_address: ReservedMulticastAddress = None,
-                             multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
+    async def create_synapse_by_name(self, type_name: str,
+                                     reserved_address: ReservedMulticastAddress = None,
+                                     multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
             raise SynapseExists("Synapse for {} already exists.".format(type_name))
@@ -544,12 +550,18 @@ class GanglionMulticast(GanglionBase):
 
         return synapse
 
-    async def create_or_update_synapse(self, type_name: str,
-                                       reserved_address: ReservedMulticastAddress = None,
-                                       multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
+    async def create_synapse(self, data: UnencodedDataType,
+                             reserved_address: ReservedMulticastAddress = None,
+                             multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
+        _type = type(data)
+        return await self.create_synapse_by_name(_type.__name__, reserved_address, multicast_address)
+
+    async def create_or_update_synapse_by_name(self, type_name: str,
+                                               reserved_address: ReservedMulticastAddress = None,
+                                               multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
             # TODO: Update existing synapse
             raise NotImplementedError("Updating an existing synapse is currently not supported: {}".format(type_name))
         else:
-            return await self.create_synapse(type_name, reserved_address, multicast_address)
+            return await self.create_synapse_by_name(type_name, reserved_address, multicast_address)
