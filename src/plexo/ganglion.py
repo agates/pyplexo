@@ -330,7 +330,7 @@ class GanglionMulticast(GanglionBase):
             new_rejections_num = current_rejections_num + 1
             self._preparation_rejections = self._preparation_rejections.set(type_name_bytes, new_rejections_num)
 
-        if new_rejections_num > self._num_peers / 2:
+        if new_rejections_num >= self._num_peers:
             # Majority of rejections received, no reason to wait any longer
             async with self._preparation_timers_lock:
                 try:
