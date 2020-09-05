@@ -438,7 +438,7 @@ class GanglionMulticast(GanglionBase):
         type_name_bytes = type_name.encode("UTF-8")
 
         async with self._proposals_lock:
-            new_proposal_id = current_timestamp_nanoseconds()
+            new_proposal_id = int(current_timestamp_nanoseconds())
             try:
                 proposal = self._proposals[type_name_bytes]
                 new_proposal = PlexoProposal(instance_id=instance_id, proposal_id=new_proposal_id,
