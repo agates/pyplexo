@@ -110,21 +110,22 @@ class GanglionBase(ABC):
 
     async def update_transmitter(self, _type: Type,
                                  encoder: Callable[[UnencodedDataType], ByteString]):
+        type_name = _type.__name__
         synapse = await self.get_synapse(_type)
 
         transmitter = create_transmitter((synapse,), encoder, loop=self._loop)
 
         async with self._transmitters_lock:
-            self._transmitters = self._transmitters.set(_type, transmitter)
+            self._transmitters = self._transmitters.set(type_name, transmitter)
 
         return transmitter
 
     def get_transmitter(self, data: UnencodedDataType):
-        _type = type(data)
+        type_name = type(data).__name__
         try:
-            return self._transmitters[_type]
+            return self._transmitters[type_name]
         except KeyError:
-            raise TransmitterNotFound("Transmitter for {} does not exist.".format(_type))
+            raise TransmitterNotFound("Transmitter for {} does not exist.".format(type_name))
 
     async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
@@ -148,12 +149,19 @@ class ReservedMulticastAddress(Enum):
 
 
 def proposal_is_newer(old_proposal, new_proposal):
-    return old_proposal.proposal_id < new_proposal.proposal_id and old_proposal.instance_id <= new_proposal.instance_id
+    if old_proposal.proposal_id < new_proposal.proposal_id:
+        return True
+    elif old_proposal.proposal_id == new_proposal.proposal_id:
+        return old_proposal.instance_id <= new_proposal.instance_id
+    else:
+        return False
 
 
 def newest_accepted_proposal(p1, p2):
-    if p1.accepted_proposal_id > p2.accepted_proposal_id and p1.accepted_instance_id > p2.accepted_instance_id:
+    if p1.accepted_proposal_id > p2.accepted_proposal_id:
         return p1
+    elif p1.accepted_proposal_id == p2.accepted_proposal_id:
+        return p1 if p1.accepted_instance_id >= p2.accepted_instance_id else p2
     else:
         return p2
 
@@ -500,14 +508,14 @@ class GanglionMulticast(GanglionBase):
                 promises = self._preparation_promises[type_name_bytes]
             except KeyError:
                 promises = []
-                self._preparation_promises = self._preparation_promises.discard(type_name_bytes)
+            self._preparation_promises = self._preparation_promises.discard(type_name_bytes)
 
         async with self._preparation_rejections_lock:
             try:
                 rejections_num = self._preparation_rejections[type_name_bytes]
             except KeyError:
                 rejections_num = 0
-                self._preparation_rejections = self._preparation_rejections.discard(type_name_bytes)
+            self._preparation_rejections = self._preparation_rejections.discard(type_name_bytes)
 
         half_num_peers = self._num_peers / 2
         logging.debug("GanglionMulticast:{}:_get_address_from_consensus:{}:"
