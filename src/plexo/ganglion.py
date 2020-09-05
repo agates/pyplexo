@@ -264,11 +264,9 @@ class GanglionMulticast(GanglionBase):
             except KeyError:
                 current_proposal = None
 
-            preparation_is_newer = proposal_is_newer(current_proposal, preparation)
             logging.debug("GanglionMulticast:{}:_preparation_reaction:{}:"
-                          "current_proposal {}, preparation_is_newer {}".format(self.instance_id, preparation,
-                                                                                current_proposal, preparation_is_newer))
-            if not current_proposal or preparation_is_newer:
+                          "current_proposal {}".format(self.instance_id, preparation, current_proposal))
+            if not current_proposal or proposal_is_newer(current_proposal, preparation):
                 # instance will make newer proposal
                 # promise not to accept any older proposals, sending current known value if possible
                 current_multicast_ip = current_proposal.multicast_ip if current_proposal else None
