@@ -56,7 +56,7 @@ class IpLeaseManager:
 
         return self._ip_lease_map[ip_address]
 
-    def get_address(self):
+    def get_address(self) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
         try:
             ip_address = self._available_ips.pop()
         except KeyError:

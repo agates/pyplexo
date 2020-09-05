@@ -13,3 +13,48 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import asyncio
+import ipaddress
+import logging
+import pickle
+
+from plexo.ganglion import GanglionMulticast
+
+test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
+test_port = 5561
+
+
+class Foo:
+    string: str
+
+
+async def _foo_reaction(f: Foo):
+    logging.info("Received Foo: {}".format(f))
+
+
+def run(loop=None):
+    logging.basicConfig(level=logging.DEBUG)
+
+    if not loop:  # pragma: no cover
+        loop = asyncio.new_event_loop()
+
+    ganglion = GanglionMulticast(multicast_cidr=test_multicast_cidr,
+                                 port=test_port,
+                                 heartbeat_interval_seconds=10,
+                                 loop=loop)
+
+    loop.create_task(ganglion.react(Foo, _foo_reaction, pickle.loads))
+
+    if not loop.is_running():  # pragma: no cover
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            loop.close()
+
+    ganglion.close()
+
+
+if __name__ == "__main__":
+    run()

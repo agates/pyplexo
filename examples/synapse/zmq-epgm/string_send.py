@@ -33,7 +33,7 @@ async def send_hello_str(transmitter):
     i = 1
     while True:
         start_time = timer()
-        message = "Hello, DTS+EPGM {} …".format(i)
+        message = "Hello, Plexo+EPGM {} …".format(i)
         logging.info("Sending message: {}".format(message))
         await transmitter(message)
         i += 1
