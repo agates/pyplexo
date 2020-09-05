@@ -304,6 +304,8 @@ class GanglionMulticast(GanglionBase):
             new_promises_num = len(new_promises)
             self._preparation_promises = self._preparation_promises.set(type_name_bytes, new_promises)
 
+        logging.debug("GanglionMulticast:{}:_promise_reaction:{}:"
+                      "num_promises {}".format(self.instance_id, promise, new_promises_num))
         if new_promises_num >= self._num_peers:
             # All of promises received, no reason to wait any longer
             async with self._preparation_timers_lock:
@@ -330,6 +332,8 @@ class GanglionMulticast(GanglionBase):
             new_rejections_num = current_rejections_num + 1
             self._preparation_rejections = self._preparation_rejections.set(type_name_bytes, new_rejections_num)
 
+        logging.debug("GanglionMulticast:{}:_rejection_reaction:{}:"
+                      "num_rejections {}".format(self.instance_id, rejection, new_rejections_num))
         if new_rejections_num >= self._num_peers:
             # Majority of rejections received, no reason to wait any longer
             async with self._preparation_timers_lock:
@@ -375,7 +379,7 @@ class GanglionMulticast(GanglionBase):
             new_approvals_num = current_approvals_num + 1
             self._proposal_approvals = self._proposal_approvals.set(type_proposal_key, new_approvals_num)
 
-        logging.debug("GanglionMulticast:{}:Approval:{}:"
+        logging.debug("GanglionMulticast:{}:_approval_reaction:{}:"
                       "num_approvals {}".format(self.instance_id, approval, new_approvals_num))
         if new_approvals_num >= self._num_peers / 2:
             if approval.instance_id == self.instance_id:
