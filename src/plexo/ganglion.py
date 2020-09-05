@@ -31,7 +31,7 @@ import capnpy
 from plexo.timer import Timer
 from pyrsistent import plist, pmap, pdeque, pvector
 
-from plexo.exceptions import SynapseExists, TransmitterNotFound
+from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound
 from plexo.ip_lease import IpLeaseManager
 from plexo.transmitter import create_transmitter
 from plexo.typing import UnencodedDataType
@@ -264,7 +264,11 @@ class GanglionMulticast(GanglionBase):
             except KeyError:
                 current_proposal = None
 
-            if not current_proposal or proposal_is_newer(current_proposal, preparation):
+            preparation_is_newer = proposal_is_newer(current_proposal, preparation)
+            logging.debug("GanglionMulticast:{}:_preparation_reaction:{}:"
+                          "current_proposal {}, preparation_is_newer {}".format(self.instance_id, preparation,
+                                                                                current_proposal, preparation_is_newer))
+            if not current_proposal or preparation_is_newer:
                 # instance will make newer proposal
                 # promise not to accept any older proposals, sending current known value if possible
                 current_multicast_ip = current_proposal.multicast_ip if current_proposal else None
@@ -276,13 +280,13 @@ class GanglionMulticast(GanglionBase):
                 proposal = PlexoProposal(instance_id=preparation.instance_id, proposal_id=preparation.proposal_id,
                                          type_name=preparation.type_name, multicast_ip=current_multicast_ip)
                 self._proposals = self._proposals.set(proposal.type_name, proposal)
-                logging.debug("GanglionMulticast:{}:Sending promise: ".format(promise))
+                logging.debug("GanglionMulticast:{}:Sending promise: {}".format(self.instance_id, promise))
                 await self.transmit(promise)
             else:
                 # send a rejection
                 rejection = PlexoRejection(instance_id=preparation.instance_id, proposal_id=preparation.proposal_id,
                                            type_name=preparation.type_name)
-                logging.debug("GanglionMulticast:{}:Sending rejection: ".format(rejection))
+                logging.debug("GanglionMulticast:{}:Sending rejection: {}".format(self.instance_id, rejection))
                 await self.transmit(rejection)
 
     async def _promise_reaction(self, promise: PlexoPromise):
@@ -514,7 +518,7 @@ class GanglionMulticast(GanglionBase):
                           self.instance_id, preparation, self._num_peers, half_num_peers, len(promises), rejections_num)
                       )
         if len(promises) < half_num_peers or rejections_num > half_num_peers:
-            raise Exception("Preparation for type {} rejected: {}".format(type_name, preparation))
+            raise PreparationRejection("Preparation for type {} rejected: {}".format(type_name, preparation))
 
         promises_with_data = pvector(promise for promise in promises if promise.multicast_ip is not None)
         if len(promises_with_data):
@@ -562,6 +566,8 @@ class GanglionMulticast(GanglionBase):
 
             try:
                 address = await self._get_address_from_consensus(type_name)
+            except PreparationRejection:
+                pass
             except Exception as e:
                 logging.error("Unable to acquire new address for type {}".format(type_name))
                 logging.error(e, exc_info=True)

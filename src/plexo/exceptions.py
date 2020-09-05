@@ -31,6 +31,10 @@ class IpsExhausted(RuntimeError):
     """Raise when no more ip_addresses are available"""
 
 
+class PreparationRejection(RuntimeError):
+    """Raise when a preparation is rejected by the consensus"""
+
+
 class SynapseExists(RuntimeError):
     """Raise when a synapse for a type already exists inside a ganglion"""
 
