@@ -270,14 +270,16 @@ class GanglionMulticast(GanglionBase):
                 current_instance_id = current_proposal.instance_id if current_proposal else None
                 current_proposal_id = current_proposal.proposal_id if current_proposal else None
                 promise = PlexoPromise(multicast_ip=current_multicast_ip, accepted_instance_id=current_instance_id,
-                                       accepted_proposal_id=current_proposal_id, **preparation)
+                                       accepted_proposal_id=current_proposal_id, instance_id=preparation.instance_id,
+                                       proposal_id=preparation.proposal_id, type_name=preparation.type_name)
                 proposal = PlexoProposal(instance_id=preparation.instance_id, proposal_id=preparation.proposal_id,
                                          type_name=preparation.type_name, multicast_ip=current_multicast_ip)
                 self._proposals = self._proposals.set(proposal.type_name, proposal)
                 await self.transmit(promise)
             else:
                 # send a rejection
-                rejection = PlexoRejection(**preparation)
+                rejection = PlexoRejection(instance_id=preparation.instance_id, proposal_id=preparation.proposal_id,
+                                           type_name=preparation.type_name)
                 await self.transmit(rejection)
 
     async def _promise_reaction(self, promise: PlexoPromise):
@@ -344,7 +346,8 @@ class GanglionMulticast(GanglionBase):
 
             self._proposals = self._proposals.set(proposal.type_name, proposal)
 
-        approval = PlexoApproval(**proposal)
+        approval = PlexoApproval(instance_id=proposal.instance_id, proposal_id=proposal.proposal_id,
+                                 type_name=proposal.type_name, multicast_ip=proposal.multicast_ip)
         await self.transmit(approval)
         await self._approval_reaction(approval)
 
