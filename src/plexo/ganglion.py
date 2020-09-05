@@ -324,7 +324,7 @@ class GanglionMulticast(GanglionBase):
                 current_rejections_num = 0
 
             new_rejections_num = current_rejections_num + 1
-            self._preparation_rejections[type_name_bytes] = new_rejections_num
+            self._preparation_rejections = self._preparation_rejections.set(type_name_bytes, new_rejections_num)
 
         if new_rejections_num > self._num_peers / 2:
             # Majority of rejections received, no reason to wait any longer
@@ -366,7 +366,7 @@ class GanglionMulticast(GanglionBase):
                 current_approvals_num = 0
 
             new_approvals_num = current_approvals_num + 1
-            self._proposal_approvals[type_proposal_key] = new_approvals_num
+            self._proposal_approvals = self._proposal_approvals.set(type_proposal_key, new_approvals_num)
 
         if new_approvals_num >= self._num_peers / 2:
             if approval.instance_id == self.instance_id:
