@@ -149,21 +149,13 @@ class ReservedMulticastAddress(Enum):
 
 
 def proposal_is_newer(old_proposal, new_proposal):
-    if old_proposal.proposal_id < new_proposal.proposal_id:
-        return True
-    elif old_proposal.proposal_id == new_proposal.proposal_id:
-        return old_proposal.instance_id <= new_proposal.instance_id
-    else:
-        return False
+    return (old_proposal.proposal_id, old_proposal.instance_id) < (new_proposal.proposal_id, new_proposal.instance_id)
 
 
 def newest_accepted_proposal(p1, p2):
-    if p1.accepted_proposal_id > p2.accepted_proposal_id:
-        return p1
-    elif p1.accepted_proposal_id == p2.accepted_proposal_id:
-        return p1 if p1.accepted_instance_id >= p2.accepted_instance_id else p2
-    else:
-        return p2
+    return (p1
+            if (p1.accepted_proposal_id, p1.accepted_instance_id) > (p2.accepted_proposal_id, p2.accepted_instance_id)
+            else p2)
 
 
 class GanglionMulticast(GanglionBase):
@@ -370,7 +362,7 @@ class GanglionMulticast(GanglionBase):
             if not current_proposal:
                 raise Exception("No promise was made for proposal {}".format(proposal))
 
-            if proposal_is_newer(proposal, current_proposal):
+            if not proposal_is_newer(current_proposal, proposal):
                 raise Exception("A newer proposal was promised {}".format(current_proposal))
 
             self._proposals = self._proposals.set(proposal.type_name, proposal)
