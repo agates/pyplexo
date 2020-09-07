@@ -4,7 +4,7 @@ MAINTAINER Alecks Gates <agates@mail.agates.io>
 RUN apt -qq update \
 && apt -qqy install --no-install-recommends capnproto dbus \
 && rm -rf /var/lib/apt/lists/ \
-&& dbus-uuidgen > /var/lib/dbus/machine-id \
+&& dbus-uuidgen > /etc/machine-id \
 && mkdir -p /opt/app \
 && addgroup --system appuser \
 && adduser --system --home /opt/app --ingroup appuser appuser \

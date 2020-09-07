@@ -430,7 +430,7 @@ class GanglionMulticast(GanglionBase):
         await self.react(PlexoApproval, self._approval_reaction, PlexoApproval.loads, ignore_startup=True)
         await self.update_transmitter(PlexoApproval, PlexoApproval.dumps)
 
-        await asyncio.sleep(self.heartbeat_interval_seconds * 1.5)
+        await asyncio.sleep(self.heartbeat_interval_seconds)
         self._startup_done = True
 
     async def _send_preparation(self, type_name: str):
@@ -605,7 +605,8 @@ class GanglionMulticast(GanglionBase):
 
     async def create_or_update_synapse_by_name(self, type_name: str,
                                                reserved_address: ReservedMulticastAddress = None,
-                                               multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
+                                               multicast_address: Union[ipaddress.IPv4Address,
+                                                                        ipaddress.IPv6Address] = None):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
             # TODO: Update existing synapse
