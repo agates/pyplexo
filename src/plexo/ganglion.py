@@ -552,8 +552,9 @@ class GanglionMulticast(GanglionBase):
 
             try:
                 address = await self._get_address_from_consensus(type_name)
-            except (PreparationRejection, ConsensusNotReached):
-                pass
+            except (PreparationRejection, ConsensusNotReached) as e:
+                logging.debug("Unable to acquire new address for type {}".format(type_name))
+                logging.debug(e, exc_info=True)
             except Exception as e:
                 logging.error("Unable to acquire new address for type {}".format(type_name))
                 logging.error(e, exc_info=True)
