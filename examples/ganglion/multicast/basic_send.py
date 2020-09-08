@@ -32,7 +32,7 @@ class Foo:
 
 async def send_foo_hello_str(ganglion):
     i = 1
-    foo = Foo
+    foo = Foo()
     while True:
         start_time = timer()
         foo.message = "Hello, Plexo+Multicast {} …".format(i)
