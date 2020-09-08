@@ -437,18 +437,7 @@ class GanglionMulticast(GanglionBase):
         instance_id = self.instance_id
         type_name_bytes = type_name.encode("UTF-8")
 
-        async with self._proposals_lock:
-            new_proposal_id = int(current_timestamp_nanoseconds())
-            try:
-                proposal = self._proposals[type_name_bytes]
-                new_proposal = PlexoProposal(instance_id=instance_id, proposal_id=new_proposal_id,
-                                             type_name=proposal.type_name, multicast_ip=proposal.multicast_ip)
-                if not proposal_is_newer(proposal, new_proposal):
-                    raise Exception("Newer proposal for {} already exists".format(type_name))
-            except KeyError:
-                new_proposal = PlexoProposal(instance_id=instance_id, proposal_id=new_proposal_id,
-                                             type_name=type_name_bytes, multicast_ip=None)
-            self._proposals = self._proposals.set(type_name_bytes, new_proposal)
+        new_proposal_id = int(current_timestamp_nanoseconds())
 
         preparation = PlexoPreparation(instance_id=instance_id, proposal_id=new_proposal_id, type_name=type_name_bytes)
         logging.debug("GanglionMulticast:{}:Sending preparation: {}".format(instance_id, preparation))
