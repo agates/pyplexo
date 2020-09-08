@@ -191,21 +191,21 @@ class GanglionMulticast(GanglionBase):
         self._num_peers = 0
 
         self._proposals = pmap()
-        self._proposals_lock = asyncio.Lock()
+        self._proposals_lock = asyncio.Lock(loop=loop)
 
         self._preparation_timers = pmap()
-        self._preparation_timers_lock = asyncio.Lock()
+        self._preparation_timers_lock = asyncio.Lock(loop=loop)
 
         self._preparation_promises = pmap()
-        self._preparation_promises_lock = asyncio.Lock()
+        self._preparation_promises_lock = asyncio.Lock(loop=loop)
         self._preparation_rejections = pmap()
-        self._preparation_rejections_lock = asyncio.Lock()
+        self._preparation_rejections_lock = asyncio.Lock(loop=loop)
 
         self._proposal_timers = pmap()
-        self._proposal_timers_lock = asyncio.Lock()
+        self._proposal_timers_lock = asyncio.Lock(loop=loop)
 
         self._proposal_approvals = pmap()
-        self._proposal_approvals_lock = asyncio.Lock()
+        self._proposal_approvals_lock = asyncio.Lock(loop=loop)
 
         self._startup_done = False
         asyncio.ensure_future(self._startup(), loop=loop)
