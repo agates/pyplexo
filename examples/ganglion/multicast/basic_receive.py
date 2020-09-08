@@ -25,11 +25,11 @@ test_port = 5561
 
 
 class Foo:
-    string: str
+    message: str
 
 
 async def _foo_reaction(f: Foo):
-    logging.info("Received Foo.string: {}".format(f.string))
+    logging.info("Received Foo.string: {}".format(f.message))
 
 
 def run(loop=None):
