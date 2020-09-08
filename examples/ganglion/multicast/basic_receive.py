@@ -29,7 +29,7 @@ class Foo:
 
 
 async def _foo_reaction(f: Foo):
-    logging.info("Received Foo: {}".format(f))
+    logging.info("Received Foo.string: {}".format(f.string))
 
 
 def run(loop=None):
