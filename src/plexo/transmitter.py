@@ -23,7 +23,7 @@ from plexo import SynapseBase, UnencodedDataType
 
 
 def create_transmitter(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                       encoder: Callable[[UnencodedDataType], ByteString],
+                       encoder: Callable[[UnencodedDataType], Union[ByteString, bytes]],
                        loop=None):
     return partial(transmit_encode, pdeque(synapses), encoder, loop=loop)
 
@@ -34,13 +34,13 @@ def create_transmitter_inproc(synapses: Iterable[SynapseBase[UnencodedDataType]]
 
 
 async def transmit(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                   data: Union[ByteString, UnencodedDataType],
+                   data: Union[ByteString, bytes, UnencodedDataType],
                    loop=None):
     return await asyncio.wait([synapse.transmit(data) for synapse in synapses], loop=loop)
 
 
 async def transmit_encode(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                          encoder: Callable[[UnencodedDataType], ByteString],
+                          encoder: Callable[[UnencodedDataType], Union[ByteString, bytes]],
                           data: UnencodedDataType,
                           loop=None):
     return await transmit(synapses, encoder(data), loop=loop)

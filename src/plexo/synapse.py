@@ -31,7 +31,7 @@ from plexo.typing import UnencodedDataType
 
 class SynapseBase(ABC, Generic[UnencodedDataType]):
     def __init__(self, topic: str,
-                 receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]] = (),
+                 receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]] = (),
                  loop=None) -> None:
         self.topic = topic
         self.topic_bytes = topic.encode("UTF-8")
@@ -65,7 +65,7 @@ class SynapseBase(ABC, Generic[UnencodedDataType]):
     def receptors(self):
         return self._receptors
 
-    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]]):
+    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
         async with self._receptors_write_lock:
             self._receptors = self._receptors.update(receptors)
 
@@ -75,7 +75,7 @@ class SynapseBase(ABC, Generic[UnencodedDataType]):
 
 class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
     def __init__(self, topic: str,
-                 receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]] = (),
+                 receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]] = (),
                  directory: Path = None,
                  loop=None) -> None:
         super(SynapseZmqIPC, self).__init__(topic, receptors, loop=loop)
@@ -110,7 +110,7 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
-    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]]):
+    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
         await super(SynapseZmqIPC, self).update_receptors(receptors)
         self.start_recv_loop_if_needed()
 
@@ -135,7 +135,7 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
 
         return self._socket_sub
 
-    async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
+    async def transmit(self, data: Union[ByteString, bytes]) -> Tuple[Set[Future], Set[Future]]:
         # noinspection PyUnresolvedReferences
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
         return await self._socket_pub.send(data)
@@ -167,7 +167,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
                  multicast_address: Union[IPv4Address, IPv6Address],
                  bind_interface: str = None,
                  port: int = 5560,
-                 receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]] = (),
+                 receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]] = (),
                  loop=None) -> None:
         super(SynapseZmqEPGM, self).__init__(topic, receptors, loop=loop)
 
@@ -202,7 +202,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
-    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, UnencodedDataType]], Any]]):
+    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
         await super(SynapseZmqEPGM, self).update_receptors(receptors)
         self.start_recv_loop_if_needed()
 
@@ -227,7 +227,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
 
         return self._socket_sub
 
-    async def transmit(self, data: ByteString) -> Tuple[Set[Future], Set[Future]]:
+    async def transmit(self, data: Union[ByteString, bytes]) -> Tuple[Set[Future], Set[Future]]:
         # noinspection PyUnresolvedReferences
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
         return await self._socket_pub.send(data)

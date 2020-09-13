@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from functools import partial
-from typing import Iterable, Callable, Any, ByteString
+from typing import Iterable, Callable, Any, ByteString, Union
 
 from pyrsistent import pdeque
 
@@ -23,7 +23,7 @@ from plexo import UnencodedDataType
 
 
 def create_receptor(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                    decoder: Callable[[ByteString], UnencodedDataType],
+                    decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType],
                     loop=None):
     return partial(transduce_decode, pdeque(reactants), decoder, loop=loop)
 
@@ -40,7 +40,7 @@ async def transduce(reactants: Iterable[Callable[[UnencodedDataType], Any]],
 
 
 async def transduce_decode(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                           decoder: Callable[[ByteString], UnencodedDataType],
-                           data: ByteString,
+                           decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType],
+                           data: Union[ByteString, bytes],
                            loop=None):
     return await transduce(reactants, decoder(data), loop=loop)

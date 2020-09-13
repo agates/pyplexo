@@ -113,7 +113,7 @@ class GanglionBase(ABC):
         return await self.get_synapse_by_name(type_name)
 
     async def create_transmitter(self, type_name: str, synapse: SynapseBase[UnencodedDataType],
-                                 encoder: Callable[[UnencodedDataType], ByteString]):
+                                 encoder: Callable[[UnencodedDataType], Union[ByteString, bytes]]):
         transmitter = create_transmitter((synapse,), encoder, loop=self._loop)
 
         async with self._transmitters_lock:
@@ -121,11 +121,13 @@ class GanglionBase(ABC):
 
         return transmitter
 
-    async def update_transmitter_by_name(self, type_name: str, encoder: Callable[[UnencodedDataType], ByteString]):
+    async def update_transmitter_by_name(self, type_name: str, encoder: Callable[[UnencodedDataType],
+                                                                                 Union[ByteString, bytes]]):
         synapse = await self.get_synapse_by_name(type_name)
         return await self.create_transmitter(type_name, synapse, encoder)
 
-    async def update_transmitter_by_type(self, _type: Type, encoder: Callable[[UnencodedDataType], ByteString]):
+    async def update_transmitter_by_type(self, _type: Type, encoder: Callable[[UnencodedDataType],
+                                                                              Union[ByteString, bytes]]):
         type_name = _type.__name__
         synapse = await self.get_synapse_by_type(_type)
         return await self.create_transmitter(type_name, synapse, encoder)
@@ -139,7 +141,7 @@ class GanglionBase(ABC):
 
     async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
-                    decoder: Callable[[ByteString], UnencodedDataType]):
+                    decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType]):
         synapse = await self.get_synapse_by_type(data)
         await synapse.update_receptors((create_receptor(reactants=(reactant,), decoder=decoder, loop=self._loop),))
 
@@ -658,12 +660,12 @@ class GanglionMulticast(GanglionBase):
 
     async def _react(self, data: UnencodedDataType,
                      reactant: Callable[[UnencodedDataType], Any],
-                     decoder: Callable[[ByteString], UnencodedDataType]):
+                     decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType]):
         return await super(GanglionMulticast, self).react(data=data, reactant=reactant, decoder=decoder)
 
     async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
-                    decoder: Callable[[ByteString], UnencodedDataType]):
+                    decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType]):
         await self.wait_startup()
         return await self._react(data, reactant, decoder)
 
