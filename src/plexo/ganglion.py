@@ -500,12 +500,12 @@ class GanglionMulticast(GanglionBase):
         #   a) if any promise had a value, use value from the highest returned proposal id
         #   b) if all promises had null values, choose a new value
         # 4) Pending quorum of approvals, commit value
-        heartbeat_interval_seconds = self.heartbeat_interval_seconds
+        proposal_timeout_seconds = self.proposal_timeout_seconds
         type_name_bytes = type_name.encode("UTF-8")
 
         preparation = await self._send_preparation(type_name)
 
-        preparation_timer = Timer(heartbeat_interval_seconds)
+        preparation_timer = Timer(proposal_timeout_seconds)
         preparation_timer.start()
         async with self._preparation_timers_lock:
             self._preparation_timers = self._preparation_timers.set(type_name_bytes, preparation_timer)
@@ -549,7 +549,7 @@ class GanglionMulticast(GanglionBase):
 
         proposal = await self._send_proposal(preparation, multicast_address)
 
-        proposal_timer = Timer(heartbeat_interval_seconds)
+        proposal_timer = Timer(proposal_timeout_seconds)
         proposal_timer.start()
         async with self._proposal_timers_lock:
             self._proposal_timers = self._proposal_timers.set(type_name_bytes, proposal_timer)
