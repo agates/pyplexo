@@ -25,6 +25,7 @@ import zmq
 import zmq.asyncio
 from pyrsistent import pdeque, pset
 
+from plexo.exceptions import IpAddressIsNotMulticast
 from plexo.host_information import get_primary_ip
 from plexo.typing import UnencodedDataType
 
@@ -57,6 +58,8 @@ class SynapseBase(ABC, Generic[UnencodedDataType]):
                 task.cancel()
         except RuntimeError:
             pass
+        finally:
+            self._tasks = pdeque()
 
     def _add_task(self, task):
         self._tasks = self._tasks.append(task)
@@ -171,27 +174,28 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
                  loop=None) -> None:
         super(SynapseZmqEPGM, self).__init__(topic, receptors, loop=loop)
 
-        if not multicast_address.is_multicast:
-            raise Exception("Specified ip_address is not a multicast ip address")
+        self._startup(multicast_address, bind_interface, port)
 
+    def _startup(self, multicast_address: Union[IPv4Address, IPv6Address],
+                 bind_interface: str = None, port: int = 5560):
+        topic = self.topic
+        if not multicast_address.is_multicast:
+            raise IpAddressIsNotMulticast("Specified ip_address is not a multicast ip address")
         if not bind_interface:
             bind_interface = get_primary_ip()
-
         self.bind_interface = bind_interface
         logging.debug("SynapseZmqEPGM:{}:bind_interface {}".format(topic, bind_interface))
         self.multicast_address = multicast_address
         logging.debug("SynapseZmqEPGM:{}:multicast_address {}".format(topic, multicast_address))
         self.port = port
         logging.debug("SynapseZmqEPGM:{}:port {}".format(topic, port))
-
         self._zmq_context = zmq.asyncio.Context()
         self._socket_pub = None
         self._socket_sub = None
-
         self.connection_string = "epgm://{};{}:{}".format(bind_interface, multicast_address.compressed, port)
         logging.debug("SynapseZmqEPGM:{}:connection_string {}".format(topic, self.connection_string))
         self._create_socket_pub()
-        self.start_recv_loop_if_needed()
+        self._start_recv_loop_if_needed()
 
     def close(self):
         try:
@@ -202,9 +206,13 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
+    def update(self, multicast_address: Union[IPv4Address, IPv6Address], bind_interface: str = None, port: int = 5560):
+        self.close()
+        self._startup(multicast_address, bind_interface, port)
+
     async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
         await super(SynapseZmqEPGM, self).update_receptors(receptors)
-        self.start_recv_loop_if_needed()
+        self._start_recv_loop_if_needed()
 
     def _create_socket_pub(self):
         logging.debug("SynapseZmqEPGM:{}:Creating publisher".format(self.topic))
@@ -232,7 +240,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
         return await self._socket_pub.send(data)
 
-    def start_recv_loop_if_needed(self):
+    def _start_recv_loop_if_needed(self):
         if len(self.receptors):
             logging.debug("SynapseZmqEPGM:{}:Starting _recv_loop".format(self.topic))
             self._add_task(self._loop.create_task(self._recv_loop()))

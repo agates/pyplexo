@@ -32,7 +32,7 @@ from plexo.timer import Timer
 from pyrsistent import plist, pmap, pdeque, pvector
 
 from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound, ConsensusNotReached, \
-    ProposalPromiseNotMade, ProposalNotLatest, IpLeaseExists
+    ProposalPromiseNotMade, ProposalNotLatest, IpLeaseExists, SynapseDoesNotExist
 from plexo.ip_lease import IpLeaseManager
 from plexo.transmitter import create_transmitter
 from plexo.typing import UnencodedDataType
@@ -599,17 +599,7 @@ class GanglionMulticast(GanglionBase):
 
         return address
 
-    async def create_synapse_with_address(self, type_name: str,
-                                          multicast_address: Union[ipaddress.IPv4Address,
-                                                                   ipaddress.IPv6Address]):
-        type_name_bytes = type_name.encode("UTF-8")
-        if type_name_bytes in self._synapses:
-            raise SynapseExists("Synapse for {} already exists.".format(type_name))
-
-        logging.debug("GanglionMulticast:{}:Creating synapse for type {} with multicast_address {}".format(
-            self.instance_id, type_name, multicast_address
-        ))
-
+    def try_lease_address(self, multicast_address):
         try:
             # Try to lease the address, it may have been leased before getting this far
             self._ip_lease_manager.lease_address(multicast_address)
@@ -618,6 +608,18 @@ class GanglionMulticast(GanglionBase):
             # If it does, raise the error.  Otherwise, continue
             if multicast_address in self._synapses_by_address:
                 raise e
+
+    async def create_synapse_with_address(self, type_name: str,
+                                          multicast_address: Union[ipaddress.IPv4Address,ipaddress.IPv6Address]):
+        type_name_bytes = type_name.encode("UTF-8")
+        if type_name_bytes in self._synapses:
+            raise SynapseExists("Synapse for {} already exists.".format(type_name))
+
+        logging.debug("GanglionMulticast:{}:Creating synapse for type {} with multicast_address {}".format(
+            self.instance_id, type_name, multicast_address
+        ))
+
+        self.try_lease_address(multicast_address)
 
         synapse = SynapseZmqEPGM(topic=type_name,
                                  multicast_address=multicast_address,
@@ -630,6 +632,38 @@ class GanglionMulticast(GanglionBase):
             self._synapses_by_address = self._synapses_by_address.set(multicast_address, synapse)
 
         return synapse
+
+    async def update_synapse_with_address(self, type_name: str,
+                                          multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]):
+        type_name_bytes = type_name.encode("UTF-8")
+        if type_name_bytes not in self._synapses:
+            raise SynapseDoesNotExist("Synapse for {} does not exist.".format(type_name))
+
+        current_synapse = self._synapses[type_name_bytes]
+        current_multicast_address = current_synapse.multicast_address
+
+        if current_multicast_address == multicast_address:
+            logging.debug("GanglionMulticast:{}:update_synapse_with_address:"
+                          "Synapse for type {} already exists with correct multicast_address {}".format(
+                            self.instance_id, type_name, multicast_address))
+            return current_synapse
+        else:
+            logging.debug("GanglionMulticast:{}:update_synapse_with_address:"
+                          "Synapse for type {} already exists with current_multicast_address {}, "
+                          "updating with new multicast_address {}".format(
+                            self.instance_id, type_name, current_multicast_address, multicast_address))
+
+        self.try_lease_address(multicast_address)
+
+        current_synapse.update(multicast_address)
+
+        async with self._synapses_lock:
+            self._synapses_by_address = self._synapses_by_address.set(multicast_address, current_synapse)
+            self._synapses_by_address = self._synapses_by_address.discard(current_multicast_address)
+
+        self._ip_lease_manager.release_address(current_multicast_address)
+
+        return current_synapse
 
     async def create_synapse_with_reserved_address_by_name(self, type_name: str,
                                                            reserved_address: ReservedMulticastAddress):
@@ -653,16 +687,11 @@ class GanglionMulticast(GanglionBase):
                                                                              ipaddress.IPv6Address]):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
-            logging.debug("GanglionMulticast:{}:create_or_update_synapse_by_name:"
-                          "Synapse for type {} already exists, "
-                          "updating with multicast_address {}".format(
-                            self.instance_id, type_name, multicast_address))
             # TODO: Update existing synapse
-            raise NotImplementedError("Updating an existing synapse is currently not supported: {}".format(type_name))
+            return await self.update_synapse_with_address(type_name, multicast_address)
         else:
             logging.debug("GanglionMulticast:{}:create_or_update_synapse_by_name:"
-                          "Synapse for type {} does not exist, "
-                          "creating with multicast_address {}".format(
+                          "Synapse for type {} does not exist, creating with multicast_address {}".format(
                             self.instance_id, type_name, multicast_address))
             return await self.create_synapse_with_address(type_name, multicast_address)
 

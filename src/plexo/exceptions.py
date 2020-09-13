@@ -18,6 +18,10 @@ class ConsensusNotReached(RuntimeError):
     """Raise when a multicast ganglion cannot come to a consensus for a type"""
 
 
+class IpAddressIsNotMulticast(RuntimeError):
+    """Raise when a given ip_address is not a multicast address"""
+
+
 class IpLeaseExists(RuntimeError):
     """Raise when an ip_address is already leased"""
 
@@ -44,6 +48,10 @@ class ProposalPromiseNotMade(RuntimeError):
 
 class ProposalNotLatest(RuntimeError):
     """Raise when a newer proposal has been promised"""
+
+
+class SynapseDoesNotExist(RuntimeError):
+    """Raise when a synapse for a type does not exist inside a ganglion"""
 
 
 class SynapseExists(RuntimeError):
