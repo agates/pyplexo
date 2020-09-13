@@ -235,11 +235,11 @@ class GanglionMulticast(GanglionBase):
 
         logging.debug("GanglionMulticast:{}:random_sleep_time - {}".format(instance_id, random_sleep_time))
 
+        heartbeat = PlexoHeartbeat(instance_id=instance_id)
         while True:
             try:
                 logging.debug("GanglionMulticast:{}:Sending heartbeat".format(instance_id))
-                heartbeat = PlexoHeartbeat(instance_id=instance_id)
-                await self.transmit(heartbeat)
+                await self._transmit(heartbeat)
             except Exception as e:
                 logging.error(e)
             finally:
