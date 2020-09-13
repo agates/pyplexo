@@ -38,6 +38,14 @@ class PreparationRejection(RuntimeError):
     """Raise when a preparation is rejected by the consensus"""
 
 
+class ProposalPromiseNotMade(RuntimeError):
+    """Raise when a promise has not been made for a proposal"""
+
+
+class ProposalNotLatest(RuntimeError):
+    """Raise when a newer proposal has been promised"""
+
+
 class SynapseExists(RuntimeError):
     """Raise when a synapse for a type already exists inside a ganglion"""
 

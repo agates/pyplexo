@@ -31,7 +31,8 @@ import capnpy
 from plexo.timer import Timer
 from pyrsistent import plist, pmap, pdeque, pvector
 
-from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound, ConsensusNotReached
+from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound, ConsensusNotReached, \
+    ProposalPromiseNotMade, ProposalNotLatest
 from plexo.ip_lease import IpLeaseManager
 from plexo.transmitter import create_transmitter
 from plexo.typing import UnencodedDataType
@@ -47,12 +48,12 @@ PlexoProposal = capnpy.load_schema('plexo.schema.plexo_proposal').PlexoProposal
 PlexoRejection = capnpy.load_schema('plexo.schema.plexo_rejection').PlexoRejection
 
 
-def current_timestamp():
+def current_timestamp() -> float:
     # returns floating point timestamp in seconds
     return datetime.utcnow().replace(tzinfo=timezone.utc).timestamp()
 
 
-def current_timestamp_nanoseconds():
+def current_timestamp_nanoseconds() -> float:
     return current_timestamp() * 1e9
 
 
@@ -364,10 +365,10 @@ class GanglionMulticast(GanglionBase):
                 current_proposal = None
 
             if not current_proposal:
-                raise Exception("No promise was made for proposal {}".format(proposal))
+                raise ProposalPromiseNotMade("No promise was made for proposal {}".format(proposal))
 
             if not proposal_is_equal(current_proposal, proposal):
-                raise Exception("A newer proposal was promised {}".format(current_proposal))
+                raise ProposalNotLatest("A newer proposal was promised {}".format(current_proposal))
 
             self._proposals = self._proposals.set(proposal.type_name, proposal)
 
@@ -394,8 +395,7 @@ class GanglionMulticast(GanglionBase):
         half_num_peers = self._num_peers / 2
         logging.debug("GanglionMulticast:{}:_approval_reaction:{}:"
                       "num_approvals {}, half_num_peers {}".format(
-                        self.instance_id, approval, new_approvals_num, half_num_peers)
-        )
+                        self.instance_id, approval, new_approvals_num, half_num_peers))
         if new_approvals_num >= half_num_peers:
             if approval.instance_id == self.instance_id:
                 logging.debug("GanglionMulticast:{}:"
@@ -554,8 +554,7 @@ class GanglionMulticast(GanglionBase):
         half_num_peers = self._num_peers / 2
         logging.debug("GanglionMulticast:{}:_get_address_from_consensus:{}:"
                       "num_peers: {}, half_num_peers: {}, num_approval: {}".format(
-                        self.instance_id, proposal, self._num_peers, half_num_peers, approvals_num)
-        )
+                        self.instance_id, proposal, self._num_peers, half_num_peers, approvals_num))
         if approvals_num >= half_num_peers:
             return multicast_address
         else:
@@ -649,4 +648,3 @@ class GanglionMulticast(GanglionBase):
             heartbeat_interval_seconds = self.heartbeat_interval_seconds
             while not self._startup_done:
                 await asyncio.sleep(heartbeat_interval_seconds)
-
