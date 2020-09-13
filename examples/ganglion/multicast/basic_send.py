@@ -40,7 +40,7 @@ async def send_foo_hello_str(ganglion):
         try:
             await ganglion.transmit(foo)
         except TransmitterNotFound as e:
-            logging.error(e, exc_info=True)
+            logging.error(e)
         i += 1
         await asyncio.sleep(1-(start_time-timer()))
 
@@ -56,7 +56,7 @@ def run(loop=None):
                                  heartbeat_interval_seconds=10,
                                  loop=loop)
 
-    loop.create_task(ganglion.update_transmitter(Foo, pickle.dumps))
+    loop.create_task(ganglion.update_transmitter_by_type(Foo, pickle.dumps))
     loop.create_task(send_foo_hello_str(ganglion))
 
     if not loop.is_running():  # pragma: no cover

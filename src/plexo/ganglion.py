@@ -36,7 +36,7 @@ from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNot
 from plexo.ip_lease import IpLeaseManager
 from plexo.transmitter import create_transmitter
 from plexo.typing import UnencodedDataType
-from plexo.synapse import SynapseZmqEPGM
+from plexo.synapse import SynapseZmqEPGM, SynapseBase
 from plexo.receptor import create_receptor
 
 
@@ -96,10 +96,9 @@ class GanglionBase(ABC):
     async def create_synapse_by_name(self, type_name: str): ...
 
     @abstractmethod
-    async def create_synapse(self, _type: Type): ...
+    async def create_synapse_by_type(self, _type: Type): ...
 
-    async def get_synapse(self, _type: Type):
-        type_name = _type.__name__
+    async def get_synapse_by_name(self, type_name: str):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes not in self._synapses:
             try:
@@ -109,17 +108,27 @@ class GanglionBase(ABC):
 
         return self._synapses[type_name_bytes]
 
-    async def update_transmitter(self, _type: Type,
-                                 encoder: Callable[[UnencodedDataType], ByteString]):
+    async def get_synapse_by_type(self, _type: Type):
         type_name = _type.__name__
-        synapse = await self.get_synapse(_type)
+        return await self.get_synapse_by_name(type_name)
 
+    async def create_transmitter(self, type_name: str, synapse: SynapseBase[UnencodedDataType],
+                                 encoder: Callable[[UnencodedDataType], ByteString]):
         transmitter = create_transmitter((synapse,), encoder, loop=self._loop)
 
         async with self._transmitters_lock:
             self._transmitters = self._transmitters.set(type_name, transmitter)
 
         return transmitter
+
+    async def update_transmitter_by_name(self, type_name: str, encoder: Callable[[UnencodedDataType], ByteString]):
+        synapse = await self.get_synapse_by_name(type_name)
+        return await self.create_transmitter(type_name, synapse, encoder)
+
+    async def update_transmitter_by_type(self, _type: Type, encoder: Callable[[UnencodedDataType], ByteString]):
+        type_name = _type.__name__
+        synapse = await self.get_synapse_by_type(_type)
+        return await self.create_transmitter(type_name, synapse, encoder)
 
     def get_transmitter(self, data: UnencodedDataType):
         type_name = type(data).__name__
@@ -131,7 +140,7 @@ class GanglionBase(ABC):
     async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
                     decoder: Callable[[ByteString], UnencodedDataType]):
-        synapse = await self.get_synapse(data)
+        synapse = await self.get_synapse_by_type(data)
         await synapse.update_receptors((create_receptor(reactants=(reactant,), decoder=decoder, loop=self._loop),))
 
     async def transmit(self, data: UnencodedDataType):
@@ -411,7 +420,7 @@ class GanglionMulticast(GanglionBase):
                               "Approval instance_id is not from current instance. "
                               "Creating/updating synapse from approval {}".format(self.instance_id, approval))
                 # commit new value
-                await self.create_or_update_synapse_by_name(
+                await self.create_or_update_synapse_with_address(
                     type_name_bytes.decode("UTF-8"),
                     multicast_address=ipaddress.ip_address(approval.multicast_ip)
                 )
@@ -419,34 +428,40 @@ class GanglionMulticast(GanglionBase):
                     self._proposal_approvals = self._proposal_approvals.discard(type_proposal_key)
 
     async def _startup(self):
-        await self.create_synapse(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
-        await self.react(PlexoHeartbeat, self._heartbeat_reaction, PlexoHeartbeat.loads, ignore_startup=True)
-        await self.update_transmitter(PlexoHeartbeat, PlexoHeartbeat.dumps)
+        await self.create_synapse_with_reserved_address_by_type(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
+        await asyncio.gather(self._react(PlexoHeartbeat, self._heartbeat_reaction, PlexoHeartbeat.loads),
+                             self.update_transmitter_by_type(PlexoHeartbeat, PlexoHeartbeat.dumps))
         self._add_task(self._loop.create_task(self._heartbeat_loop()))
         self._add_task(self._loop.create_task(self._num_peers_loop()))
 
-        await self.create_synapse(PlexoPreparation, ReservedMulticastAddress.Preparation)
-        await self.react(PlexoPreparation, self._preparation_reaction, PlexoPreparation.loads, ignore_startup=True)
-        await self.update_transmitter(PlexoPreparation, PlexoPreparation.dumps)
+        await asyncio.gather(
+            self.create_synapse_with_reserved_address_by_type(PlexoPreparation, ReservedMulticastAddress.Preparation),
+            self.create_synapse_with_reserved_address_by_type(PlexoPromise, ReservedMulticastAddress.Promise),
+            self.create_synapse_with_reserved_address_by_type(PlexoRejection, ReservedMulticastAddress.Rejection),
+            self.create_synapse_with_reserved_address_by_type(PlexoProposal, ReservedMulticastAddress.Proposal),
+            self.create_synapse_with_reserved_address_by_type(PlexoApproval, ReservedMulticastAddress.Approval)
+        )
 
-        await self.create_synapse(PlexoPromise, ReservedMulticastAddress.Promise)
-        await self.react(PlexoPromise, self._promise_reaction, PlexoPromise.loads, ignore_startup=True)
-        await self.update_transmitter(PlexoPromise, PlexoPromise.dumps)
-
-        await self.create_synapse(PlexoRejection, ReservedMulticastAddress.Rejection)
-        await self.react(PlexoRejection, self._rejection_reaction, PlexoRejection.loads, ignore_startup=True)
-        await self.update_transmitter(PlexoRejection, PlexoRejection.dumps)
-
-        await self.create_synapse(PlexoProposal, ReservedMulticastAddress.Proposal)
-        await self.react(PlexoProposal, self._proposal_reaction, PlexoProposal.loads, ignore_startup=True)
-        await self.update_transmitter(PlexoProposal, PlexoProposal.dumps)
-
-        await self.create_synapse(PlexoApproval, ReservedMulticastAddress.Approval)
-        await self.react(PlexoApproval, self._approval_reaction, PlexoApproval.loads, ignore_startup=True)
-        await self.update_transmitter(PlexoApproval, PlexoApproval.dumps)
+        await asyncio.gather(
+            self._react(PlexoPreparation, self._preparation_reaction, PlexoPreparation.loads),
+            self.update_transmitter_by_type(PlexoPreparation, PlexoPreparation.dumps),
+            self._react(PlexoPromise, self._promise_reaction, PlexoPromise.loads),
+            self.update_transmitter_by_type(PlexoPromise, PlexoPromise.dumps),
+            self._react(PlexoRejection, self._rejection_reaction, PlexoRejection.loads),
+            self.update_transmitter_by_type(PlexoRejection, PlexoRejection.dumps),
+            self._react(PlexoProposal, self._proposal_reaction, PlexoProposal.loads),
+            self.update_transmitter_by_type(PlexoProposal, PlexoProposal.dumps),
+            self._react(PlexoApproval, self._approval_reaction, PlexoApproval.loads),
+            self.update_transmitter_by_type(PlexoApproval, PlexoApproval.dumps)
+        )
 
         await asyncio.sleep(self.heartbeat_interval_seconds)
         self._startup_done = True
+
+    async def wait_startup(self):
+        heartbeat_interval_seconds = self.heartbeat_interval_seconds
+        while not self._startup_done:
+            await asyncio.sleep(heartbeat_interval_seconds)
 
     async def _send_preparation(self, type_name: str):
         instance_id = self.instance_id
@@ -580,21 +595,19 @@ class GanglionMulticast(GanglionBase):
 
         return address
 
-    async def create_synapse_by_name(self, type_name: str,
-                                     reserved_address: ReservedMulticastAddress = None,
-                                     multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
+    async def create_synapse_with_address(self, type_name: str,
+                                          multicast_address: Union[ipaddress.IPv4Address,
+                                                                   ipaddress.IPv6Address]):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
             raise SynapseExists("Synapse for {} already exists.".format(type_name))
-        
-        # TODO: Add check for existing multicast address in use
-        
-        multicast_address = self._reserved_addresses[reserved_address.value] if reserved_address \
-            else multicast_address if multicast_address \
-            else (await self.acquire_address_for_type(type_name))
+
         logging.debug("GanglionMulticast:{}:Creating synapse for type {} with multicast_address {}".format(
             self.instance_id, type_name, multicast_address
         ))
+
+        # TODO: Add check for existing multicast address in use
+
         synapse = SynapseZmqEPGM(topic=type_name,
                                  multicast_address=multicast_address,
                                  bind_interface=self.bind_interface,
@@ -606,45 +619,57 @@ class GanglionMulticast(GanglionBase):
 
         return synapse
 
-    async def create_synapse(self, _type: Type,
-                             reserved_address: ReservedMulticastAddress = None,
-                             multicast_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address] = None):
-        return await self.create_synapse_by_name(_type.__name__, reserved_address, multicast_address)
+    async def create_synapse_with_reserved_address_by_name(self, type_name: str,
+                                                           reserved_address: ReservedMulticastAddress):
+        multicast_address = self._reserved_addresses[reserved_address.value]
 
-    async def create_or_update_synapse_by_name(self, type_name: str,
-                                               reserved_address: ReservedMulticastAddress = None,
-                                               multicast_address: Union[ipaddress.IPv4Address,
-                                                                        ipaddress.IPv6Address] = None):
+        return await self.create_synapse_with_address(type_name, multicast_address)
+
+    async def create_synapse_with_reserved_address_by_type(self, _type: Type,
+                                                           reserved_address: ReservedMulticastAddress):
+        type_name = _type.__name__
+        return await self.create_synapse_with_reserved_address_by_name(type_name, reserved_address)
+
+    async def create_synapse_by_name(self, type_name: str):
+        multicast_address = await self.acquire_address_for_type(type_name)
+
+        return await self.create_synapse_with_address(type_name, multicast_address)
+
+    async def create_synapse_by_type(self, _type: Type):
+        return await self.create_synapse_by_name(_type.__name__)
+
+    async def create_or_update_synapse_with_address(self, type_name: str,
+                                                    multicast_address: Union[ipaddress.IPv4Address,
+                                                                             ipaddress.IPv6Address]):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
             logging.debug("GanglionMulticast:{}:create_or_update_synapse_by_name:"
                           "Synapse for type {} already exists, "
-                          "updating with reserved_address {}, multicast_address {}".format(
-                            self.instance_id, type_name, reserved_address, multicast_address))
+                          "updating with multicast_address {}".format(
+                            self.instance_id, type_name, multicast_address))
             # TODO: Update existing synapse
             raise NotImplementedError("Updating an existing synapse is currently not supported: {}".format(type_name))
         else:
             logging.debug("GanglionMulticast:{}:create_or_update_synapse_by_name:"
                           "Synapse for type {} does not exist, "
-                          "creating with reserved_address {}, multicast_address {}".format(
-                            self.instance_id, type_name, reserved_address, multicast_address))
-            return await self.create_synapse_by_name(type_name, reserved_address, multicast_address)
+                          "creating with multicast_address {}".format(
+                            self.instance_id, type_name, multicast_address))
+            return await self.create_synapse_with_address(type_name, multicast_address)
+
+    async def _react(self, data: UnencodedDataType,
+                     reactant: Callable[[UnencodedDataType], Any],
+                     decoder: Callable[[ByteString], UnencodedDataType]):
+        return await super(GanglionMulticast, self).react(data=data, reactant=reactant, decoder=decoder)
 
     async def react(self, data: UnencodedDataType,
                     reactant: Callable[[UnencodedDataType], Any],
-                    decoder: Callable[[ByteString], UnencodedDataType],
-                    ignore_startup=False):
-        await self.wait_startup(ignore_startup)
+                    decoder: Callable[[ByteString], UnencodedDataType]):
+        await self.wait_startup()
+        return await self._react(data, reactant, decoder)
 
-        return await super(GanglionMulticast, self).react(data=data, reactant=reactant, decoder=decoder)
-
-    async def transmit(self, data: UnencodedDataType, ignore_startup=False):
-        await self.wait_startup(ignore_startup)
-
+    async def _transmit(self, data: UnencodedDataType):
         return await super(GanglionMulticast, self).transmit(data=data)
 
-    async def wait_startup(self, ignore_startup=False):
-        if not ignore_startup:
-            heartbeat_interval_seconds = self.heartbeat_interval_seconds
-            while not self._startup_done:
-                await asyncio.sleep(heartbeat_interval_seconds)
+    async def transmit(self, data: UnencodedDataType):
+        await self.wait_startup()
+        return await self._transmit(data)
