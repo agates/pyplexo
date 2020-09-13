@@ -373,7 +373,7 @@ class GanglionMulticast(GanglionBase):
 
         approval = PlexoApproval(instance_id=proposal.instance_id, proposal_id=proposal.proposal_id,
                                  type_name=proposal.type_name, multicast_ip=proposal.multicast_ip)
-        logging.debug("GanglionMulticast:{}:Sending approval: ".format(approval))
+        logging.debug("GanglionMulticast:{}:Sending approval: {}".format(self.instance_id, approval))
         await self.transmit(approval)
         await self._approval_reaction(approval)
 
@@ -391,9 +391,12 @@ class GanglionMulticast(GanglionBase):
             new_approvals_num = current_approvals_num + 1
             self._proposal_approvals = self._proposal_approvals.set(type_proposal_key, new_approvals_num)
 
+        half_num_peers = self._num_peers / 2
         logging.debug("GanglionMulticast:{}:_approval_reaction:{}:"
-                      "num_approvals {}".format(self.instance_id, approval, new_approvals_num))
-        if new_approvals_num >= self._num_peers / 2:
+                      "num_approvals {}, half_num_peers {}".format(
+                        self.instance_id, approval, new_approvals_num, half_num_peers)
+        )
+        if new_approvals_num >= half_num_peers:
             if approval.instance_id == self.instance_id:
                 logging.debug("GanglionMulticast:{}:"
                               "Approval instance_id is from current instance. Canceling timer".format(self.instance_id))
@@ -404,8 +407,16 @@ class GanglionMulticast(GanglionBase):
                     except KeyError:
                         pass
             else:
+                logging.debug("GanglionMulticast:{}:"
+                              "Approval instance_id is not from current instance. "
+                              "Creating/updating synapse from approval {}".format(self.instance_id, approval))
                 # commit new value
-                await self.create_or_update_synapse_by_name(type_name_bytes.decode("UTF-8"))
+                await self.create_or_update_synapse_by_name(
+                    type_name_bytes.decode("UTF-8"),
+                    multicast_address=ipaddress.ip_address(approval.multicast_ip)
+                )
+                async with self._proposal_approvals_lock:
+                    self._proposal_approvals = self._proposal_approvals.discard(type_proposal_key)
 
     async def _startup(self):
         await self.create_synapse(PlexoHeartbeat, ReservedMulticastAddress.Heartbeat)
@@ -541,6 +552,10 @@ class GanglionMulticast(GanglionBase):
                 self._proposal_approvals = self._proposal_approvals.discard(type_proposal_key)
 
         half_num_peers = self._num_peers / 2
+        logging.debug("GanglionMulticast:{}:_get_address_from_consensus:{}:"
+                      "num_peers: {}, half_num_peers: {}, num_approval: {}".format(
+                        self.instance_id, proposal, self._num_peers, half_num_peers, approvals_num)
+        )
         if approvals_num >= half_num_peers:
             return multicast_address
         else:
@@ -603,9 +618,17 @@ class GanglionMulticast(GanglionBase):
                                                                         ipaddress.IPv6Address] = None):
         type_name_bytes = type_name.encode("UTF-8")
         if type_name_bytes in self._synapses:
+            logging.debug("GanglionMulticast:{}:create_or_update_synapse_by_name:"
+                          "Synapse for type {} already exists, "
+                          "updating with reserved_address {}, multicast_address {}".format(
+                            self.instance_id, type_name, reserved_address, multicast_address))
             # TODO: Update existing synapse
             raise NotImplementedError("Updating an existing synapse is currently not supported: {}".format(type_name))
         else:
+            logging.debug("GanglionMulticast:{}:create_or_update_synapse_by_name:"
+                          "Synapse for type {} does not exist, "
+                          "creating with reserved_address {}, multicast_address {}".format(
+                            self.instance_id, type_name, reserved_address, multicast_address))
             return await self.create_synapse_by_name(type_name, reserved_address, multicast_address)
 
     async def react(self, data: UnencodedDataType,
