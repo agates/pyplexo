@@ -32,7 +32,7 @@ from plexo.timer import Timer
 from pyrsistent import plist, pmap, pdeque, pvector
 
 from plexo.exceptions import PreparationRejection, SynapseExists, TransmitterNotFound, ConsensusNotReached, \
-    ProposalPromiseNotMade, ProposalNotLatest
+    ProposalPromiseNotMade, ProposalNotLatest, IpLeaseExists
 from plexo.ip_lease import IpLeaseManager
 from plexo.transmitter import create_transmitter
 from plexo.typing import UnencodedDataType
@@ -193,6 +193,8 @@ class GanglionMulticast(GanglionBase):
         self._reserved_addresses = plist(islice((i for i in multicast_cidr), 0, 32))
         for address in self._reserved_addresses:
             self._ip_lease_manager.lease_address(address)
+
+        self._synapses_by_address = pmap()
 
         # Unique id for the current instance, first 64 bits of uuid1
         # Not random but should include the current time and be unique enough
@@ -608,7 +610,14 @@ class GanglionMulticast(GanglionBase):
             self.instance_id, type_name, multicast_address
         ))
 
-        # TODO: Add check for existing multicast address in use
+        try:
+            # Try to lease the address, it may have been leased before getting this far
+            self._ip_lease_manager.lease_address(multicast_address)
+        except IpLeaseExists as e:
+            # If the address is currently leased, see if it exists in an known synapse
+            # If it does, raise the error.  Otherwise, continue
+            if multicast_address in self._synapses_by_address:
+                raise e
 
         synapse = SynapseZmqEPGM(topic=type_name,
                                  multicast_address=multicast_address,
@@ -618,13 +627,13 @@ class GanglionMulticast(GanglionBase):
                                  )
         async with self._synapses_lock:
             self._synapses = self._synapses.set(type_name_bytes, synapse)
+            self._synapses_by_address = self._synapses_by_address.set(multicast_address, synapse)
 
         return synapse
 
     async def create_synapse_with_reserved_address_by_name(self, type_name: str,
                                                            reserved_address: ReservedMulticastAddress):
         multicast_address = self._reserved_addresses[reserved_address.value]
-
         return await self.create_synapse_with_address(type_name, multicast_address)
 
     async def create_synapse_with_reserved_address_by_type(self, _type: Type,
@@ -634,7 +643,6 @@ class GanglionMulticast(GanglionBase):
 
     async def create_synapse_by_name(self, type_name: str):
         multicast_address = await self.acquire_address_for_type(type_name)
-
         return await self.create_synapse_with_address(type_name, multicast_address)
 
     async def create_synapse_by_type(self, _type: Type):

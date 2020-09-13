@@ -62,6 +62,4 @@ class IpLeaseManager:
         except KeyError:
             raise IpsExhausted("No more ip addresses are available")
 
-        self.lease_address(ip_address)
-
-        return ip_address
+        return self.lease_address(ip_address)
