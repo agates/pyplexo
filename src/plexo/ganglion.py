@@ -242,6 +242,8 @@ class GanglionMulticast(GanglionBase):
                 await self._transmit(heartbeat)
             except Exception as e:
                 logging.error(e)
+            except asyncio.CancelledError:
+                raise
             finally:
                 await asyncio.sleep(random_sleep_time)
 
@@ -259,6 +261,8 @@ class GanglionMulticast(GanglionBase):
                 logging.debug("GanglionMulticast:{}:num_peers - {}".format(self.instance_id, self._num_peers))
             except Exception as e:
                 logging.error(e)
+            except asyncio.CancelledError:
+                raise
             finally:
                 await asyncio.sleep(check_seconds)
 
@@ -409,7 +413,7 @@ class GanglionMulticast(GanglionBase):
         logging.debug("GanglionMulticast:{}:_approval_reaction:{}:"
                       "num_approvals {}, half_num_peers {}".format(
                         self.instance_id, approval, new_approvals_num, half_num_peers))
-        if new_approvals_num >= half_num_peers:
+        if new_approvals_num > half_num_peers:
             if approval.instance_id == self.instance_id:
                 logging.debug("GanglionMulticast:{}:"
                               "Approval instance_id is from current instance. Canceling timer".format(self.instance_id))
