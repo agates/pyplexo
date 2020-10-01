@@ -16,9 +16,6 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .synapse import *
-from .typing import *
-
 import logging
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())

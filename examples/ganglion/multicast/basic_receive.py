@@ -18,7 +18,7 @@ import ipaddress
 import logging
 import pickle
 
-from plexo.ganglion import GanglionMulticast
+from plexo.ganglion.multicast import GanglionMulticast
 
 test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
 test_port = 5561
@@ -43,7 +43,7 @@ def run(loop=None):
                                  heartbeat_interval_seconds=10,
                                  loop=loop)
 
-    loop.create_task(ganglion.react(Foo, _foo_reaction, pickle.loads))
+    loop.create_task(ganglion.react_decode_by_data_class(Foo, _foo_reaction, pickle.loads))
 
     if not loop.is_running():  # pragma: no cover
         try:

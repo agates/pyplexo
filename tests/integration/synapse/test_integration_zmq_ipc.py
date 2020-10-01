@@ -15,17 +15,13 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import json
-import ipaddress
 from typing import ByteString
 
 import pytest
 
-from plexo.receptor import create_receptor
-from plexo.synapse import SynapseZmqEPGM
+from plexo.receptor import create_decoder_receptor
+from plexo.synapse.zeromq import SynapseZmqIPC
 from plexo.transmitter import transmit_encode
-
-test_ip_address = ipaddress.IPv4Address('239.255.0.1')
-test_port = 5561
 
 
 def encode_json_bytes(o: dict) -> bytes:
@@ -36,27 +32,20 @@ def decode_json_bytes(s: ByteString) -> dict:
     return json.loads(bytes(s).decode("UTF-8"))
 
 
-@pytest.mark.skip
 @pytest.mark.asyncio
-async def test_zmq_epgm_receptor(event_loop):
-    test_queue = asyncio.Queue()
+async def test_zmq_ipc_synapse(event_loop):
+    test_queue = asyncio.Queue(loop=event_loop)
 
     async def receptor_queue(_):
         await test_queue.put(_)
 
-    receptor = create_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes)
-    synapse = SynapseZmqEPGM[dict]("test",
-                                   multicast_address=test_ip_address,
-                                   port=test_port,
-                                   receptors=(receptor,),
-                                   loop=event_loop)
+    receptor = create_decoder_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes, loop=event_loop)
+    synapse = SynapseZmqIPC("test", receptors=(receptor,), loop=event_loop)
 
-    await asyncio.sleep(.1)
+    await asyncio.sleep(.25, loop=event_loop)
 
     foo_bar_dict = {"foo": "bar"}
-    await transmit_encode(synapse, encode_json_bytes, foo_bar_dict)
-
-    await asyncio.sleep(.1)
+    await transmit_encode((synapse,), encode_json_bytes, foo_bar_dict, loop=event_loop)
 
     data = await test_queue.get()
     assert data == foo_bar_dict

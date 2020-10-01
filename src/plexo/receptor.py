@@ -15,32 +15,24 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from functools import partial
-from typing import Iterable, Callable, Any, ByteString, Union
+from typing import Iterable
 
-from pyrsistent import pdeque
+from pyrsistent import plist
 
-from plexo import UnencodedDataType
-
-
-def create_receptor(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                    decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType],
-                    loop=None):
-    return partial(transduce_decode, pdeque(reactants), decoder, loop=loop)
+from plexo.typing import D, E, DecodedReactant, Decoder, Reactant
 
 
-def create_receptor_inproc(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                           loop=None):
-    return partial(transduce, pdeque(reactants), loop=loop)
+def create_decoder_receptor(reactants: Iterable[DecodedReactant], decoder: Decoder, loop=None):
+    return partial(transduce_decode, plist(reactants), decoder, loop=loop)
 
 
-async def transduce(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                    data: UnencodedDataType,
-                    loop=None):
+def create_receptor(reactants: Iterable[Reactant], loop=None):
+    return partial(transduce, plist(reactants), loop=loop)
+
+
+async def transduce(reactants: Iterable[Reactant], data: D, loop=None):
     return await asyncio.wait([reactant(data) for reactant in reactants], loop=loop)
 
 
-async def transduce_decode(reactants: Iterable[Callable[[UnencodedDataType], Any]],
-                           decoder: Callable[[Union[ByteString, bytes]], UnencodedDataType],
-                           data: Union[ByteString, bytes],
-                           loop=None):
-    return await transduce(reactants, decoder(data), loop=loop)
+async def transduce_decode(reactants: Iterable[DecodedReactant], decoder: Decoder, data: E, loop=None):
+    return await asyncio.wait([reactant(decoder(data)) for reactant in reactants], loop=loop)

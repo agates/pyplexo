@@ -12,7 +12,7 @@ pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
 pytest-mock = "*"
-pytest-trio = "*"
+pytest-mypy = "*"
 tox = "*"
 wemake-python-styleguide = "*"
 

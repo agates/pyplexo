@@ -1,5 +1,5 @@
 #  pyplexo
-#   Copyright (C) 2020  Alecks Gates
+#   Copyright (C) 2019-2020  Alecks Gates
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -13,29 +13,3 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import asyncio
-from asyncio import Future
-from typing import Optional
-
-
-class Timer:
-    def __init__(self, timeout, callback=None):
-        self._timeout = timeout
-        self._callback = callback
-        self._task: Optional[Future] = None
-
-    async def _job(self):
-        await asyncio.sleep(self._timeout)
-        if self._callback:
-            await self._callback()
-
-    def start(self):
-        self._task = asyncio.ensure_future(self._job())
-
-    async def wait(self):
-        if self._task:
-            return await self._task
-
-    def cancel(self):
-        if self._task:
-            self._task.cancel()

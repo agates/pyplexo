@@ -13,6 +13,17 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import TypeVar
+from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
+from typing import TypeVar, Union, ByteString, Callable, Any
 
-UnencodedDataType = TypeVar('UnencodedDataType')
+E = Union[ByteString, bytes]
+U = TypeVar('U')
+D = Union[E, U]
+
+Decoder = Callable[[E], U]
+Encoder = Callable[[U], E]
+DecodedReactant = Callable[[U], Any]
+Reactant = Callable[[D], Any]
+
+IPAddress = Union[IPv4Address, IPv6Address]
+IPNetwork = Union[IPv4Network, IPv6Network]

@@ -18,9 +18,9 @@ from itertools import repeat
 
 import pytest
 
-from plexo.receptor import create_receptor_inproc
-from plexo.synapse import SynapseInproc
-from plexo.transmitter import create_transmitter_inproc
+from plexo.receptor import create_receptor
+from plexo.synapse.inproc import SynapseInproc
+from plexo.transmitter import create_transmitter
 
 
 @pytest.mark.asyncio
@@ -35,9 +35,9 @@ async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit
         return stub_async
 
     stubs = tuple(mocker.stub() for _ in range(stub_count))
-    receptor = create_receptor_inproc(reactants=(make_stub_async(stub) for stub in stubs))
-    synapse = SynapseInproc[dict]("test", receptors=(receptor,))
-    transmitter = create_transmitter_inproc((synapse,))
+    receptor = create_receptor(reactants=(make_stub_async(stub) for stub in stubs))
+    synapse = SynapseInproc("test", receptors=(receptor,))
+    transmitter = create_transmitter((synapse,))
 
     foo_bar_dict = {"foo": "bar"}
     await asyncio.wait(tuple(t(foo_bar_dict) for t in repeat(transmitter, transmit_count)))

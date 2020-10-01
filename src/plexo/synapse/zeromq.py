@@ -1,5 +1,5 @@
 #  pyplexo
-#   Copyright (C) 2019-2020  Alecks Gates
+#   Copyright (C) 2020  Alecks Gates
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -15,71 +15,24 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import logging
-from abc import ABC, abstractmethod
-from asyncio import Future
-from ipaddress import IPv4Address, IPv6Address
+from asyncio.futures import Future
 from pathlib import Path
-from typing import Iterable, Set, Tuple, Union, ByteString, Generic, Callable, Any
+from typing import Iterable, Any, Tuple, Set, Optional
 
 import zmq
 import zmq.asyncio
-from pyrsistent import pdeque, pset
+from pyrsistent import pdeque
 
 from plexo.exceptions import IpAddressIsNotMulticast
 from plexo.host_information import get_primary_ip
-from plexo.typing import UnencodedDataType
+from plexo.synapse.base import SynapseBase
+from plexo.typing import E, Reactant, IPAddress
 
 
-class SynapseBase(ABC, Generic[UnencodedDataType]):
+class SynapseZmqIPC(SynapseBase):
     def __init__(self, topic: str,
-                 receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]] = (),
-                 loop=None) -> None:
-        self.topic = topic
-        self.topic_bytes = topic.encode("UTF-8")
-        self._receptors = pset(receptors)
-        self._receptors_write_lock = asyncio.Lock()
-
-        self._tasks = pdeque()
-
-        if not loop:
-            loop = asyncio.get_event_loop()
-
-        self._loop = loop
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-
-    def __del__(self):
-        self.close()
-
-    def close(self):
-        try:
-            for task in self._tasks:
-                task.cancel()
-        except RuntimeError:
-            pass
-        finally:
-            self._tasks = pdeque()
-
-    def _add_task(self, task):
-        self._tasks = self._tasks.append(task)
-
-    @property
-    def receptors(self):
-        return self._receptors
-
-    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
-        async with self._receptors_write_lock:
-            self._receptors = self._receptors.update(receptors)
-
-    @abstractmethod
-    async def transmit(self, data): ...
-
-
-class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
-    def __init__(self, topic: str,
-                 receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]] = (),
-                 directory: Path = None,
+                 receptors: Iterable[Reactant] = (),
+                 directory: Optional[Path] = None,
                  loop=None) -> None:
         super(SynapseZmqIPC, self).__init__(topic, receptors, loop=loop)
 
@@ -96,8 +49,8 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
         self._directory = directory
 
         self._zmq_context = zmq.asyncio.Context()
-        self._socket_pub = None
-        self._socket_sub = None
+        self._socket_pub: Optional[Any] = None
+        self._socket_sub: Optional[Any] = None
 
         self.connection_string = "ipc://{0}/{1}".format(directory, topic)
         logging.debug("SynapseZmqIPC:{}:connection_string {}".format(topic, self.connection_string))
@@ -113,7 +66,7 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
-    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
+    async def update_receptors(self, receptors: Iterable[Reactant]):
         await super(SynapseZmqIPC, self).update_receptors(receptors)
         self.start_recv_loop_if_needed()
 
@@ -138,10 +91,10 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
 
         return self._socket_sub
 
-    async def transmit(self, data: Union[ByteString, bytes]) -> Tuple[Set[Future], Set[Future]]:
+    async def transmit(self, data: E) -> Tuple[Set[Future], Set[Future]]:
         # noinspection PyUnresolvedReferences
-        await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
-        return await self._socket_pub.send(data)
+        await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)  # type: ignore
+        return await self._socket_pub.send(data)  # type: ignore
 
     def start_recv_loop_if_needed(self):
         if len(self.receptors):
@@ -165,12 +118,12 @@ class SynapseZmqIPC(SynapseBase, Generic[UnencodedDataType]):
                 continue
 
 
-class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
+class SynapseZmqEPGM(SynapseBase):
     def __init__(self, topic: str,
-                 multicast_address: Union[IPv4Address, IPv6Address],
-                 bind_interface: str = None,
+                 multicast_address: IPAddress,
+                 bind_interface: Optional[str] = None,
                  port: int = 5560,
-                 receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]] = (),
+                 receptors: Iterable[Reactant] = (),
                  loop=None) -> None:
         super(SynapseZmqEPGM, self).__init__(topic, receptors, loop=loop)
 
@@ -183,7 +136,7 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
 
         self._startup(multicast_address)
 
-    def _startup(self, multicast_address: Union[IPv4Address, IPv6Address]):
+    def _startup(self, multicast_address: IPAddress):
         topic = self.topic
         self._startup_done = False
         if not multicast_address.is_multicast:
@@ -191,8 +144,8 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
         self.multicast_address = multicast_address
         logging.debug("SynapseZmqEPGM:{}:multicast_address {}".format(topic, multicast_address))
         self._zmq_context = zmq.asyncio.Context()
-        self._socket_pub = None
-        self._socket_sub = None
+        self._socket_pub: Optional[Any] = None
+        self._socket_sub: Optional[Any] = None
         self.connection_string = "epgm://{};{}:{}".format(self.bind_interface, multicast_address.compressed, self.port)
         logging.debug("SynapseZmqEPGM:{}:connection_string {}".format(topic, self.connection_string))
         self._create_socket_pub()
@@ -208,11 +161,11 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             if self._socket_pub:
                 self._socket_pub.close()
 
-    def update(self, multicast_address: Union[IPv4Address, IPv6Address]):
+    def update(self, multicast_address: IPAddress):
         self.close()
         self._startup(multicast_address)
 
-    async def update_receptors(self, receptors: Iterable[Callable[[Union[ByteString, bytes, UnencodedDataType]], Any]]):
+    async def update_receptors(self, receptors: Iterable[Reactant]):
         await super(SynapseZmqEPGM, self).update_receptors(receptors)
         self._start_recv_loop_if_needed()
 
@@ -237,10 +190,10 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
 
         return self._socket_sub
 
-    async def transmit(self, data: Union[ByteString, bytes]) -> Tuple[Set[Future], Set[Future]]:
+    async def transmit(self, data: E) -> Tuple[Set[Future], Set[Future]]:
         # noinspection PyUnresolvedReferences
-        await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
-        return await self._socket_pub.send(data)
+        await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)  # type: ignore
+        return await self._socket_pub.send(data)  # type: ignore
 
     def _start_recv_loop_if_needed(self):
         if len(self.receptors):
@@ -265,8 +218,3 @@ class SynapseZmqEPGM(SynapseBase, Generic[UnencodedDataType]):
             except Exception as e:
                 logging.error("SynapseZmqEPGM:{}:_recv_loop: {}".format(topic, e), stack_info=True)
                 continue
-
-
-class SynapseInproc(SynapseBase, Generic[UnencodedDataType]):
-    async def transmit(self, data: UnencodedDataType) -> Tuple[Set[Future], Set[Future]]:
-        return await asyncio.wait([receptor(data) for receptor in self.receptors], loop=self._loop)

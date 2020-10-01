@@ -13,20 +13,18 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import ipaddress
-from typing import Union
-
 from pyrsistent import pmap
 
 from plexo.exceptions import IpNotFound, IpLeaseExists, IpNotLeased, IpsExhausted
+from plexo.typing import IPAddress, IPNetwork
 
 
 class IpLeaseManager:
-    def __init__(self, ip_cidr: Union[ipaddress.IPv4Network, ipaddress.IPv6Network]):
+    def __init__(self, ip_cidr: IPNetwork):
         self._ip_lease_map = pmap({ip_address: False for ip_address in ip_cidr})
         self._available_ips = set(self._ip_lease_map.keys())
 
-    def lease_address(self, ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]):
+    def lease_address(self, ip_address: IPAddress):
         if ip_address not in self._ip_lease_map:
             raise IpNotFound("ip_address {} not found".format(ip_address))
 
@@ -38,7 +36,7 @@ class IpLeaseManager:
 
         return ip_address
 
-    def release_address(self, ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]):
+    def release_address(self, ip_address: IPAddress):
         if ip_address not in self._ip_lease_map:
             raise IpNotFound("ip_address {} not found".format(ip_address))
 
@@ -50,13 +48,13 @@ class IpLeaseManager:
 
         return ip_address
 
-    def address_is_leased(self, ip_address: Union[ipaddress.IPv4Address, ipaddress.IPv6Address]):
+    def address_is_leased(self, ip_address: IPAddress):
         if ip_address not in self._ip_lease_map:
             raise IpNotFound("ip_address {} not found".format(ip_address))
 
         return self._ip_lease_map[ip_address]
 
-    def get_address(self) -> Union[ipaddress.IPv4Address, ipaddress.IPv6Address]:
+    def get_address(self) -> IPAddress:
         try:
             ip_address = self._available_ips.pop()
         except KeyError:

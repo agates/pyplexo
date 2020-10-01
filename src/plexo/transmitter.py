@@ -15,32 +15,25 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from functools import partial
-from typing import Iterable, Callable, ByteString, Union
+from typing import Iterable
 
-from pyrsistent import pdeque
+from pyrsistent import plist
 
-from plexo import SynapseBase, UnencodedDataType
-
-
-def create_transmitter(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                       encoder: Callable[[UnencodedDataType], Union[ByteString, bytes]],
-                       loop=None):
-    return partial(transmit_encode, pdeque(synapses), encoder, loop=loop)
+from plexo.synapse.base import SynapseBase
+from plexo.typing import D, U, Encoder
 
 
-def create_transmitter_inproc(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                              loop=None):
-    return partial(transmit, pdeque(synapses), loop=loop)
+def create_encoder_transmitter(synapses: Iterable[SynapseBase], encoder: Encoder, loop=None):
+    return partial(transmit_encode, plist(synapses), encoder, loop=loop)
 
 
-async def transmit(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                   data: Union[ByteString, bytes, UnencodedDataType],
-                   loop=None):
+def create_transmitter(synapses: Iterable[SynapseBase], loop=None):
+    return partial(transmit, plist(synapses), loop=loop)
+
+
+async def transmit(synapses: Iterable[SynapseBase], data: D, loop=None):
     return await asyncio.wait([synapse.transmit(data) for synapse in synapses], loop=loop)
 
 
-async def transmit_encode(synapses: Iterable[SynapseBase[UnencodedDataType]],
-                          encoder: Callable[[UnencodedDataType], Union[ByteString, bytes]],
-                          data: UnencodedDataType,
-                          loop=None):
+async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder, data: U, loop=None):
     return await transmit(synapses, encoder(data), loop=loop)
