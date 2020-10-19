@@ -14,35 +14,37 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-import ipaddress
 import logging
 import pickle
 from timeit import default_timer as timer
 
+from plexo.coder import Coder
 from plexo.exceptions import TransmitterNotFound
-from plexo.ganglion.multicast import GanglionMulticast
-
-test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
-test_port = 5561
+from plexo.ganglion.inproc import GanglionInproc
+from plexo.namespace import Namespace
 
 
 class Foo:
     message: str
 
 
+async def _foo_reaction(f: Foo):
+    logging.info("Received Foo.string: {}".format(f.message))
+
+
 async def send_foo_hello_str(ganglion):
     i = 1
     foo = Foo()
     while True:
-        start_time = timer()
-        foo.message = "Hello, Plexo+Multicast {} …".format(i)
+        #start_time = timer()
+        foo.message = "Hello, Plexo+Inproc {} …".format(i)
         logging.info("Sending Foo with message: {}".format(foo.message))
         try:
-            await ganglion.transmit_encode(foo)
+            await ganglion.transmit(foo)
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
-        await asyncio.sleep(1-(start_time-timer()))
+        #await asyncio.sleep(1-(start_time-timer()))
 
 
 def run(loop=None):
@@ -51,12 +53,11 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    ganglion = GanglionMulticast(multicast_cidr=test_multicast_cidr,
-                                 port=test_port,
-                                 heartbeat_interval_seconds=10,
-                                 loop=loop)
+    ganglion = GanglionInproc(loop=loop)
+    namespace = Namespace(["plexo", "test"])
+    foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
 
-    loop.create_task(ganglion.update_transmitter_by_type(Foo, pickle.dumps))
+    loop.run_until_complete(ganglion.adapt(foo_coder, reactant=_foo_reaction))
     loop.create_task(send_foo_hello_str(ganglion))
 
     if not loop.is_running():  # pragma: no cover

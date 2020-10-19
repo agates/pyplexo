@@ -18,7 +18,9 @@ import ipaddress
 import logging
 import pickle
 
-from plexo.ganglion.multicast import GanglionMulticast
+from plexo.coder import Coder
+from plexo.ganglion.multicast import GanglionPlexoMulticast
+from plexo.namespace import Namespace
 
 test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
 test_port = 5561
@@ -38,12 +40,13 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    ganglion = GanglionMulticast(multicast_cidr=test_multicast_cidr,
-                                 port=test_port,
-                                 heartbeat_interval_seconds=10,
-                                 loop=loop)
-
-    loop.create_task(ganglion.react_decode_by_data_class(Foo, _foo_reaction, pickle.loads))
+    ganglion = GanglionPlexoMulticast(multicast_cidr=test_multicast_cidr,
+                                      port=test_port,
+                                      heartbeat_interval_seconds=10,
+                                      loop=loop)
+    namespace = Namespace(["plexo", "test"])
+    foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
+    loop.create_task(ganglion.adapt(foo_coder, decoded_reactant=_foo_reaction))
 
     if not loop.is_running():  # pragma: no cover
         try:

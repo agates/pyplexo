@@ -36,4 +36,5 @@ async def transmit(synapses: Iterable[SynapseBase], data: D, loop=None):
 
 
 async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder, data: U, loop=None):
-    return await transmit(synapses, encoder(data), loop=loop)
+    encoded = encoder(data)
+    return await transmit(synapses, encoded, loop=loop)

@@ -16,106 +16,15 @@
 import asyncio
 import logging
 from asyncio.futures import Future
-from pathlib import Path
 from typing import Iterable, Any, Tuple, Set, Optional
 
 import zmq
 import zmq.asyncio
-from pyrsistent import pdeque
 
 from plexo.exceptions import IpAddressIsNotMulticast
 from plexo.host_information import get_primary_ip
 from plexo.synapse.base import SynapseBase
 from plexo.typing import E, Reactant, IPAddress
-
-
-class SynapseZmqIPC(SynapseBase):
-    def __init__(self, topic: str,
-                 receptors: Iterable[Reactant] = (),
-                 directory: Optional[Path] = None,
-                 loop=None) -> None:
-        super(SynapseZmqIPC, self).__init__(topic, receptors, loop=loop)
-
-        self._tasks = pdeque()
-
-        if not directory:
-            directory = Path("/tmp/plexo/zmq")
-
-        directory.mkdir(parents=True, exist_ok=True)
-
-        if not directory.is_dir():
-            raise Exception("Given path is not a directory")
-
-        self._directory = directory
-
-        self._zmq_context = zmq.asyncio.Context()
-        self._socket_pub: Optional[Any] = None
-        self._socket_sub: Optional[Any] = None
-
-        self.connection_string = "ipc://{0}/{1}".format(directory, topic)
-        logging.debug("SynapseZmqIPC:{}:connection_string {}".format(topic, self.connection_string))
-        self._create_socket_pub()
-        self.start_recv_loop_if_needed()
-
-    def close(self):
-        try:
-            super(SynapseZmqIPC, self).close()
-        finally:
-            if self._socket_sub:
-                self._socket_sub.close()
-            if self._socket_pub:
-                self._socket_pub.close()
-
-    async def update_receptors(self, receptors: Iterable[Reactant]):
-        await super(SynapseZmqIPC, self).update_receptors(receptors)
-        self.start_recv_loop_if_needed()
-
-    def _create_socket_pub(self):
-        logging.debug("SynapseZmqIPC:{}:Creating publisher".format(self.topic))
-        # noinspection PyUnresolvedReferences
-        self._socket_pub = self._zmq_context.socket(zmq.PUB, io_loop=self._loop)
-        self._socket_pub.bind(self.connection_string)
-
-    def _create_socket_sub(self):
-        logging.debug("SynapseZmqIPC:{}:Creating subscription".format(self.topic))
-        # noinspection PyUnresolvedReferences
-        self._socket_sub = self._zmq_context.socket(zmq.SUB, io_loop=self._loop)
-        # noinspection PyUnresolvedReferences
-        self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, self.topic)
-        self._socket_sub.connect(self.connection_string)
-
-    @property
-    def socket_sub(self):
-        if not self._socket_sub:
-            self._create_socket_sub()
-
-        return self._socket_sub
-
-    async def transmit(self, data: E) -> Tuple[Set[Future], Set[Future]]:
-        # noinspection PyUnresolvedReferences
-        await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)  # type: ignore
-        return await self._socket_pub.send(data)  # type: ignore
-
-    def start_recv_loop_if_needed(self):
-        if len(self.receptors):
-            logging.debug("SynapseZmqIPC:{}:Starting _recv_loop".format(self.topic))
-            self._create_socket_sub()
-            self._add_task(self._loop.create_task(self._recv_loop()))
-        else:
-            logging.debug("SynapseZmqIPC:{}:Not starting _recv_loop - no receptors found".format(self.topic))
-
-    async def _recv_loop(self):
-        loop = self._loop
-        socket_sub = self.socket_sub
-        topic = self.topic
-
-        while True:
-            try:
-                data = (await socket_sub.recv_multipart())[1]
-                await asyncio.wait([receptor(data) for receptor in self.receptors], loop=loop)
-            except Exception as e:
-                logging.error("SynapseZmqIPC:{}:_recv_loop: {}".format(topic, e))
-                continue
 
 
 class SynapseZmqEPGM(SynapseBase):

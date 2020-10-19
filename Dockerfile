@@ -1,4 +1,4 @@
-FROM pypy:3
+FROM pypy:3.7-buster
 MAINTAINER Alecks Gates <agates@mail.agates.io>
 
 RUN apt -qq update \
@@ -24,4 +24,4 @@ USER appuser
 
 #EXPOSE 5555
 
-CMD ["pypy3", "examples/basic_handle_any.py"]
+CMD ["pypy3", "examples/ganglion/inproc/basic_send_receive.py"]

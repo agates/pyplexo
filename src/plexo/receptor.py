@@ -35,4 +35,5 @@ async def transduce(reactants: Iterable[Reactant], data: D, loop=None):
 
 
 async def transduce_decode(reactants: Iterable[DecodedReactant], decoder: Decoder, data: E, loop=None):
-    return await asyncio.wait([reactant(decoder(data)) for reactant in reactants], loop=loop)
+    decoded = decoder(data)
+    return await asyncio.wait([reactant(decoded) for reactant in reactants], loop=loop)
