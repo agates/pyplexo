@@ -14,14 +14,20 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+import ipaddress
 import logging
 import pickle
 from timeit import default_timer as timer
 
 from plexo.coder import Coder
 from plexo.exceptions import TransmitterNotFound
-from plexo.ganglion.inproc import GanglionInproc
+from plexo.ganglion.multicast import GanglionPlexoMulticast
 from plexo.namespace import Namespace
+from plexo.plexus import Plexus
+
+
+test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
+test_port = 5561
 
 
 class Foo:
@@ -32,7 +38,7 @@ async def _foo_reaction(f: Foo, _):
     logging.info("Received Foo.string: {}".format(f.message))
 
 
-async def send_foo_hello_str(ganglion):
+async def send_foo_hello_str(plexus):
     i = 1
     foo = Foo()
     while True:
@@ -40,7 +46,7 @@ async def send_foo_hello_str(ganglion):
         foo.message = "Hello, Plexo+Inproc {} …".format(i)
         logging.info("Sending Foo with message: {}".format(foo.message))
         try:
-            await ganglion.transmit(foo)
+            await plexus.transmit(foo)
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
@@ -53,12 +59,16 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    ganglion = GanglionInproc(loop=loop)
+    multicast_ganglion = GanglionPlexoMulticast(multicast_cidr=test_multicast_cidr,
+                                                port=test_port,
+                                                heartbeat_interval_seconds=10,
+                                                loop=loop)
+    plexus = Plexus(ganglia=(multicast_ganglion,), loop=loop)
     namespace = Namespace(["plexo", "test"])
     foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
 
-    loop.run_until_complete(ganglion.adapt(foo_coder, reactant=_foo_reaction))
-    loop.create_task(send_foo_hello_str(ganglion))
+    loop.run_until_complete(plexus.adapt(foo_coder, reactant=_foo_reaction))
+    loop.create_task(send_foo_hello_str(plexus))
 
     if not loop.is_running():  # pragma: no cover
         try:
@@ -68,7 +78,7 @@ def run(loop=None):
         finally:
             loop.close()
 
-    ganglion.close()
+    plexus.close()
 
 
 if __name__ == "__main__":

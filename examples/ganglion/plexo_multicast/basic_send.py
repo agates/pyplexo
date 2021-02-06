@@ -59,7 +59,7 @@ def run(loop=None):
                                       loop=loop)
     namespace = Namespace(["plexo", "test"])
     foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
-    loop.create_task(ganglion.adapt(foo_coder))
+    loop.run_until_complete(ganglion.adapt(foo_coder))
     loop.create_task(send_foo_hello_str(ganglion))
 
     if not loop.is_running():  # pragma: no cover

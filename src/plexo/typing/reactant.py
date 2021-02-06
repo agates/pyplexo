@@ -12,18 +12,19 @@
 #  GNU Affero General Public License for more details.
 #
 #  You should have received a copy of the GNU Affero General Public License
-#  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-import asyncio
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+from typing import Callable, Coroutine, Any
 
-from plexo.synapse.base import SynapseBase
-from plexo.typing import U
+from plexo.typing import U, D
+from plexo.typing.ganglion import Ganglion
 
+DecodedReactant = Callable[[U, Ganglion], Coroutine[Any, Any, Any]]
+Reactant = Callable[[D, Ganglion], Coroutine[Any, Any, Any]]
 
-class SynapseInproc(SynapseBase):
-    async def transmit(self, data: U):
-        ganglion = self.ganglion
-        try:
-            return await asyncio.gather(*(receptor(data, ganglion) for receptor in self.receptors), loop=self._loop)
-        except ValueError:
-            # Got empty list, continue
-            pass
+# class DecodedReactant(Protocol):
+#     def __call__(self, data: U, source: GanglionProtocol) -> Coroutine[Any, Any, Any]: ...
+#
+#
+# class Reactant(Protocol):
+#     def __call__(self, data: D, source: GanglionProtocol) -> Coroutine[Any, Any, Any]: ...

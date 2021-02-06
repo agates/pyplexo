@@ -32,7 +32,7 @@ def create_transmitter(synapses: Iterable[SynapseBase], loop=None):
 
 
 async def transmit(synapses: Iterable[SynapseBase], data: D, loop=None):
-    return await asyncio.wait([synapse.transmit(data) for synapse in synapses], loop=loop)
+    return await asyncio.gather(*(synapse.transmit(data) for synapse in synapses), loop=loop)
 
 
 async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder, data: U, loop=None):

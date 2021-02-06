@@ -19,15 +19,19 @@ from typing import Iterable
 
 from pyrsistent import pset, pdeque, PDeque
 
-from plexo.typing import Reactant
+from plexo.typing.ganglion import Ganglion
+from plexo.typing.reactant import Reactant
 
 
 class SynapseBase(ABC):
     def __init__(self, topic: str,
+                 ganglion: Ganglion,
                  receptors: Iterable[Reactant] = (),
                  loop=None) -> None:
         self.topic = topic
         self.topic_bytes = topic.encode("UTF-8")
+        self.ganglion = ganglion
+
         self._receptors = pset(receptors)
         self._receptors_write_lock = asyncio.Lock()
 

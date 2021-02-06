@@ -30,7 +30,7 @@ class Foo:
     message: str
 
 
-async def _foo_reaction(f: Foo):
+async def _foo_reaction(f: Foo, _):
     logging.info("Received Foo.string: {}".format(f.message))
 
 

@@ -32,12 +32,14 @@ from pyrsistent.typing import PMap
 from plexo.coder import Coder
 from plexo.exceptions import ProposalPromiseNotMade, ProposalNotLatest, PreparationRejection, ConsensusNotReached, \
     SynapseExists, IpLeaseExists, SynapseDoesNotExist
-from plexo.ganglion.base import GanglionBase
+from plexo.ganglion.external import GanglionExternalBase
 from plexo.ip_lease import IpLeaseManager
 from plexo.namespace import Namespace
 from plexo.synapse.zeromq import SynapseZmqEPGM
 from plexo.timer import Timer
-from plexo.typing import U, DecodedReactant, Reactant, IPAddress, IPNetwork
+from plexo.typing import U, IPAddress, IPNetwork
+from plexo.typing.ganglion import Ganglion
+from plexo.typing.reactant import DecodedReactant, Reactant
 
 PlexoApproval: Any = capnpy.load_schema('plexo.schema.plexo_approval').PlexoApproval
 PlexoHeartbeat: Any = capnpy.load_schema('plexo.schema.plexo_heartbeat').PlexoHeartbeat
@@ -83,7 +85,7 @@ def newest_accepted_proposal(p1, p2):
             else p2)
 
 
-class GanglionPlexoMulticast(GanglionBase):
+class GanglionPlexoMulticast(GanglionExternalBase):
     def __init__(self, bind_interface: Optional[str] = None,
                  multicast_cidr: IPNetwork = ipaddress.ip_network('239.0.0.0/16'),
                  port: int = 5560,
@@ -175,7 +177,7 @@ class GanglionPlexoMulticast(GanglionBase):
             finally:
                 await asyncio.sleep(check_seconds)
 
-    async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat):
+    async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat, _: Ganglion):
         logging.debug(
             "GanglionPlexoMulticast:{}:"
             "Received heartbeat from instance: {}".format(self.instance_id, heartbeat.instance_id)
@@ -183,7 +185,7 @@ class GanglionPlexoMulticast(GanglionBase):
         async with self._heartbeats_lock:
             self._heartbeats = self._heartbeats.set(heartbeat.instance_id, timer())
 
-    async def _preparation_reaction(self, preparation: PlexoPreparation):
+    async def _preparation_reaction(self, preparation: PlexoPreparation, _: Ganglion):
         logging.debug("GanglionPlexoMulticast:{}:Received preparation: {}".format(self.instance_id, preparation))
         if preparation.instance_id == self.instance_id:
             logging.debug("GanglionPlexoMulticast:{}:"
@@ -219,7 +221,7 @@ class GanglionPlexoMulticast(GanglionBase):
                 logging.debug("GanglionPlexoMulticast:{}:Sending rejection: {}".format(self.instance_id, rejection))
                 await self.transmit_encode(rejection)
 
-    async def _promise_reaction(self, promise: PlexoPromise):
+    async def _promise_reaction(self, promise: PlexoPromise, _: Ganglion):
         logging.debug("GanglionPlexoMulticast:{}:Received promise: {}".format(self.instance_id, promise))
 
         if promise.instance_id != self.instance_id:
@@ -251,7 +253,7 @@ class GanglionPlexoMulticast(GanglionBase):
                 except KeyError:
                     pass
 
-    async def _rejection_reaction(self, rejection: PlexoRejection):
+    async def _rejection_reaction(self, rejection: PlexoRejection, _: Ganglion):
         logging.debug("GanglionPlexoMulticast:{}:Received rejection: {}".format(self.instance_id, rejection))
 
         if rejection.instance_id != self.instance_id:
@@ -282,7 +284,7 @@ class GanglionPlexoMulticast(GanglionBase):
                 except KeyError:
                     pass
 
-    async def _proposal_reaction(self, proposal: PlexoProposal):
+    async def _proposal_reaction(self, proposal: PlexoProposal, _: Ganglion):
         logging.debug("GanglionPlexoMulticast:{}:Received proposal: {}".format(self.instance_id, proposal))
 
         async with self._proposals_lock:
@@ -303,9 +305,9 @@ class GanglionPlexoMulticast(GanglionBase):
                                  type_name=proposal.type_name, multicast_ip=proposal.multicast_ip)
         logging.debug("GanglionPlexoMulticast:{}:Sending approval: {}".format(self.instance_id, approval))
         await self.transmit_encode(approval)
-        await self._approval_reaction(approval)
+        await self._approval_reaction(approval, self)
 
-    async def _approval_reaction(self, approval: PlexoApproval):
+    async def _approval_reaction(self, approval: PlexoApproval, _: Ganglion):
         logging.debug("GanglionPlexoMulticast:{}:Received approval: {}".format(self.instance_id, approval))
 
         name_bytes = approval.type_name
@@ -539,6 +541,7 @@ class GanglionPlexoMulticast(GanglionBase):
         self.try_lease_address(multicast_address)
 
         synapse: SynapseZmqEPGM = SynapseZmqEPGM(topic=name,
+                                                 ganglion=self,
                                                  multicast_address=multicast_address,
                                                  bind_interface=self.bind_interface,
                                                  port=self.port,
@@ -587,12 +590,12 @@ class GanglionPlexoMulticast(GanglionBase):
     async def create_synapse_with_reserved_address(self, coder: Coder, reserved_address: ReservedMulticastAddress):
         return await self.create_synapse_with_reserved_address_by_name(coder.full_name(), reserved_address)
 
-    async def create_synapse_by_name(self, name: str):
+    async def _create_synapse_by_name(self, name: str):
         multicast_address = await self.acquire_address_for_type(name)
         return await self.create_synapse_with_address(name, multicast_address)
 
-    async def create_synapse(self, coder: Coder):
-        return await self.create_synapse_by_name(coder.full_name())
+    async def _create_synapse(self, coder: Coder):
+        return await self._create_synapse_by_name(coder.full_name())
 
     async def create_or_update_synapse_with_address(self, name: str, multicast_address: IPAddress):
         if name in self._synapses:
