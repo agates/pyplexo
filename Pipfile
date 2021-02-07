@@ -7,7 +7,6 @@ verify_ssl = true
 plexo = {editable = true, path="."}
 flake8 = "*"
 mypy = "*"
-returns = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"

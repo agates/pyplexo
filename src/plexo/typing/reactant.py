@@ -14,17 +14,23 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
-from typing import Callable, Coroutine, Any
 
-from plexo.typing import U, D
-from plexo.typing.ganglion import Ganglion
+from typing import Callable, Coroutine, Any, TYPE_CHECKING
 
-DecodedReactant = Callable[[U, Ganglion], Coroutine[Any, Any, Any]]
-Reactant = Callable[[D, Ganglion], Coroutine[Any, Any, Any]]
+#from typing_extensions import Protocol # pyright: reportMissingModuleSource=false
 
-# class DecodedReactant(Protocol):
-#     def __call__(self, data: U, source: GanglionProtocol) -> Coroutine[Any, Any, Any]: ...
+if TYPE_CHECKING:
+    # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
+    from plexo.typing import U, D
+    from plexo.typing.ganglion import Ganglion
+
+
+DecodedReactant = Callable[["U", "Ganglion"], Coroutine[Any, Any, Any]]
+Reactant = Callable[["D", "Ganglion"], Coroutine[Any, Any, Any]]
+
+#class DecodedReactant(Protocol):
+#    def __call__(self, data: U, source: Ganglion) -> Coroutine[Any, Any, Any]: ...
 #
 #
-# class Reactant(Protocol):
-#     def __call__(self, data: D, source: GanglionProtocol) -> Coroutine[Any, Any, Any]: ...
+#class Reactant(Protocol):
+#    def __call__(self, data: D, source: Ganglion) -> Coroutine[Any, Any, Any]: ...

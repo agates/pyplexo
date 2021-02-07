@@ -22,8 +22,8 @@ from pyrsistent import plist
 from plexo.synapse.base import SynapseBase
 from plexo.typing import D, U, Encoder
 
-
-def create_encoder_transmitter(synapses: Iterable[SynapseBase], encoder: Encoder, loop=None):
+ # pyright: reportInvalidTypeVarUse=false
+def create_encoder_transmitter(synapses: Iterable[SynapseBase], encoder: Encoder[U], loop=None):
     return partial(transmit_encode, plist(synapses), encoder, loop=loop)
 
 
@@ -35,6 +35,6 @@ async def transmit(synapses: Iterable[SynapseBase], data: D, loop=None):
     return await asyncio.gather(*(synapse.transmit(data) for synapse in synapses), loop=loop)
 
 
-async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder, data: U, loop=None):
+async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder[U], data: U, loop=None):
     encoded = encoder(data)
     return await transmit(synapses, encoded, loop=loop)

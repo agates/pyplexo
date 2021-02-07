@@ -19,12 +19,12 @@ from typing import Iterable
 
 from pyrsistent import plist
 
-from plexo.typing import D, E, Decoder
+from plexo.typing import D, E, U, Decoder
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import DecodedReactant, Reactant
 
 
-def create_decoder_receptor(reactants: Iterable[DecodedReactant], decoder: Decoder, loop=None):
+def create_decoder_receptor(reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], loop=None):
     return partial(transduce_decode, plist(reactants), decoder, loop=loop)
 
 
@@ -36,7 +36,7 @@ async def transduce(reactants: Iterable[Reactant], data: D, source: Ganglion, lo
     return await asyncio.gather(*(reactant(data, source) for reactant in reactants), loop=loop)
 
 
-async def transduce_decode(reactants: Iterable[DecodedReactant], decoder: Decoder, data: E, source: Ganglion,
+async def transduce_decode(reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], data: E, source: Ganglion,
                            loop=None):
     decoded = decoder(data)
     return await asyncio.gather(*(reactant(decoded, source) for reactant in reactants), loop=loop)

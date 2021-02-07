@@ -79,7 +79,7 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
             (create_decoder_receptor(reactants=(reactant,), decoder=coder.decoder, loop=self._loop),)
         )
 
-    async def transmit_encode(self, data: U):
+    async def transmit_encode(self, data: U): # pyright: reportInvalidTypeVarUse=false
         encoder_transmitters = await self._get_encoder_transmitters(data)
 
         return await asyncio.gather(

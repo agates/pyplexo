@@ -129,7 +129,7 @@ class Plexus(Ganglion):
     async def react(self, coder: Coder, reactant: Reactant):
         return await self.inproc_ganglion.react(coder, reactant)
 
-    async def transmit(self, data: U):
+    async def transmit(self, data: U): # pyright: reportInvalidTypeVarUse=false
         return await self.inproc_ganglion.transmit(data)
 
     async def adapt(self, coder: Coder, reactant: Optional[Reactant] = None):

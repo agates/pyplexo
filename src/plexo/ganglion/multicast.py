@@ -23,7 +23,7 @@ from enum import Enum
 from functools import reduce
 from itertools import islice
 from timeit import default_timer as timer
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import capnpy
 from pyrsistent import plist, pmap, pvector
@@ -557,7 +557,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         if name not in self._synapses:
             raise SynapseDoesNotExist("Synapse for {} does not exist.".format(name))
 
-        current_synapse = self._synapses[name]
+        current_synapse = cast(SynapseZmqEPGM, self._synapses[name])
         current_multicast_address = current_synapse.multicast_address
 
         if current_multicast_address == multicast_address:
@@ -630,7 +630,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def transmit_ignore_startup(self, data: U):
         return await super(GanglionPlexoMulticast, self).transmit(data)
 
-    async def transmit(self, data: U):
+    async def transmit(self, data: U): # pyright: reportInvalidTypeVarUse=false
         await self.wait_startup()
         return await self.transmit_ignore_startup(data)
 

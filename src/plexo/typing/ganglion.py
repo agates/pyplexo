@@ -16,11 +16,15 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Coroutine, Optional, Protocol, Tuple
+from typing import Any, Optional, Tuple,TYPE_CHECKING
+
+from typing_extensions import Protocol # pyright: reportMissingModuleSource=false
 
 from plexo.coder import Coder
-from plexo.typing import U
-from plexo.typing.reactant import Reactant
+if TYPE_CHECKING:
+    # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
+    from plexo.typing import U
+    from plexo.typing.reactant import Reactant
 
 
 class Ganglion(Protocol):
@@ -31,7 +35,7 @@ class Ganglion(Protocol):
     async def react(self, coder: Coder, reactant: Reactant): ...
 
     @abstractmethod
-    async def transmit(self, data: U) ->  Tuple[Any]: ...
+    async def transmit(self, data: U) ->  Tuple[Any]: ... # pyright: reportInvalidTypeVarUse=false
 
     @abstractmethod
     async def adapt(self, coder: Coder, reactant: Optional[Reactant] = None): ...

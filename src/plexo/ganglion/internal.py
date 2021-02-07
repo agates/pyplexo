@@ -131,7 +131,7 @@ class GanglionInternalBase(Ganglion, ABC):
         except KeyError:
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(coder))
 
-    async def _get_transmitters(self, data: U) -> Iterable[Callable[[D], Any]]:
+    async def _get_transmitters(self, data: U) -> Iterable[Callable[[U], Any]]:
         try:
             coders = await self._get_coders(data)
         except CoderNotFound:
@@ -144,7 +144,7 @@ class GanglionInternalBase(Ganglion, ABC):
             (create_receptor(reactants=(reactant,), loop=self._loop),)
         )
 
-    async def transmit(self, data: U):
+    async def transmit(self, data: U): # pyright: reportInvalidTypeVarUse=false
         transmitters = await self._get_transmitters(data)
 
         return await asyncio.gather(
