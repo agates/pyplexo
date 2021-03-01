@@ -17,6 +17,7 @@ import asyncio
 from abc import ABC
 from functools import partial
 from typing import Any, Callable, Coroutine, Iterable, Optional
+from uuid import UUID
 
 from pyrsistent import pmap
 from pyrsistent.typing import PMap
@@ -67,7 +68,7 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
         except KeyError:
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(coder))
 
-    async def _get_encoder_transmitters(self, data: U) -> Iterable[Callable[[U], Any]]:
+    async def _get_encoder_transmitters(self, data: U) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
         try:
             coders = await self._get_coders(data)
         except CoderNotFound:
@@ -80,11 +81,11 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
             (create_decoder_receptor(reactants=reactants, decoder=coder.decoder, loop=self._loop),)
         )
 
-    async def transmit_encode(self, data):
+    async def transmit_encode(self, data, reaction_id: Optional[UUID] = None):
         encoder_transmitters = await self._get_encoder_transmitters(data)
 
         return await asyncio.gather(
-            *(encoder_transmitter(data) for encoder_transmitter in encoder_transmitters),
+            *(encoder_transmitter(data, reaction_id) for encoder_transmitter in encoder_transmitters),
             loop=self._loop)
 
     async def adapt(self, coder: Coder[U],

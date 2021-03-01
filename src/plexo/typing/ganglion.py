@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from typing import Any, Iterable, Optional, Tuple,TYPE_CHECKING
+from uuid import UUID
 
 from typing_extensions import Protocol
 
@@ -35,7 +36,7 @@ class Ganglion(Protocol):
     async def react(self, coder: Coder[U], reactants: Iterable[Reactant]): ...
 
     @abstractmethod
-    async def transmit(self, data: U) ->  Tuple[Any]: ... # pyright: reportInvalidTypeVarUse=false
+    async def transmit(self, data: U, reaction_id: Optional[UUID] = None) ->  Tuple[Any]: ... # pyright: reportInvalidTypeVarUse=false
 
     @abstractmethod
     async def adapt(self, coder: Coder[U], reactants: Optional[Iterable[Reactant]] = None): ...

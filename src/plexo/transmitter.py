@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
+from uuid import UUID
 
 from pyrsistent import plist
 
@@ -33,10 +34,10 @@ def create_transmitter(synapses: Iterable[SynapseBase], loop=None):
     return partial(transmit, plist(synapses), loop=loop)
 
 
-async def transmit(synapses: Iterable[SynapseBase], data: Any, loop=None):
-    return await asyncio.gather(*(synapse.transmit(data) for synapse in synapses), loop=loop)
+async def transmit(synapses: Iterable[SynapseBase], data: Any, reaction_id: Optional[UUID] = None, loop=None):
+    return await asyncio.gather(*(synapse.transmit(data, reaction_id) for synapse in synapses), loop=loop)
 
 
-async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder[U], data: U, loop=None):
+async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder[U], data: U, reaction_id: Optional[UUID] = None, loop=None):
     encoded = encoder(data)
-    return await transmit(synapses, encoded, loop=loop)
+    return await transmit(synapses, encoded, reaction_id, loop=loop)

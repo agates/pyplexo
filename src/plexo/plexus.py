@@ -81,8 +81,8 @@ class Plexus(Ganglion):
             else:
                 self._reactions[reaction_id].add(current)
 
-            internal = (ganglion.transmit(data) for ganglion in self._internal_ganglia - self._reactions[reaction_id])
-            external = (ganglion.transmit_encode(data) for ganglion in self._external_ganglia - self._reactions[reaction_id])
+            internal = (ganglion.transmit(data, reaction_id) for ganglion in self._internal_ganglia - self._reactions[reaction_id])
+            external = (ganglion.transmit_encode(data, reaction_id) for ganglion in self._external_ganglia - self._reactions[reaction_id])
 
         try:
             await asyncio.gather(*itertools.chain(internal, external))
@@ -105,7 +105,7 @@ class Plexus(Ganglion):
             else:
                 self._reactions[reaction_id].add(current)
 
-            internal = (ganglion.transmit(data) for ganglion in self._internal_ganglia - self._reactions[reaction_id])
+            internal = (ganglion.transmit(data, reaction_id) for ganglion in self._internal_ganglia - self._reactions[reaction_id])
 
         try:
             await asyncio.gather(*internal)
@@ -128,7 +128,7 @@ class Plexus(Ganglion):
             else:
                 self._reactions[reaction_id].add(current)
 
-            external = (ganglion.transmit(data) for ganglion in self._external_ganglia - self._reactions[reaction_id])
+            external = (ganglion.transmit(data, reaction_id) for ganglion in self._external_ganglia - self._reactions[reaction_id])
 
         try:
             await asyncio.gather(*external)

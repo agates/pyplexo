@@ -16,6 +16,7 @@
 import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, Type, Optional
+from uuid import UUID
 
 from pyrsistent import pdeque, pmap, pset
 from pyrsistent.typing import PDeque, PMap, PSet
@@ -42,7 +43,7 @@ class GanglionInternalBase(Ganglion, ABC):
         self._synapses: PMap[str, SynapseBase] = pmap({})
         self._synapses_lock = asyncio.Lock()
 
-        self._transmitters: PMap[Coder, Callable[[Any], Any]] = pmap({})
+        self._transmitters: PMap[Coder, Callable[[Any, Optional[UUID]], Any]] = pmap({})
         self._transmitters_lock = asyncio.Lock()
 
         self._type_coders: PMap[Type, PSet[Coder]] = pmap({})
@@ -131,7 +132,7 @@ class GanglionInternalBase(Ganglion, ABC):
         except KeyError:
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(coder))
 
-    async def _get_transmitters(self, data: U) -> Iterable[Callable[[U], Any]]:
+    async def _get_transmitters(self, data: U) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
         try:
             coders = await self._get_coders(data)
         except CoderNotFound:
@@ -144,11 +145,11 @@ class GanglionInternalBase(Ganglion, ABC):
             (create_receptor(reactants=reactants, loop=self._loop),)
         )
 
-    async def transmit(self, data):
+    async def transmit(self, data, reaction_id: Optional[UUID] = None):
         transmitters = await self._get_transmitters(data)
 
         return await asyncio.gather(
-            *(transmitter(data) for transmitter in transmitters),
+            *(transmitter(data, reaction_id) for transmitter in transmitters),
             loop=self._loop)
 
     async def adapt(self, coder: Coder, reactants: Optional[Iterable[Reactant]] = None):

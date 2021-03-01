@@ -15,7 +15,8 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
+from uuid import UUID
 
 from pyrsistent import pset, pdeque, PDeque
 
@@ -66,4 +67,4 @@ class SynapseBase(ABC):
             self._receptors = self._receptors.update(receptors)
 
     @abstractmethod
-    async def transmit(self, data: Any): ...
+    async def transmit(self, data: Any, reaction_id: Optional[UUID] = None): ...

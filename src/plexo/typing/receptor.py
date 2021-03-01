@@ -13,10 +13,11 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Callable, Coroutine, Any, TYPE_CHECKING
+from typing import Callable, Coroutine, Any, Optional
+from uuid import UUID
 
 from plexo.typing import U
 
 
-DecodedReceptor = Callable[[U], Coroutine[Any, Any, Any]]
-Receptor = Callable[[Any], Coroutine[Any, Any, Any]]
+DecodedReceptor = Callable[[U, Optional[UUID]], Coroutine[Any, Any, Any]]
+Receptor = Callable[[Any, Optional[UUID]], Coroutine[Any, Any, Any]]

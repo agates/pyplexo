@@ -17,6 +17,7 @@ import asyncio
 import logging
 from asyncio.futures import Future
 from typing import Iterable, Any, Tuple, Set, Optional
+from uuid import UUID
 
 import zmq
 import zmq.asyncio
@@ -100,7 +101,7 @@ class SynapseZmqEPGM(SynapseBase):
 
         return self._socket_sub
 
-    async def transmit(self, data: E) -> Tuple[Set[Future], Set[Future]]:
+    async def transmit(self, data: E, reaction_id: Optional[UUID] = None) -> Tuple[Set[Future], Set[Future]]:
         # noinspection PyUnresolvedReferences
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)  # type: ignore
         return await self._socket_pub.send(data)  # type: ignore
@@ -119,7 +120,7 @@ class SynapseZmqEPGM(SynapseBase):
         while True:
             try:
                 data = (await self.socket_sub.recv_multipart())[1]
-                await asyncio.wait([receptor(data) for receptor in self.receptors], loop=loop)
+                await asyncio.wait([receptor(data, None) for receptor in self.receptors], loop=loop)
             except AttributeError:
                 # Error/exit if the socket no longer exists
                 raise

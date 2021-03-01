@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
+from uuid import UUID
 
 from pyrsistent import plist
 
@@ -33,10 +34,10 @@ def create_receptor(reactants: Iterable[Reactant], loop=None):
     return partial(transduce, plist(reactants), loop=loop)
 
 
-async def transduce(reactants: Iterable[Reactant], data: Any, loop=None):
-    return await asyncio.gather(*(reactant(data, None) for reactant in reactants), loop=loop)
+async def transduce(reactants: Iterable[Reactant], data: Any, reaction_id: Optional[UUID] = None, loop=None):
+    return await asyncio.gather(*(reactant(data, reaction_id) for reactant in reactants), loop=loop)
 
 
-async def transduce_decode(reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], data: E, loop=None):
+async def transduce_decode(reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], data: E, reaction_id: Optional[UUID] = None, loop=None):
     decoded = decoder(data)
-    return await asyncio.gather(*(reactant(decoded, None) for reactant in reactants), loop=loop)
+    return await asyncio.gather(*(reactant(decoded, reaction_id) for reactant in reactants), loop=loop)
