@@ -13,12 +13,10 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
-from typing import Union, Callable, TypeVar
+from typing import Callable, Coroutine, Any, TYPE_CHECKING
 
-E = bytes
-U = TypeVar('U')
-Decoder = Callable[[E], U]
-Encoder = Callable[[U], E]
-IPAddress = Union[IPv4Address, IPv6Address]
-IPNetwork = Union[IPv4Network, IPv6Network]
+from plexo.typing import U
+
+
+DecodedReceptor = Callable[[U], Coroutine[Any, Any, Any]]
+Receptor = Callable[[Any], Coroutine[Any, Any, Any]]

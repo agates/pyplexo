@@ -23,7 +23,7 @@ from enum import Enum
 from functools import reduce
 from itertools import islice
 from timeit import default_timer as timer
-from typing import Any, Optional, cast
+from typing import Any, Iterable, Optional, cast
 
 import capnpy
 from pyrsistent import plist, pmap, pvector
@@ -41,6 +41,7 @@ from plexo.typing import U, IPAddress, IPNetwork
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import DecodedReactant, Reactant
 
+# pyright: reportGeneralTypeIssues=false
 PlexoApproval: Any = capnpy.load_schema('plexo.schema.plexo_approval').PlexoApproval
 PlexoHeartbeat: Any = capnpy.load_schema('plexo.schema.plexo_heartbeat').PlexoHeartbeat
 PlexoPreparation: Any = capnpy.load_schema('plexo.schema.plexo_preparation').PlexoPreparation
@@ -177,7 +178,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
             finally:
                 await asyncio.sleep(check_seconds)
 
-    async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat, _: Ganglion):
+    async def _heartbeat_reaction(self, heartbeat: PlexoHeartbeat, _ = None):
         logging.debug(
             "GanglionPlexoMulticast:{}:"
             "Received heartbeat from instance: {}".format(self.instance_id, heartbeat.instance_id)
@@ -185,7 +186,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         async with self._heartbeats_lock:
             self._heartbeats = self._heartbeats.set(heartbeat.instance_id, timer())
 
-    async def _preparation_reaction(self, preparation: PlexoPreparation, _: Ganglion):
+    async def _preparation_reaction(self, preparation: PlexoPreparation, _ = None):
         logging.debug("GanglionPlexoMulticast:{}:Received preparation: {}".format(self.instance_id, preparation))
         if preparation.instance_id == self.instance_id:
             logging.debug("GanglionPlexoMulticast:{}:"
@@ -221,7 +222,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                 logging.debug("GanglionPlexoMulticast:{}:Sending rejection: {}".format(self.instance_id, rejection))
                 await self.transmit_encode(rejection)
 
-    async def _promise_reaction(self, promise: PlexoPromise, _: Ganglion):
+    async def _promise_reaction(self, promise: PlexoPromise, _ = None):
         logging.debug("GanglionPlexoMulticast:{}:Received promise: {}".format(self.instance_id, promise))
 
         if promise.instance_id != self.instance_id:
@@ -253,7 +254,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                 except KeyError:
                     pass
 
-    async def _rejection_reaction(self, rejection: PlexoRejection, _: Ganglion):
+    async def _rejection_reaction(self, rejection: PlexoRejection, _ = None):
         logging.debug("GanglionPlexoMulticast:{}:Received rejection: {}".format(self.instance_id, rejection))
 
         if rejection.instance_id != self.instance_id:
@@ -284,7 +285,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                 except KeyError:
                     pass
 
-    async def _proposal_reaction(self, proposal: PlexoProposal, _: Ganglion):
+    async def _proposal_reaction(self, proposal: PlexoProposal, _ = None):
         logging.debug("GanglionPlexoMulticast:{}:Received proposal: {}".format(self.instance_id, proposal))
 
         async with self._proposals_lock:
@@ -307,7 +308,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         await self.transmit_encode(approval)
         await self._approval_reaction(approval, self)
 
-    async def _approval_reaction(self, approval: PlexoApproval, _: Ganglion):
+    async def _approval_reaction(self, approval: PlexoApproval, _ = None):
         logging.debug("GanglionPlexoMulticast:{}:Received approval: {}".format(self.instance_id, approval))
 
         name_bytes = approval.type_name
@@ -351,7 +352,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         namespace = Namespace(["plexo"])
         heartbeat_coder = Coder(PlexoHeartbeat, namespace, PlexoHeartbeat.dumps, PlexoHeartbeat.loads)
         await self.create_synapse_with_reserved_address(heartbeat_coder, ReservedMulticastAddress.Heartbeat)
-        await self.adapt_ignore_startup(heartbeat_coder, decoded_reactant=self._heartbeat_reaction)
+        await self.adapt_ignore_startup(heartbeat_coder, decoded_reactants=(self._heartbeat_reaction,))
         self._add_task(self._loop.create_task(self._heartbeat_loop()))
         self._add_task(self._loop.create_task(self._num_peers_loop()))
 
@@ -380,7 +381,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         await asyncio.wait([self.create_synapse_with_reserved_address(coder, reserved_address)
                             for coder, reserved_address in coder_reserved_addresses])
 
-        await asyncio.wait([self.adapt_ignore_startup(coder, decoded_reactant=reactant)
+        await asyncio.wait([self.adapt_ignore_startup(coder, decoded_reactants=(reactant,))
                             for coder, reactant in coder_reactions])
 
         await asyncio.sleep(self.heartbeat_interval_seconds)
@@ -541,7 +542,6 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         self.try_lease_address(multicast_address)
 
         synapse: SynapseZmqEPGM = SynapseZmqEPGM(topic=name,
-                                                 ganglion=self,
                                                  multicast_address=multicast_address,
                                                  bind_interface=self.bind_interface,
                                                  port=self.port,
@@ -606,46 +606,46 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                             self.instance_id, name, multicast_address))
             return await self.create_synapse_with_address(name, multicast_address)
 
-    async def react_decode_ignore_startup(self, coder: Coder, reactant: DecodedReactant):
-        return await super(GanglionPlexoMulticast, self).react_decode(coder, reactant)
+    async def react_decode_ignore_startup(self, coder: Coder[U], reactants: Iterable[DecodedReactant[U]]):
+        return await super(GanglionPlexoMulticast, self).react_decode(coder, reactants)
 
-    async def react_decode(self, coder: Coder, reactant: DecodedReactant):
+    async def react_decode(self, coder: Coder[U], reactants: Iterable[DecodedReactant[U]]):
         await self.wait_startup()
-        return await self.react_decode_ignore_startup(coder, reactant)
+        return await self.react_decode_ignore_startup(coder, reactants)
 
-    async def react_ignore_startup(self, coder: Coder, reactant: Reactant):
-        return await super(GanglionPlexoMulticast, self).react(coder, reactant)
+    async def react_ignore_startup(self, coder: Coder, reactants: Iterable[Reactant]):
+        return await super(GanglionPlexoMulticast, self).react(coder, reactants)
 
-    async def react(self, coder: Coder, reactant: Reactant):
+    async def react(self, coder: Coder, reactants: Iterable[Reactant]):
         await self.wait_startup()
-        return await self.react_ignore_startup(coder, reactant)
+        return await self.react_ignore_startup(coder, reactants)
 
-    async def transmit_encode_ignore_startup(self, data: U):
+    async def transmit_encode_ignore_startup(self, data):
         return await super(GanglionPlexoMulticast, self).transmit_encode(data)
 
-    async def transmit_encode(self, data: U):
+    async def transmit_encode(self, data):
         await self.wait_startup()
         return await self.transmit_encode_ignore_startup(data)
 
-    async def transmit_ignore_startup(self, data: U):
+    async def transmit_ignore_startup(self, data):
         return await super(GanglionPlexoMulticast, self).transmit(data)
 
-    async def transmit(self, data: U): # pyright: reportInvalidTypeVarUse=false
+    async def transmit(self, data):
         await self.wait_startup()
         return await self.transmit_ignore_startup(data)
 
-    async def adapt_ignore_startup(self, coder: Coder,
-                                   reactant: Optional[Reactant] = None,
-                                   decoded_reactant: Optional[DecodedReactant] = None):
-        if reactant:
-            await self.react_ignore_startup(coder, reactant)
-        if decoded_reactant:
-            await self.react_decode_ignore_startup(coder, decoded_reactant)
+    async def adapt_ignore_startup(self, coder: Coder[U],
+                                   reactants: Optional[Iterable[Reactant]] = None,
+                                   decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None):
+        if reactants:
+            await self.react_ignore_startup(coder, reactants)
+        if decoded_reactants:
+            await self.react_decode_ignore_startup(coder, decoded_reactants)
 
         return await self.update_transmitter(coder)
 
-    async def adapt(self, coder: Coder,
-                    reactant: Optional[Reactant] = None,
-                    decoded_reactant: Optional[DecodedReactant] = None):
+    async def adapt(self, coder: Coder[U],
+                    reactants: Optional[Iterable[Reactant]] = None,
+                    decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None):
         await self.wait_startup()
-        return await self.adapt_ignore_startup(coder, reactant, decoded_reactant)
+        return await self.adapt_ignore_startup(coder, reactants, decoded_reactants)

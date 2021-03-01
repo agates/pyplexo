@@ -13,14 +13,15 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import asyncio
 from functools import partial
-from typing import Iterable
+from typing import Any, Iterable
 
 from pyrsistent import plist
 
-from plexo.typing import D, E, U, Decoder
-from plexo.typing.ganglion import Ganglion
+from plexo.typing import E, U, Decoder
 from plexo.typing.reactant import DecodedReactant, Reactant
 
 
@@ -32,11 +33,10 @@ def create_receptor(reactants: Iterable[Reactant], loop=None):
     return partial(transduce, plist(reactants), loop=loop)
 
 
-async def transduce(reactants: Iterable[Reactant], data: D, source: Ganglion, loop=None):
-    return await asyncio.gather(*(reactant(data, source) for reactant in reactants), loop=loop)
+async def transduce(reactants: Iterable[Reactant], data: Any, loop=None):
+    return await asyncio.gather(*(reactant(data, None) for reactant in reactants), loop=loop)
 
 
-async def transduce_decode(reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], data: E, source: Ganglion,
-                           loop=None):
+async def transduce_decode(reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], data: E, loop=None):
     decoded = decoder(data)
-    return await asyncio.gather(*(reactant(decoded, source) for reactant in reactants), loop=loop)
+    return await asyncio.gather(*(reactant(decoded, None) for reactant in reactants), loop=loop)

@@ -67,7 +67,7 @@ def run(loop=None):
     namespace = Namespace(["plexo", "test"])
     foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
 
-    loop.run_until_complete(plexus.adapt(foo_coder, reactant=_foo_reaction))
+    loop.run_until_complete(plexus.adapt(foo_coder, reactants=[_foo_reaction]))
     loop.create_task(send_foo_hello_str(plexus))
 
     if not loop.is_running():  # pragma: no cover

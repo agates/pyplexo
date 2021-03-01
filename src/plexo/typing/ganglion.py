@@ -16,9 +16,9 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Optional, Tuple,TYPE_CHECKING
+from typing import Any, Iterable, Optional, Tuple,TYPE_CHECKING
 
-from typing_extensions import Protocol # pyright: reportMissingModuleSource=false
+from typing_extensions import Protocol
 
 from plexo.coder import Coder
 if TYPE_CHECKING:
@@ -29,13 +29,16 @@ if TYPE_CHECKING:
 
 class Ganglion(Protocol):
     @abstractmethod
-    async def update_transmitter(self, coder: Coder): ...
+    async def update_transmitter(self, coder: Coder[U]): ...
 
     @abstractmethod
-    async def react(self, coder: Coder, reactant: Reactant): ...
+    async def react(self, coder: Coder[U], reactants: Iterable[Reactant]): ...
 
     @abstractmethod
     async def transmit(self, data: U) ->  Tuple[Any]: ... # pyright: reportInvalidTypeVarUse=false
 
     @abstractmethod
-    async def adapt(self, coder: Coder, reactant: Optional[Reactant] = None): ...
+    async def adapt(self, coder: Coder[U], reactants: Optional[Iterable[Reactant]] = None): ...
+
+    @abstractmethod
+    def close(self): ...

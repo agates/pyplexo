@@ -14,16 +14,15 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
+from typing import Any
 
 from plexo.synapse.base import SynapseBase
-from plexo.typing import U
 
 
 class SynapseInproc(SynapseBase):
-    async def transmit(self, data: U):
-        ganglion = self.ganglion
+    async def transmit(self, data: Any):
         try:
-            return await asyncio.gather(*(receptor(data, ganglion) for receptor in self.receptors), loop=self._loop)
+            return await asyncio.gather(*(receptor(data) for receptor in self.receptors), loop=self._loop)
         except ValueError:
             # Got empty list, continue
             pass
