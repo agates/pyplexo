@@ -18,7 +18,6 @@ from abc import ABC
 from functools import partial
 from typing import Any, Callable, Coroutine, Iterable, Optional
 
-from pyrsistent import pmap
 from pyrsistent.typing import PMap
 
 from plexo.coder import Coder
