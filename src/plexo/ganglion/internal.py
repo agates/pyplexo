@@ -17,7 +17,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, Type, Optional
 
-from pyrsistent import pdeque, pset
+from pyrsistent import pdeque, pmap, pset
 from pyrsistent.typing import PDeque, PMap, PSet
 
 from plexo.coder import Coder
