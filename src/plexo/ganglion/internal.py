@@ -17,7 +17,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Iterable, Type, Optional
 
-from pyrsistent import pdeque, pmap, pset
+from pyrsistent import pdeque, pset
 from pyrsistent.typing import PDeque, PMap, PSet
 
 from plexo.coder import Coder
@@ -25,7 +25,7 @@ from plexo.exceptions import SynapseExists, CoderNotFound, TransmitterNotFound
 from plexo.receptor import create_receptor
 from plexo.synapse.base import SynapseBase
 from plexo.transmitter import create_transmitter
-from plexo.typing import D, U
+from plexo.typing import U
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import Reactant
 
@@ -39,13 +39,13 @@ class GanglionInternalBase(Ganglion, ABC):
 
         self._loop = loop
 
-        self._synapses: PMap[str, SynapseBase] = pmap()
+        self._synapses: PMap[str, SynapseBase] = PMap()
         self._synapses_lock = asyncio.Lock()
 
-        self._transmitters: PMap[Coder, Callable[[D], Any]] = pmap()
+        self._transmitters: PMap[Coder, Callable[[Any], Any]] = PMap()
         self._transmitters_lock = asyncio.Lock()
 
-        self._type_coders: PMap[Type, PSet[Coder]] = pmap()
+        self._type_coders: PMap[Type, PSet[Coder]] = PMap()
         self._type_coders_lock = asyncio.Lock()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -68,7 +68,7 @@ class GanglionInternalBase(Ganglion, ABC):
     async def _create_synapse_by_name(self, name: str) -> SynapseBase: ...
 
     @abstractmethod
-    async def _create_synapse(self, coder: Coder): ...
+    async def _create_synapse(self, coder: Coder) -> SynapseBase: ...
 
     async def get_synapse_by_name(self, name: str):
         if name not in self._synapses:
@@ -121,7 +121,7 @@ class GanglionInternalBase(Ganglion, ABC):
             except KeyError:
                 raise CoderNotFound("Coder for {} does not exist.".format(_type.__name__))
 
-    async def _get_coders(self, data: U):
+    async def _get_coders(self, data: U) -> PSet[Coder[U]]:
         _type = type(data)
         return await self._get_coders_by_type(_type)
 
@@ -138,21 +138,21 @@ class GanglionInternalBase(Ganglion, ABC):
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(type(data).__name__))
         return (self._get_transmitter(coder) for coder in coders)
 
-    async def react(self, coder: Coder, reactant: Reactant):
+    async def react(self, coder: Coder, reactants: Iterable[Reactant]):
         synapse = await self.get_synapse(coder)
         await synapse.update_receptors(
-            (create_receptor(reactants=(reactant,), loop=self._loop),)
+            (create_receptor(reactants=reactants, loop=self._loop),)
         )
 
-    async def transmit(self, data: U): # pyright: reportInvalidTypeVarUse=false
+    async def transmit(self, data):
         transmitters = await self._get_transmitters(data)
 
         return await asyncio.gather(
             *(transmitter(data) for transmitter in transmitters),
             loop=self._loop)
 
-    async def adapt(self, coder: Coder, reactant: Optional[Reactant] = None):
-        if reactant:
-            await self.react(coder, reactant)
+    async def adapt(self, coder: Coder, reactants: Optional[Iterable[Reactant]] = None):
+        if reactants:
+            await self.react(coder, reactants)
 
         return await self.update_transmitter(coder)

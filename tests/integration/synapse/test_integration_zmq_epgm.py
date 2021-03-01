@@ -16,7 +16,6 @@
 import asyncio
 import json
 import ipaddress
-from typing import ByteString
 
 import pytest
 
@@ -32,17 +31,17 @@ def encode_json_bytes(o: dict) -> bytes:
     return json.dumps(o).encode("UTF-8")
 
 
-def decode_json_bytes(s: ByteString) -> dict:
-    return json.loads(bytes(s).decode("UTF-8"))
+def decode_json_bytes(s: bytes) -> dict:
+    return json.loads(s)
 
 
 @pytest.mark.skip
 @pytest.mark.asyncio
 async def test_zmq_epgm_receptor(event_loop):
-    test_queue = asyncio.Queue()
+    test_queue: asyncio.Queue = asyncio.Queue()
 
-    async def receptor_queue(_):
-        await test_queue.put(_)
+    async def receptor_queue(_1, _2):
+        await test_queue.put(_1)
 
     receptor = create_decoder_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes)
     synapse = SynapseZmqEPGM("test",

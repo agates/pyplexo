@@ -13,17 +13,19 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+from __future__ import annotations
+
 import asyncio
 from functools import partial
-from typing import Iterable
+from typing import Any, Iterable
 
 from pyrsistent import plist
 
 from plexo.synapse.base import SynapseBase
-from plexo.typing import D, U, Encoder
+from plexo.typing import U, Encoder
 
- # pyright: reportInvalidTypeVarUse=false
-def create_encoder_transmitter(synapses: Iterable[SynapseBase], encoder: Encoder[U], loop=None):
+
+def create_encoder_transmitter(synapses: Iterable[SynapseBase], encoder: Encoder, loop=None):
     return partial(transmit_encode, plist(synapses), encoder, loop=loop)
 
 
@@ -31,7 +33,7 @@ def create_transmitter(synapses: Iterable[SynapseBase], loop=None):
     return partial(transmit, plist(synapses), loop=loop)
 
 
-async def transmit(synapses: Iterable[SynapseBase], data: D, loop=None):
+async def transmit(synapses: Iterable[SynapseBase], data: Any, loop=None):
     return await asyncio.gather(*(synapse.transmit(data) for synapse in synapses), loop=loop)
 
 

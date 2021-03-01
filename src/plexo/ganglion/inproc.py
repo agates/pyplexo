@@ -28,7 +28,7 @@ class GanglionInproc(GanglionInternalBase):
 
         logging.debug("GanglionInproc:Creating synapse for type {}".format(name))
 
-        synapse: SynapseInproc = SynapseInproc(topic=name, ganglion=self, loop=self._loop)
+        synapse: SynapseInproc = SynapseInproc(topic=name, loop=self._loop)
 
         async with self._synapses_lock:
             self._synapses = self._synapses.set(name, synapse)

@@ -15,9 +15,9 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from abc import ABC
-from typing import Any, Callable, Iterable, Optional
+from functools import partial
+from typing import Any, Callable, Coroutine, Iterable, Optional
 
-from pyrsistent import pmap
 from pyrsistent.typing import PMap
 
 from plexo.coder import Coder
@@ -33,7 +33,7 @@ from plexo.typing.reactant import DecodedReactant, Reactant
 class GanglionExternalBase(GanglionInternalBase, ABC):
     def __init__(self, loop=None):
         super(GanglionExternalBase, self).__init__(loop=loop)
-        self._encoder_transmitters: PMap = pmap()
+        self._encoder_transmitters: PMap[Coder, partial[Coroutine]] = PMap()
         self._encoder_transmitters_lock = asyncio.Lock()
 
     async def _create_encoder_transmitter(self, coder: Coder, synapse: SynapseBase):
@@ -73,23 +73,23 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(type(data).__name__))
         return (self._get_encoder_transmitter(coder) for coder in coders)
 
-    async def react_decode(self, coder: Coder, reactant: DecodedReactant):
+    async def react_decode(self, coder: Coder[U], reactants: Iterable[DecodedReactant[U]]):
         synapse = await self.get_synapse(coder)
         await synapse.update_receptors(
-            (create_decoder_receptor(reactants=(reactant,), decoder=coder.decoder, loop=self._loop),)
+            (create_decoder_receptor(reactants=reactants, decoder=coder.decoder, loop=self._loop),)
         )
 
-    async def transmit_encode(self, data: U): # pyright: reportInvalidTypeVarUse=false
+    async def transmit_encode(self, data):
         encoder_transmitters = await self._get_encoder_transmitters(data)
 
         return await asyncio.gather(
             *(encoder_transmitter(data) for encoder_transmitter in encoder_transmitters),
             loop=self._loop)
 
-    async def adapt(self, coder: Coder,
-                    reactant: Optional[Reactant] = None,
-                    decoded_reactant: Optional[DecodedReactant] = None):
-        if decoded_reactant:
-            await self.react_decode(coder, decoded_reactant)
+    async def adapt(self, coder: Coder[U],
+                    reactants: Optional[Iterable[Reactant]] = None,
+                    decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None):
+        if decoded_reactants:
+            await self.react_decode(coder, decoded_reactants)
 
-        return await super(GanglionExternalBase, self).adapt(coder, reactant=reactant)
+        return await super(GanglionExternalBase, self).adapt(coder, reactants=reactants)

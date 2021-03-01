@@ -29,8 +29,8 @@ from plexo.transmitter import create_transmitter
                          )
 async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit_count):
     def make_stub_async(stub):
-        async def stub_async(_):
-            return stub(_)
+        async def stub_async(_1, _2):
+            return stub(_1, _2)
 
         return stub_async
 
@@ -43,5 +43,5 @@ async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit
     await asyncio.wait(tuple(t(foo_bar_dict) for t in repeat(transmitter, transmit_count)))
 
     for stub in stubs:
-        stub.assert_called_with(foo_bar_dict)
+        stub.assert_called_with(foo_bar_dict, None)
         assert stub.call_count == transmit_count

@@ -25,19 +25,17 @@ from plexo.exceptions import IpAddressIsNotMulticast
 from plexo.host_information import get_primary_ip
 from plexo.synapse.base import SynapseBase
 from plexo.typing import E, IPAddress
-from plexo.typing.ganglion import Ganglion
-from plexo.typing.reactant import Reactant
+from plexo.typing.receptor import DecodedReceptor
 
 
 class SynapseZmqEPGM(SynapseBase):
     def __init__(self, topic: str,
-                 ganglion: Ganglion,
                  multicast_address: IPAddress,
                  bind_interface: Optional[str] = None,
                  port: int = 5560,
-                 receptors: Iterable[Reactant] = (),
+                 receptors: Iterable[DecodedReceptor] = (),
                  loop=None) -> None:
-        super(SynapseZmqEPGM, self).__init__(topic, ganglion, receptors, loop=loop)
+        super(SynapseZmqEPGM, self).__init__(topic, receptors, loop=loop)
 
         if not bind_interface:
             bind_interface = get_primary_ip()
@@ -77,7 +75,7 @@ class SynapseZmqEPGM(SynapseBase):
         self.close()
         self._startup(multicast_address)
 
-    async def update_receptors(self, receptors: Iterable[Reactant]):
+    async def update_receptors(self, receptors: Iterable[DecodedReceptor]):
         await super(SynapseZmqEPGM, self).update_receptors(receptors)
         self._start_recv_loop_if_needed()
 
@@ -117,12 +115,11 @@ class SynapseZmqEPGM(SynapseBase):
     async def _recv_loop(self):
         loop = self._loop
         topic = self.topic
-        ganglion = self.ganglion
 
         while True:
             try:
                 data = (await self.socket_sub.recv_multipart())[1]
-                await asyncio.wait([receptor(data, ganglion) for receptor in self.receptors], loop=loop)
+                await asyncio.wait([receptor(data) for receptor in self.receptors], loop=loop)
             except AttributeError:
                 # Error/exit if the socket no longer exists
                 raise
