@@ -24,6 +24,7 @@ from functools import reduce
 from itertools import islice
 from timeit import default_timer as timer
 from typing import Any, Iterable, Optional, cast
+from uuid import UUID
 
 import capnpy
 from pyrsistent import plist, pmap, pvector
@@ -620,19 +621,19 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         await self.wait_startup()
         return await self.react_ignore_startup(coder, reactants)
 
-    async def transmit_encode_ignore_startup(self, data):
-        return await super(GanglionPlexoMulticast, self).transmit_encode(data)
+    async def transmit_encode_ignore_startup(self, data, reaction_id: Optional[UUID] = None):
+        return await super(GanglionPlexoMulticast, self).transmit_encode(data, reaction_id)
 
-    async def transmit_encode(self, data):
+    async def transmit_encode(self, data, reaction_id: Optional[UUID] = None):
         await self.wait_startup()
-        return await self.transmit_encode_ignore_startup(data)
+        return await self.transmit_encode_ignore_startup(data, reaction_id)
 
-    async def transmit_ignore_startup(self, data):
-        return await super(GanglionPlexoMulticast, self).transmit(data)
+    async def transmit_ignore_startup(self, data, reaction_id: Optional[UUID] = None):
+        return await super(GanglionPlexoMulticast, self).transmit(data, reaction_id)
 
-    async def transmit(self, data):
+    async def transmit(self, data, reaction_id: Optional[UUID] = None):
         await self.wait_startup()
-        return await self.transmit_ignore_startup(data)
+        return await self.transmit_ignore_startup(data, reaction_id)
 
     async def adapt_ignore_startup(self, coder: Coder[U],
                                    reactants: Optional[Iterable[Reactant]] = None,
