@@ -82,6 +82,7 @@ class SynapseZmqEPGM(SynapseBase):
 
     def _create_socket_pub(self):
         logging.debug("SynapseZmqEPGM:{}:Creating publisher".format(self.topic))
+        # pyright: reportGeneralTypeIssues=false
         # noinspection PyUnresolvedReferences
         self._socket_pub = self._zmq_context.socket(zmq.PUB, io_loop=self._loop)
         self._socket_pub.bind(self.connection_string)
