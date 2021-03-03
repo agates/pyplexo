@@ -420,6 +420,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         return proposal
 
     async def _get_address_from_consensus(self, name: str) -> IPAddress:
+        # 1) Send preparation with new proposal number
         # 2) If received quorum of rejections, do nothing (there is a higher number proposal in progress)
         # 3) Pending quorum of promises, send proposal
         #   a) if any promise had a value, use value from the highest returned proposal id
