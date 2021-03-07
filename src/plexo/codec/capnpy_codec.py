@@ -24,7 +24,7 @@ class CapnpyCodec(Codec):
         self.capnpy_struct = capnpy_struct
     
     def encode(self, data) -> E:
-        return self.capnpy_struct.loads(data)
+        return self.capnpy_struct.dumps(data)
 
     def decode(self, data: E):
-        return self.capnpy_struct.dump(data)
+        return self.capnpy_struct.loads(data)

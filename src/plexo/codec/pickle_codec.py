@@ -23,7 +23,7 @@ class PickleCodec(Codec):
     name = "pickle"
 
     def encode(self, data) -> E:
-        return pickle.loads(data)
+        return pickle.dumps(data)
 
     def decode(self, data: E):
-        return pickle.dumps(data)
+        return pickle.loads(data)
