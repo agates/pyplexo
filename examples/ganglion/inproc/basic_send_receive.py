@@ -15,13 +15,13 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import logging
-import pickle
 from timeit import default_timer as timer
 
-from plexo.coder import Coder
+from plexo.codec.pickle_codec import PickleCodec
+from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.ganglion.inproc import GanglionInproc
-from plexo.namespace import Namespace
+from plexo.namespace.namespace import Namespace
 
 
 class Foo:
@@ -55,7 +55,7 @@ def run(loop=None):
 
     ganglion = GanglionInproc(loop=loop)
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
+    foo_coder = Neuron(Foo, namespace, PickleCodec())
 
     loop.run_until_complete(ganglion.adapt(foo_coder, reactants=[_foo_reaction]))
     loop.create_task(send_foo_hello_str(ganglion))

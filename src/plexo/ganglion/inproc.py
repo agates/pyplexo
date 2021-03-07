@@ -15,7 +15,7 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from plexo.coder import Coder
+from plexo.neuron.neuron import Neuron
 from plexo.exceptions import SynapseExists
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.synapse.inproc import SynapseInproc
@@ -35,5 +35,5 @@ class GanglionInproc(GanglionInternalBase):
 
         return synapse
 
-    async def _create_synapse(self, coder: Coder):
-        return await self._create_synapse_by_name(coder.full_name())
+    async def _create_synapse(self, neuron: Neuron):
+        return await self._create_synapse_by_name(neuron.name)

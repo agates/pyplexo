@@ -13,3 +13,18 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+from plexo.typing import E
+from plexo.typing.codec import Codec
+
+
+class CapnpyCodec(Codec):
+    name = "capnp"
+
+    def __init__(self, capnpy_struct):
+        self.capnpy_struct = capnpy_struct
+    
+    def encode(self, data) -> E:
+        return self.capnpy_struct.loads(data)
+
+    def decode(self, data: E):
+        return self.capnpy_struct.dump(data)

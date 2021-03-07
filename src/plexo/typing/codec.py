@@ -13,3 +13,23 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+from abc import abstractmethod
+from typing_extensions import Protocol
+
+from plexo.typing import E
+
+
+class Codec(Protocol):
+    name: str
+
+    def __str__(self):
+        return self.name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    @abstractmethod
+    def encode(self, data) -> E: ...
+
+    @abstractmethod
+    def decode(self, data: E): ...

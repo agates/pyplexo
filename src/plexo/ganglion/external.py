@@ -22,8 +22,8 @@ from uuid import UUID
 from pyrsistent import pmap
 from pyrsistent.typing import PMap
 
-from plexo.coder import Coder
-from plexo.exceptions import TransmitterNotFound, CoderNotFound
+from plexo.neuron.neuron import Neuron
+from plexo.exceptions import TransmitterNotFound, NeuronNotFound
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.receptor import create_decoder_receptor
 from plexo.synapse.base import SynapseBase
@@ -35,50 +35,50 @@ from plexo.typing.reactant import DecodedReactant, Reactant
 class GanglionExternalBase(GanglionInternalBase, ABC):
     def __init__(self, loop=None):
         super(GanglionExternalBase, self).__init__(loop=loop)
-        self._encoder_transmitters: PMap[Coder, partial[Coroutine]] = pmap({})
+        self._encoder_transmitters: PMap[Neuron, partial[Coroutine]] = pmap({})
         self._encoder_transmitters_lock = asyncio.Lock()
 
-    async def _create_encoder_transmitter(self, coder: Coder, synapse: SynapseBase):
+    async def _create_encoder_transmitter(self, neuron: Neuron, synapse: SynapseBase):
         async with self._encoder_transmitters_lock:
             try:
-                return self._encoder_transmitters[coder]
+                return self._encoder_transmitters[neuron]
             except KeyError:
-                encoder_transmitter = create_encoder_transmitter((synapse,), coder.encoder, loop=self._loop)
-                self._encoder_transmitters = self._encoder_transmitters.set(coder, encoder_transmitter)
+                encoder_transmitter = create_encoder_transmitter((synapse,), neuron.encode, loop=self._loop)
+                self._encoder_transmitters = self._encoder_transmitters.set(neuron, encoder_transmitter)
                 return encoder_transmitter
 
-    async def create_encoder_transmitter(self, coder: Coder, synapse: SynapseBase):
-        encoder_transmitter = self._create_encoder_transmitter(coder, synapse)
+    async def create_encoder_transmitter(self, neuron: Neuron, synapse: SynapseBase):
+        encoder_transmitter = self._create_encoder_transmitter(neuron, synapse)
 
-        await self._update_type_coders(coder)
+        await self._update_type_neurons(neuron)
 
         return encoder_transmitter
 
-    async def update_transmitter(self, coder: Coder):
-        synapse = await self.get_synapse(coder)
-        await asyncio.gather(self._create_encoder_transmitter(coder, synapse),
-                             self._create_transmitter(coder, synapse)
+    async def update_transmitter(self, neuron: Neuron):
+        synapse = await self.get_synapse(neuron)
+        await asyncio.gather(self._create_encoder_transmitter(neuron, synapse),
+                             self._create_transmitter(neuron, synapse)
                              )
 
-        await self._update_type_coders(coder)
+        await self._update_type_neurons(neuron)
 
-    def _get_encoder_transmitter(self, coder: Coder):
+    def _get_encoder_transmitter(self, neuron: Neuron):
         try:
-            return self._encoder_transmitters[coder]
+            return self._encoder_transmitters[neuron]
         except KeyError:
-            raise TransmitterNotFound("Transmitter for {} does not exist.".format(coder))
+            raise TransmitterNotFound("Transmitter for {} does not exist.".format(neuron))
 
     async def _get_encoder_transmitters(self, data: U) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
         try:
-            coders = await self._get_coders(data)
-        except CoderNotFound:
+            neurons = await self._get_neurons(data)
+        except NeuronNotFound:
             raise TransmitterNotFound("Transmitter for {} does not exist.".format(type(data).__name__))
-        return (self._get_encoder_transmitter(coder) for coder in coders)
+        return (self._get_encoder_transmitter(neuron) for neuron in neurons)
 
-    async def react_decode(self, coder: Coder[U], reactants: Iterable[DecodedReactant[U]]):
-        synapse = await self.get_synapse(coder)
+    async def react_decode(self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]):
+        synapse = await self.get_synapse(neuron)
         await synapse.update_receptors(
-            (create_decoder_receptor(reactants=reactants, decoder=coder.decoder, loop=self._loop),)
+            (create_decoder_receptor(reactants=reactants, decoder=neuron.decode, loop=self._loop),)
         )
 
     async def transmit_encode(self, data, reaction_id: Optional[UUID] = None):
@@ -88,10 +88,10 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
             *(encoder_transmitter(data, reaction_id) for encoder_transmitter in encoder_transmitters),
             loop=self._loop)
 
-    async def adapt(self, coder: Coder[U],
+    async def adapt(self, neuron: Neuron[U],
                     reactants: Optional[Iterable[Reactant]] = None,
                     decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None):
         if decoded_reactants:
-            await self.react_decode(coder, decoded_reactants)
+            await self.react_decode(neuron, decoded_reactants)
 
-        return await super(GanglionExternalBase, self).adapt(coder, reactants=reactants)
+        return await super(GanglionExternalBase, self).adapt(neuron, reactants=reactants)

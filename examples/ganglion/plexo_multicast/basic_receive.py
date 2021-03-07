@@ -16,11 +16,11 @@
 import asyncio
 import ipaddress
 import logging
-import pickle
 
-from plexo.coder import Coder
+from plexo.codec.pickle_codec import PickleCodec
+from plexo.neuron.neuron import Neuron
 from plexo.ganglion.multicast import GanglionPlexoMulticast
-from plexo.namespace import Namespace
+from plexo.namespace.namespace import Namespace
 
 test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
 test_port = 5561
@@ -45,7 +45,7 @@ def run(loop=None):
                                       heartbeat_interval_seconds=10,
                                       loop=loop)
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
+    foo_coder = Neuron(Foo, namespace, PickleCodec())
     
     loop.create_task(ganglion.adapt(foo_coder, decoded_reactants=[_foo_reaction]))
 

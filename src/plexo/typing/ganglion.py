@@ -16,30 +16,29 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Any, Iterable, Optional, Tuple,TYPE_CHECKING
+from typing import Iterable, Optional, TYPE_CHECKING
 from uuid import UUID
 
 from typing_extensions import Protocol
 
-from plexo.coder import Coder
+from plexo.neuron.neuron import Neuron
 if TYPE_CHECKING:
     # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
-    from plexo.typing import U
     from plexo.typing.reactant import Reactant
 
 
 class Ganglion(Protocol):
     @abstractmethod
-    async def update_transmitter(self, coder: Coder[U]): ...
+    async def update_transmitter(self, neuron: Neuron): ...
 
     @abstractmethod
-    async def react(self, coder: Coder[U], reactants: Iterable[Reactant]): ...
+    async def react(self, neuron: Neuron, reactants: Iterable[Reactant]): ...
 
     @abstractmethod
-    async def transmit(self, data: U, reaction_id: Optional[UUID] = None) ->  Tuple[Any]: ... # pyright: reportInvalidTypeVarUse=false
+    async def transmit(self, data, reaction_id: Optional[UUID] = None): ...
 
     @abstractmethod
-    async def adapt(self, coder: Coder[U], reactants: Optional[Iterable[Reactant]] = None): ...
+    async def adapt(self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None): ...
 
     @abstractmethod
     def close(self): ...

@@ -16,13 +16,13 @@
 import asyncio
 import ipaddress
 import logging
-import pickle
 from timeit import default_timer as timer
 
-from plexo.coder import Coder
+from plexo.codec.pickle_codec import PickleCodec
+from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.ganglion.multicast import GanglionPlexoMulticast
-from plexo.namespace import Namespace
+from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 
 
@@ -65,7 +65,7 @@ def run(loop=None):
                                                 loop=loop)
     plexus = Plexus(ganglia=(multicast_ganglion,), loop=loop)
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Coder(Foo, namespace, pickle.dumps, pickle.loads)
+    foo_coder = Neuron(Foo, namespace, PickleCodec())
 
     loop.run_until_complete(plexus.adapt(foo_coder, reactants=[_foo_reaction]))
     loop.create_task(send_foo_hello_str(plexus))

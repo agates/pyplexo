@@ -13,24 +13,21 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Generic, Type
-
-from plexo.namespace import Namespace
-from plexo.typing import Decoder, Encoder, U
+from typing import Iterable
 
 
-class Coder(Generic[U]):
-    def __init__(self, _type: Type[U], namespace: Namespace, encoder: Encoder[U], decoder: Decoder[U]):
-        self.type: Type[U] = _type
-        self.namespace: Namespace = namespace
-        self.encoder = encoder
-        self.decoder = decoder
+class Namespace:
+    def __init__(self, parts: Iterable[str], delimiter: str = '.'):
+        self.delimiter = delimiter
+        self.parts = parts
+
+        self.path = delimiter.join(parts)
 
     def __str__(self):
-        return self.type.__name__
+        return self.path
 
     def __hash__(self):
-        return hash(self.full_name())
+        return hash(self.path)
 
-    def full_name(self):
-        return self.namespace.with_suffix(self.type.__name__)
+    def with_suffix(self, suffix: Iterable[str]):
+        return self.delimiter.join((self.path, *suffix))

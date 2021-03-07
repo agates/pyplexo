@@ -1,4 +1,6 @@
 settings.py
+src/plexo/schema/*.py
+src/plexo/schema/*.so
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -6,7 +6,7 @@ verify_ssl = true
 [dev-packages]
 plexo = {editable = true, path="."}
 flake8 = "*"
-mypy = "*"
+mypy = ">=0.812"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-cov = "*"
@@ -20,7 +20,7 @@ capnpy = "~=0.8"
 pyrsistent = "~=0.15"
 pyzmq = "~=19.0"
 returns = "~=0.15"
-#typing_extensions = "~=3.7"
+typing_extensions = "~=3.7"
 
 [requires]
 python_version = "3.7"

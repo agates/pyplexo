@@ -19,6 +19,8 @@ RUN pipenv install --system --deploy --ignore-pipfile \
     && pip install --force --no-binary :all: pyzmq~=19.0 \
     && pip install .
 
+RUN for schema in src/plexo/schema/*.capnp; do pypy3 -m capnpy compile $schema; done
+
 USER appuser
 
 EXPOSE 5560/udp

@@ -13,3 +13,6 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+from plexo.namespace.namespace import Namespace
+
+plexo_namespace = Namespace(["plexo"])

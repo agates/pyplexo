@@ -23,7 +23,7 @@ from pyrsistent import pset, PSet
 from plexo.ganglion.internal import GanglionInternalBase
 from returns.curry import partial
 
-from plexo.coder import Coder
+from plexo.neuron.neuron import Neuron
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.ganglion.inproc import GanglionInproc
 from plexo.typing import E
@@ -44,10 +44,10 @@ class Plexus(Ganglion):
         self._internal_ganglia = self._internal_ganglia.add(self.inproc_ganglion)
         self._internal_ganglia_lock = asyncio.Lock()
 
-        self._coders: PSet[Coder] = pset()
-        self._coders_lock = asyncio.Lock()
-        self._coder_ganglia: PSet[Tuple[Coder, Ganglion]] = pset()
-        self._coder_ganglia_lock = asyncio.Lock()
+        self._neurons: PSet[Neuron] = pset()
+        self._neurons_lock = asyncio.Lock()
+        self._neuron_ganglia: PSet[Tuple[Neuron, Ganglion]] = pset()
+        self._neuron_ganglia_lock = asyncio.Lock()
 
         self._reactions: WeakKeyDictionary[UUID, Set[Ganglion]] = WeakKeyDictionary()
         self._reaction_locks: WeakKeyDictionary[UUID, asyncio.Lock] = WeakKeyDictionary()
@@ -144,49 +144,49 @@ class Plexus(Ganglion):
             async with self._internal_ganglia_lock:
                 self._internal_ganglia = self._internal_ganglia.add(ganglion)
 
-        await self._update_coder_ganglia()
+        await self._update_neuron_ganglia()
 
-    async def _update_coders(self, coder: Coder):
-        async with self._coders_lock:
-            self._coders = self._coders.add(coder)
+    async def _update_neurons(self, neuron: Neuron):
+        async with self._neurons_lock:
+            self._neurons = self._neurons.add(neuron)
 
-        await self._update_coder_ganglia()
+        await self._update_neuron_ganglia()
 
-    async def _update_coder_ganglia(self):
+    async def _update_neuron_ganglia(self):
         all_ganglia = itertools.chain(self._internal_ganglia, self._external_ganglia)
-        all_coder_ganglia = pset(itertools.product(self._coders, all_ganglia))
-        async with self._coder_ganglia_lock:
-            new_coder_ganglia = all_coder_ganglia.difference(self._coder_ganglia)
-            self._coder_ganglia = all_coder_ganglia
+        all_neuron_ganglia = pset(itertools.product(self._neurons, all_ganglia))
+        async with self._neuron_ganglia_lock:
+            new_neuron_ganglia = all_neuron_ganglia.difference(self._neuron_ganglia)
+            self._neuron_ganglia = all_neuron_ganglia
 
-        new_external_coder_ganglia = pset((coder, ganglion) for coder, ganglion in new_coder_ganglia
+        new_external_neuron_ganglia = pset((neuron, ganglion) for neuron, ganglion in new_neuron_ganglia
                                           if isinstance(ganglion, GanglionExternalBase))
-        new_internal_coder_ganglia = new_coder_ganglia.difference(new_external_coder_ganglia)
-        internal = (ganglion.adapt(coder, reactants=(partial(self._internal_reaction, ganglion),))
-                    for coder, ganglion in new_internal_coder_ganglia)
-        external_external = (ganglion.adapt(coder, reactants=(partial(self._external_external_reaction, ganglion),))
-                             for coder, ganglion in new_external_coder_ganglia)
-        external_internal = (ganglion.adapt(coder, decoded_reactants=(partial(self._external_internal_reaction, ganglion),))
-                             for coder, ganglion in new_external_coder_ganglia)
+        new_internal_neuron_ganglia = new_neuron_ganglia.difference(new_external_neuron_ganglia)
+        internal = (ganglion.adapt(neuron, reactants=(partial(self._internal_reaction, ganglion),))
+                    for neuron, ganglion in new_internal_neuron_ganglia)
+        external_external = (ganglion.adapt(neuron, reactants=(partial(self._external_external_reaction, ganglion),))
+                             for neuron, ganglion in new_external_neuron_ganglia)
+        external_internal = (ganglion.adapt(neuron, decoded_reactants=(partial(self._external_internal_reaction, ganglion),))
+                             for neuron, ganglion in new_external_neuron_ganglia)
         try:
             await asyncio.gather(*itertools.chain(internal, external_external, external_internal))
         except ValueError:
             # Got empty list, continue
             pass
 
-    async def update_transmitter(self, coder: Coder):
-        await self._update_coders(coder)
+    async def update_transmitter(self, neuron: Neuron):
+        await self._update_neurons(neuron)
 
-        return await self.inproc_ganglion.update_transmitter(coder)
+        return await self.inproc_ganglion.update_transmitter(neuron)
 
-    async def react(self, coder: Coder, reactants: Iterable[Reactant]):
-        return await self.inproc_ganglion.react(coder, reactants)
+    async def react(self, neuron: Neuron, reactants: Iterable[Reactant]):
+        return await self.inproc_ganglion.react(neuron, reactants)
 
-    async def transmit(self, data):
-        return await self.inproc_ganglion.transmit(data)
+    async def transmit(self, data, reaction_id: Optional[UUID] = None):
+        return await self.inproc_ganglion.transmit(data, reaction_id)
 
-    async def adapt(self, coder: Coder, reactants: Optional[Iterable[Reactant]] = None):
+    async def adapt(self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None):
         if reactants:
-            await self.react(coder, reactants)
+            await self.react(neuron, reactants)
 
-        return await self.update_transmitter(coder)
+        return await self.update_transmitter(neuron)

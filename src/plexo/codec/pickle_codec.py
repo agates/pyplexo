@@ -13,21 +13,17 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Iterable
+import pickle
+
+from plexo.typing import E
+from plexo.typing.codec import Codec
 
 
-class Namespace:
-    def __init__(self, parts: Iterable[str], delimiter: str = '.'):
-        self.delimiter = delimiter
-        self.parts = parts
+class PickleCodec(Codec):
+    name = "pickle"
 
-        self.path = delimiter.join(parts)
+    def encode(self, data) -> E:
+        return pickle.loads(data)
 
-    def __str__(self):
-        return self.path
-
-    def __hash__(self):
-        return hash(self.path)
-
-    def with_suffix(self, suffix: str):
-        return self.path + self.delimiter + suffix
+    def decode(self, data: E):
+        return pickle.dumps(data)
