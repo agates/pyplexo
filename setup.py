@@ -55,9 +55,17 @@ setup(
         'returns~=0.15',
         'typing_extensions~=3.7'
     ],
+    capnpy_schemas=[
+        'src/plexo/schema/plexo_approval.capnp',
+        'src/plexo/schema/plexo_heartbeat.capnp',
+        'src/plexo/schema/plexo_preparation.capnp',
+        'src/plexo/schema/plexo_promise.capnp',
+        'src/plexo/schema/plexo_proposal.capnp',
+        'src/plexo/schema/plexo_rejection.capnp',
+    ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
-    package_data={'plexo': ['schema/*']},
+    package_data={'plexo': ['schema/*.py', 'schema/*.so']},
     entry_points={
         'console_scripts': [
         ],

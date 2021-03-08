@@ -16,10 +16,11 @@ WORKDIR /opt/app
 
 # Install the package and dependencies from Pipfile.lock as system-wide
 RUN pipenv install --system --deploy --ignore-pipfile \
-    && pip install --force --no-binary :all: pyzmq~=19.0 \
-    && pip install .
-
-RUN for schema in src/plexo/schema/*.capnp; do pypy3 -m capnpy compile $schema; done
+    # Need to install pyzmq from source for PGM (multicast) support
+    && pip install --no-compile --no-cache-dir --force --no-binary :all: pyzmq~=19.0 \
+    # sdist before install to build capnpy schemas
+    && pypy3 ./setup.py sdist \
+    && pip install --no-compile --no-cache-dir .
 
 USER appuser
 
