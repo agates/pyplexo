@@ -374,7 +374,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         await asyncio.wait([self.create_synapse_with_reserved_address(neuron, reserved_address)
                             for neuron, reserved_address in neuron_reserved_addresses])
 
-        await asyncio.wait([self.adapt_ignore_startup(cast(Neuron, neuron),
+        await asyncio.wait([self.adapt_ignore_startup(neuron,
                                                       decoded_reactants=(cast(DecodedReactant, reactant),))
                             for neuron, reactant in neuron_reactions])
 
