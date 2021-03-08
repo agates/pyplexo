@@ -1,10 +1,14 @@
 **/*.egg-info
 **/__pycache__
+build
+dist
 
 .idea
 .mypy_cache
 .pytest_cache
 .vscode
 
-src/plexo/schema/*.py
-src/plexo/schema/*.so
+src/plexo/schema/plexo*.py
+src/plexo/schema/plexo*.pyx
+src/plexo/schema/plexo*.c
+src/plexo/schema/plexo*.so

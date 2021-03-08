@@ -65,9 +65,11 @@ setup(
     ],
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
-    package_data={'plexo': ['schema/*.py', 'schema/*.so']},
+    package_data={'plexo': ['schema/*.so']},
+    data_files=['LICENSE.txt', 'README.md'],
     entry_points={
         'console_scripts': [
         ],
-    }
+    },
+    #options={'build_ext': {'build_lib': 'src/plexo/schema'}}
 )

@@ -1,0 +1,24 @@
+FROM python:3.7-buster
+
+RUN apt -qq update \
+    && apt -qqy install --no-install-recommends capnproto dbus libzmq3-dev libpgm-dev \
+    && rm -rf /var/lib/apt/lists/ \
+    && dbus-uuidgen > /etc/machine-id \
+    && pip install --no-cache-dir pipenv
+
+WORKDIR /build/
+COPY . /build/
+
+# Install the package and dependencies from Pipfile.lock as system-wide
+RUN pipenv install --system --deploy --ignore-pipfile \
+    # Need to install pyzmq from source for PGM (multicast) support
+    && pip install --no-cache-dir --force --no-binary :all: pyzmq~=19.0 \
+    # build_ext before wheel to build capnpy schemas
+    && python3 ./setup.py build_ext \
+    && python3 ./setup.py bdist_wheel \
+    && pip install --no-cache-dir dist/*.whl
+
+EXPOSE 5560/udp
+EXPOSE 5561/udp
+
+CMD ["python3", "examples/plexus/basic_send.py"]
