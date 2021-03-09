@@ -43,7 +43,9 @@ class GanglionInternalBase(Ganglion, ABC):
         self._synapses: PMap[str, SynapseBase] = pmap({})
         self._synapses_lock = asyncio.Lock()
 
-        self._transmitters: PMap[Neuron, Callable[[Any, Optional[UUID]], Any]] = pmap({})
+        self._transmitters: PMap[Neuron, Callable[[Any, Optional[UUID]], Any]] = pmap(
+            {}
+        )
         self._transmitters_lock = asyncio.Lock()
 
         self._type_neurons: PMap[Type, PSet[Neuron]] = pmap({})
@@ -66,10 +68,12 @@ class GanglionInternalBase(Ganglion, ABC):
         self._tasks = self._tasks.append(task)
 
     @abstractmethod
-    async def _create_synapse_by_name(self, name: str) -> SynapseBase: ...
+    async def _create_synapse_by_name(self, name: str) -> SynapseBase:
+        ...
 
     @abstractmethod
-    async def _create_synapse(self, neuron: Neuron) -> SynapseBase: ...
+    async def _create_synapse(self, neuron: Neuron) -> SynapseBase:
+        ...
 
     async def get_synapse_by_name(self, name: str):
         if name not in self._synapses:
@@ -120,7 +124,7 @@ class GanglionInternalBase(Ganglion, ABC):
             try:
                 return self._type_neurons[_type]
             except KeyError:
-                raise NeuronNotFound("Neuron for {} does not exist.".format(_type.__name__))
+                raise NeuronNotFound(f"Neuron for {_type.__name__} does not exist.")
 
     async def _get_neurons(self, data: U) -> PSet[Neuron[U]]:
         _type = type(data)
@@ -130,13 +134,17 @@ class GanglionInternalBase(Ganglion, ABC):
         try:
             return self._transmitters[neuron]
         except KeyError:
-            raise TransmitterNotFound("Transmitter for {} does not exist.".format(neuron))
+            raise TransmitterNotFound(f"Transmitter for {neuron} does not exist.")
 
-    async def _get_transmitters(self, data: U) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
+    async def _get_transmitters(
+        self, data: U
+    ) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
         try:
             neurons = await self._get_neurons(data)
         except NeuronNotFound:
-            raise TransmitterNotFound("Transmitter for {} does not exist.".format(type(data).__name__))
+            raise TransmitterNotFound(
+                f"Transmitter for {type(data).__name__} does not exist."
+            )
         return (self._get_transmitter(neuron) for neuron in neurons)
 
     async def react(self, neuron: Neuron, reactants: Iterable[Reactant]):
@@ -150,9 +158,12 @@ class GanglionInternalBase(Ganglion, ABC):
 
         return await asyncio.gather(
             *(transmitter(data, reaction_id) for transmitter in transmitters),
-            loop=self._loop)
+            loop=self._loop,
+        )
 
-    async def adapt(self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None):
+    async def adapt(
+        self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None
+    ):
         if reactants:
             await self.react(neuron, reactants)
 

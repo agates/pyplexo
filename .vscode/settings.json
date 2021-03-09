@@ -8,5 +8,7 @@
         "reportMissingImports"
     ],
     "python.languageServer": "Pylance",
-    "python.linting.enabled": true
+    "python.linting.enabled": true,
+    "python.formatting.provider": "black",
+    "editor.formatOnSave": true
 }

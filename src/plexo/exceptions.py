@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
+
 class NeuronNotFound(KeyError):
     """Raise when a coder does not exist in a ganglion"""
 

@@ -26,7 +26,7 @@ from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 
 
-test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
+test_multicast_cidr = ipaddress.ip_network("239.255.0.0/16")
 test_port = 5561
 
 
@@ -35,7 +35,7 @@ class Foo:
 
 
 async def _foo_reaction(f: Foo, _):
-    logging.info("Received Foo.string: {}".format(f.message))
+    logging.info(f"Received Foo.string: {f.message}")
 
 
 async def send_foo_hello_str(plexus):
@@ -43,14 +43,14 @@ async def send_foo_hello_str(plexus):
     foo = Foo()
     while True:
         start_time = timer()
-        foo.message = "Hello, Plexo+Inproc {} …".format(i)
-        logging.info("Sending Foo with message: {}".format(foo.message))
+        foo.message = f"Hello, Plexo+Inproc {i} …"
+        logging.info(f"Sending Foo with message: {foo.message}")
         try:
             await plexus.transmit(foo)
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
-        await asyncio.sleep(1-(start_time-timer()))
+        await asyncio.sleep(1 - (start_time - timer()))
 
 
 def run(loop=None):
@@ -59,10 +59,12 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    multicast_ganglion = GanglionPlexoMulticast(multicast_cidr=test_multicast_cidr,
-                                                port=test_port,
-                                                heartbeat_interval_seconds=10,
-                                                loop=loop)
+    multicast_ganglion = GanglionPlexoMulticast(
+        multicast_cidr=test_multicast_cidr,
+        port=test_port,
+        heartbeat_interval_seconds=10,
+        loop=loop,
+    )
     plexus = Plexus(ganglia=(multicast_ganglion,), loop=loop)
     namespace = Namespace(["plexo", "test"])
     foo_coder = Neuron(Foo, namespace, PickleCodec())

@@ -24,9 +24,9 @@ from plexo.synapse.inproc import SynapseInproc
 class GanglionInproc(GanglionInternalBase):
     async def _create_synapse_by_name(self, name: str):
         if name in self._synapses:
-            raise SynapseExists("Synapse for {} already exists.".format(name))
+            raise SynapseExists(f"Synapse for {name} already exists.")
 
-        logging.debug("GanglionInproc:Creating synapse for type {}".format(name))
+        logging.debug(f"GanglionInproc:Creating synapse for type {name}")
 
         synapse: SynapseInproc = SynapseInproc(topic=name, loop=self._loop)
 

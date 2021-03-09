@@ -24,9 +24,9 @@ from plexo.typing.receptor import Receptor
 
 
 class SynapseBase(ABC):
-    def __init__(self, topic: str,
-                 receptors: Iterable[Receptor] = (),
-                 loop=None) -> None:
+    def __init__(
+        self, topic: str, receptors: Iterable[Receptor] = (), loop=None
+    ) -> None:
         self.topic = topic
         self.topic_bytes = topic.encode("UTF-8")
 
@@ -67,4 +67,5 @@ class SynapseBase(ABC):
             self._receptors = self._receptors.update(receptors)
 
     @abstractmethod
-    async def transmit(self, data: Any, reaction_id: Optional[UUID] = None): ...
+    async def transmit(self, data: Any, reaction_id: Optional[UUID] = None):
+        ...

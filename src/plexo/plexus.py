@@ -36,11 +36,17 @@ class Plexus(Ganglion):
         ganglia = pset(ganglia)
         self.inproc_ganglion: GanglionInternalBase = GanglionInproc(loop=loop)
 
-        self._external_ganglia = pset(ganglion for ganglion in ganglia
-                                            if isinstance(ganglion, GanglionExternalBase))
+        self._external_ganglia = pset(
+            ganglion
+            for ganglion in ganglia
+            if isinstance(ganglion, GanglionExternalBase)
+        )
         self._external_ganglia_lock = asyncio.Lock()
-        self._internal_ganglia = pset(ganglion for ganglion in ganglia
-                                            if not isinstance(ganglion, GanglionExternalBase))
+        self._internal_ganglia = pset(
+            ganglion
+            for ganglion in ganglia
+            if not isinstance(ganglion, GanglionExternalBase)
+        )
         self._internal_ganglia = self._internal_ganglia.add(self.inproc_ganglion)
         self._internal_ganglia_lock = asyncio.Lock()
 
@@ -50,7 +56,9 @@ class Plexus(Ganglion):
         self._neuron_ganglia_lock = asyncio.Lock()
 
         self._reactions: WeakKeyDictionary[UUID, Set[Ganglion]] = WeakKeyDictionary()
-        self._reaction_locks: WeakKeyDictionary[UUID, asyncio.Lock] = WeakKeyDictionary()
+        self._reaction_locks: WeakKeyDictionary[
+            UUID, asyncio.Lock
+        ] = WeakKeyDictionary()
         self._reaction_locks_lock = asyncio.Lock()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -61,12 +69,16 @@ class Plexus(Ganglion):
 
     def close(self):
         try:
-            for ganglion in itertools.chain(self._internal_ganglia, self._external_ganglia):
+            for ganglion in itertools.chain(
+                self._internal_ganglia, self._external_ganglia
+            ):
                 ganglion.close()
         except RuntimeError:
             pass
 
-    async def _internal_reaction(self, current: Ganglion, data: Any, reaction_id: Optional[UUID] = None):
+    async def _internal_reaction(
+        self, current: Ganglion, data: Any, reaction_id: Optional[UUID] = None
+    ):
         if reaction_id is None:
             reaction_id = uuid4()
             reaction_lock = asyncio.Lock()
@@ -74,15 +86,21 @@ class Plexus(Ganglion):
                 self._reaction_locks[reaction_id] = reaction_lock
         else:
             reaction_lock = self._reaction_locks[reaction_id]
-        
+
         async with reaction_lock:
             if reaction_id not in self._reactions:
                 self._reactions[reaction_id] = {current}
             else:
                 self._reactions[reaction_id].add(current)
 
-            internal = (ganglion.transmit(data, reaction_id) for ganglion in self._internal_ganglia - self._reactions[reaction_id])
-            external = (ganglion.transmit_encode(data, reaction_id) for ganglion in self._external_ganglia - self._reactions[reaction_id])
+            internal = (
+                ganglion.transmit(data, reaction_id)
+                for ganglion in self._internal_ganglia - self._reactions[reaction_id]
+            )
+            external = (
+                ganglion.transmit_encode(data, reaction_id)
+                for ganglion in self._external_ganglia - self._reactions[reaction_id]
+            )
 
         try:
             await asyncio.gather(*itertools.chain(internal, external))
@@ -90,7 +108,12 @@ class Plexus(Ganglion):
             # Got empty list, continue
             pass
 
-    async def _external_internal_reaction(self, current: GanglionExternalBase, data: Any, reaction_id: Optional[UUID] = None):
+    async def _external_internal_reaction(
+        self,
+        current: GanglionExternalBase,
+        data: Any,
+        reaction_id: Optional[UUID] = None,
+    ):
         if reaction_id is None:
             reaction_id = uuid4()
             reaction_lock = asyncio.Lock()
@@ -98,14 +121,17 @@ class Plexus(Ganglion):
                 self._reaction_locks[reaction_id] = reaction_lock
         else:
             reaction_lock = self._reaction_locks[reaction_id]
-        
+
         async with reaction_lock:
             if reaction_id not in self._reactions:
                 self._reactions[reaction_id] = {current}
             else:
                 self._reactions[reaction_id].add(current)
 
-            internal = (ganglion.transmit(data, reaction_id) for ganglion in self._internal_ganglia - self._reactions[reaction_id])
+            internal = (
+                ganglion.transmit(data, reaction_id)
+                for ganglion in self._internal_ganglia - self._reactions[reaction_id]
+            )
 
         try:
             await asyncio.gather(*internal)
@@ -113,7 +139,9 @@ class Plexus(Ganglion):
             # Got empty list, continue
             pass
 
-    async def _external_external_reaction(self, current: GanglionExternalBase, data: E, reaction_id: Optional[UUID] = None):
+    async def _external_external_reaction(
+        self, current: GanglionExternalBase, data: E, reaction_id: Optional[UUID] = None
+    ):
         if reaction_id is None:
             reaction_id = uuid4()
             reaction_lock = asyncio.Lock()
@@ -121,14 +149,17 @@ class Plexus(Ganglion):
                 self._reaction_locks[reaction_id] = reaction_lock
         else:
             reaction_lock = self._reaction_locks[reaction_id]
-        
+
         async with reaction_lock:
             if reaction_id not in self._reactions:
                 self._reactions[reaction_id] = {current}
             else:
                 self._reactions[reaction_id].add(current)
 
-            external = (ganglion.transmit(data, reaction_id) for ganglion in self._external_ganglia - self._reactions[reaction_id])
+            external = (
+                ganglion.transmit(data, reaction_id)
+                for ganglion in self._external_ganglia - self._reactions[reaction_id]
+            )
 
         try:
             await asyncio.gather(*external)
@@ -159,17 +190,39 @@ class Plexus(Ganglion):
             new_neuron_ganglia = all_neuron_ganglia.difference(self._neuron_ganglia)
             self._neuron_ganglia = all_neuron_ganglia
 
-        new_external_neuron_ganglia = pset((neuron, ganglion) for neuron, ganglion in new_neuron_ganglia
-                                          if isinstance(ganglion, GanglionExternalBase))
-        new_internal_neuron_ganglia = new_neuron_ganglia.difference(new_external_neuron_ganglia)
-        internal = (ganglion.adapt(neuron, reactants=(partial(self._internal_reaction, ganglion),))
-                    for neuron, ganglion in new_internal_neuron_ganglia)
-        external_external = (ganglion.adapt(neuron, reactants=(partial(self._external_external_reaction, ganglion),))
-                             for neuron, ganglion in new_external_neuron_ganglia)
-        external_internal = (ganglion.adapt(neuron, decoded_reactants=(partial(self._external_internal_reaction, ganglion),))
-                             for neuron, ganglion in new_external_neuron_ganglia)
+        new_external_neuron_ganglia = pset(
+            (neuron, ganglion)
+            for neuron, ganglion in new_neuron_ganglia
+            if isinstance(ganglion, GanglionExternalBase)
+        )
+        new_internal_neuron_ganglia = new_neuron_ganglia.difference(
+            new_external_neuron_ganglia
+        )
+        internal = (
+            ganglion.adapt(
+                neuron, reactants=(partial(self._internal_reaction, ganglion),)
+            )
+            for neuron, ganglion in new_internal_neuron_ganglia
+        )
+        external_external = (
+            ganglion.adapt(
+                neuron, reactants=(partial(self._external_external_reaction, ganglion),)
+            )
+            for neuron, ganglion in new_external_neuron_ganglia
+        )
+        external_internal = (
+            ganglion.adapt(
+                neuron,
+                decoded_reactants=(
+                    partial(self._external_internal_reaction, ganglion),
+                ),
+            )
+            for neuron, ganglion in new_external_neuron_ganglia
+        )
         try:
-            await asyncio.gather(*itertools.chain(internal, external_external, external_internal))
+            await asyncio.gather(
+                *itertools.chain(internal, external_external, external_internal)
+            )
         except ValueError:
             # Got empty list, continue
             pass
@@ -185,7 +238,9 @@ class Plexus(Ganglion):
     async def transmit(self, data, reaction_id: Optional[UUID] = None):
         return await self.inproc_ganglion.transmit(data, reaction_id)
 
-    async def adapt(self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None):
+    async def adapt(
+        self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None
+    ):
         if reactants:
             await self.react(neuron, reactants)
 

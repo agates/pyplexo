@@ -22,7 +22,7 @@ from typing import ByteString
 from plexo.synapse.zeromq import SynapseZmqEPGM
 from plexo.receptor import create_decoder_receptor
 
-test_ip_address = ipaddress.IPv4Address('239.255.0.1')
+test_ip_address = ipaddress.IPv4Address("239.255.0.1")
 test_port = 5561
 
 start_time = timer()
@@ -33,9 +33,10 @@ messages = {"received": 0}
 async def print_handler(data: str, _):
     async with messages_lock:
         messages["received"] += 1
-        logging.info("Print handler: {0} - {1} messages/s".format(
-            data,
-            messages["received"]/(timer()-start_time))
+        logging.info(
+            "Print handler: {0} - {1} messages/s".format(
+                data, messages["received"] / (timer() - start_time)
+            )
         )
 
 
@@ -50,11 +51,13 @@ def run(loop=None):
         loop = asyncio.new_event_loop()
 
     receptor = create_decoder_receptor(reactants=(print_handler,), decoder=bytes_decode)
-    synapse = SynapseZmqEPGM("example_string",
-                             multicast_address=test_ip_address,
-                             port=test_port,
-                             receptors=(receptor,),
-                             loop=loop)
+    synapse = SynapseZmqEPGM(
+        "example_string",
+        multicast_address=test_ip_address,
+        port=test_port,
+        receptors=(receptor,),
+        loop=loop,
+    )
 
     if not loop.is_running():  # pragma: no cover
         try:

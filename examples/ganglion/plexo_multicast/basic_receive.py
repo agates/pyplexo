@@ -22,7 +22,7 @@ from plexo.neuron.neuron import Neuron
 from plexo.ganglion.multicast import GanglionPlexoMulticast
 from plexo.namespace.namespace import Namespace
 
-test_multicast_cidr = ipaddress.ip_network('239.255.0.0/16')
+test_multicast_cidr = ipaddress.ip_network("239.255.0.0/16")
 test_port = 5561
 
 
@@ -31,7 +31,7 @@ class Foo:
 
 
 async def _foo_reaction(data: Foo, _):
-    logging.info("Received Foo.string: {}".format(data.message))
+    logging.info(f"Received Foo.string: {data.message}")
 
 
 def run(loop=None):
@@ -40,13 +40,15 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    ganglion = GanglionPlexoMulticast(multicast_cidr=test_multicast_cidr,
-                                      port=test_port,
-                                      heartbeat_interval_seconds=10,
-                                      loop=loop)
+    ganglion = GanglionPlexoMulticast(
+        multicast_cidr=test_multicast_cidr,
+        port=test_port,
+        heartbeat_interval_seconds=10,
+        loop=loop,
+    )
     namespace = Namespace(["plexo", "test"])
     foo_coder = Neuron(Foo, namespace, PickleCodec())
-    
+
     loop.create_task(ganglion.adapt(foo_coder, decoded_reactants=[_foo_reaction]))
 
     if not loop.is_running():  # pragma: no cover

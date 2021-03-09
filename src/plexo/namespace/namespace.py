@@ -17,7 +17,7 @@ from typing import Iterable
 
 
 class Namespace:
-    def __init__(self, parts: Iterable[str], delimiter: str = '.'):
+    def __init__(self, parts: Iterable[str], delimiter: str = "."):
         self.delimiter = delimiter
         self.parts = parts
 

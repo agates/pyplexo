@@ -17,7 +17,7 @@ from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
 from typing import Union, Callable, TypeVar
 
 E = bytes
-U = TypeVar('U')
+U = TypeVar("U")
 Decoder = Callable[[E], U]
 Encoder = Callable[[U], E]
 IPAddress = Union[IPv4Address, IPv6Address]

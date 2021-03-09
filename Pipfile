@@ -5,6 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 plexo = {editable = true, path="."}
+black = "*"
 flake8 = "*"
 mypy = ">=0.812"
 pytest = "*"

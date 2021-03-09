@@ -23,7 +23,7 @@ from plexo.receptor import create_decoder_receptor
 from plexo.synapse.zeromq import SynapseZmqEPGM
 from plexo.transmitter import transmit_encode
 
-test_ip_address = ipaddress.IPv4Address('239.255.0.1')
+test_ip_address = ipaddress.IPv4Address("239.255.0.1")
 test_port = 5561
 
 
@@ -43,19 +43,23 @@ async def test_zmq_epgm_receptor(event_loop):
     async def receptor_queue(_1, _2):
         await test_queue.put(_1)
 
-    receptor = create_decoder_receptor(reactants=(receptor_queue,), decoder=decode_json_bytes)
-    synapse = SynapseZmqEPGM("test",
-                             multicast_address=test_ip_address,
-                             port=test_port,
-                             receptors=(receptor,),
-                             loop=event_loop)
+    receptor = create_decoder_receptor(
+        reactants=(receptor_queue,), decoder=decode_json_bytes
+    )
+    synapse = SynapseZmqEPGM(
+        "test",
+        multicast_address=test_ip_address,
+        port=test_port,
+        receptors=(receptor,),
+        loop=event_loop,
+    )
 
-    await asyncio.sleep(.1)
+    await asyncio.sleep(0.1)
 
     foo_bar_dict = {"foo": "bar"}
     await transmit_encode((synapse,), encode_json_bytes, foo_bar_dict)
 
-    await asyncio.sleep(.1)
+    await asyncio.sleep(0.1)
 
     data = await test_queue.get()
     assert data == foo_bar_dict

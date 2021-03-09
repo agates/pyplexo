@@ -26,10 +26,10 @@ class IpLeaseManager:
 
     def lease_address(self, ip_address: IPAddress):
         if ip_address not in self._ip_lease_map:
-            raise IpNotFound("ip_address {} not found".format(ip_address))
+            raise IpNotFound(f"ip_address {ip_address} not found")
 
         if self._ip_lease_map[ip_address]:
-            raise IpLeaseExists("ip_address {} is already leased".format(ip_address))
+            raise IpLeaseExists(f"ip_address {ip_address} is already leased")
 
         self._ip_lease_map = self._ip_lease_map.set(ip_address, True)
         self._available_ips.discard(ip_address)
@@ -38,10 +38,10 @@ class IpLeaseManager:
 
     def release_address(self, ip_address: IPAddress):
         if ip_address not in self._ip_lease_map:
-            raise IpNotFound("ip_address {} not found".format(ip_address))
+            raise IpNotFound(f"ip_address {ip_address} not found")
 
         if not self._ip_lease_map[ip_address]:
-            raise IpNotLeased("ip_address {} is not leased".format(ip_address))
+            raise IpNotLeased(f"ip_address {ip_address} is not leased")
 
         self._ip_lease_map = self._ip_lease_map.set(ip_address, False)
         self._available_ips.add(ip_address)
@@ -50,7 +50,7 @@ class IpLeaseManager:
 
     def address_is_leased(self, ip_address: IPAddress):
         if ip_address not in self._ip_lease_map:
-            raise IpNotFound("ip_address {} not found".format(ip_address))
+            raise IpNotFound(f"ip_address {ip_address} not found")
 
         return self._ip_lease_map[ip_address]
 

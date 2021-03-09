@@ -23,7 +23,10 @@ from plexo.synapse.base import SynapseBase
 class SynapseInproc(SynapseBase):
     async def transmit(self, data: Any, reaction_id: Optional[UUID] = None):
         try:
-            return await asyncio.gather(*(receptor(data, reaction_id) for receptor in self.receptors), loop=self._loop)
+            return await asyncio.gather(
+                *(receptor(data, reaction_id) for receptor in self.receptors),
+                loop=self._loop,
+            )
         except ValueError:
             # Got empty list, continue
             pass

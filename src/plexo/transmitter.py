@@ -26,7 +26,9 @@ from plexo.synapse.base import SynapseBase
 from plexo.typing import U, Encoder
 
 
-def create_encoder_transmitter(synapses: Iterable[SynapseBase], encoder: Encoder, loop=None):
+def create_encoder_transmitter(
+    synapses: Iterable[SynapseBase], encoder: Encoder, loop=None
+):
     return partial(transmit_encode, plist(synapses), encoder, loop=loop)
 
 
@@ -34,10 +36,23 @@ def create_transmitter(synapses: Iterable[SynapseBase], loop=None):
     return partial(transmit, plist(synapses), loop=loop)
 
 
-async def transmit(synapses: Iterable[SynapseBase], data: Any, reaction_id: Optional[UUID] = None, loop=None):
-    return await asyncio.gather(*(synapse.transmit(data, reaction_id) for synapse in synapses), loop=loop)
+async def transmit(
+    synapses: Iterable[SynapseBase],
+    data: Any,
+    reaction_id: Optional[UUID] = None,
+    loop=None,
+):
+    return await asyncio.gather(
+        *(synapse.transmit(data, reaction_id) for synapse in synapses), loop=loop
+    )
 
 
-async def transmit_encode(synapses: Iterable[SynapseBase], encoder: Encoder[U], data: U, reaction_id: Optional[UUID] = None, loop=None):
+async def transmit_encode(
+    synapses: Iterable[SynapseBase],
+    encoder: Encoder[U],
+    data: U,
+    reaction_id: Optional[UUID] = None,
+    loop=None,
+):
     encoded = encoder(data)
     return await transmit(synapses, encoded, reaction_id, loop=loop)

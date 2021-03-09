@@ -24,9 +24,9 @@ from plexo.transmitter import create_transmitter
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("stub_count,transmit_count",
-                         tuple((n, m) for n in range(1, 5) for m in range(1, 5))
-                         )
+@pytest.mark.parametrize(
+    "stub_count,transmit_count", tuple((n, m) for n in range(1, 5) for m in range(1, 5))
+)
 async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit_count):
     def make_stub_async(stub):
         async def stub_async(_1, _2):
@@ -40,7 +40,9 @@ async def test_inprocess_receptor_transmit_multiple(mocker, stub_count, transmit
     transmitter = create_transmitter((synapse,))
 
     foo_bar_dict = {"foo": "bar"}
-    await asyncio.wait(tuple(t(foo_bar_dict) for t in repeat(transmitter, transmit_count)))
+    await asyncio.wait(
+        tuple(t(foo_bar_dict) for t in repeat(transmitter, transmit_count))
+    )
 
     for stub in stubs:
         stub.assert_called_with(foo_bar_dict, None)

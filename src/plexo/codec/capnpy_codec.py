@@ -22,7 +22,7 @@ class CapnpyCodec(Codec):
 
     def __init__(self, capnpy_struct):
         self.capnpy_struct = capnpy_struct
-    
+
     def encode(self, data) -> E:
         return self.capnpy_struct.dumps(data)
 

@@ -43,8 +43,12 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
             try:
                 return self._encoder_transmitters[neuron]
             except KeyError:
-                encoder_transmitter = create_encoder_transmitter((synapse,), neuron.encode, loop=self._loop)
-                self._encoder_transmitters = self._encoder_transmitters.set(neuron, encoder_transmitter)
+                encoder_transmitter = create_encoder_transmitter(
+                    (synapse,), neuron.encode, loop=self._loop
+                )
+                self._encoder_transmitters = self._encoder_transmitters.set(
+                    neuron, encoder_transmitter
+                )
                 return encoder_transmitter
 
     async def create_encoder_transmitter(self, neuron: Neuron, synapse: SynapseBase):
@@ -56,9 +60,10 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
 
     async def update_transmitter(self, neuron: Neuron):
         synapse = await self.get_synapse(neuron)
-        await asyncio.gather(self._create_encoder_transmitter(neuron, synapse),
-                             self._create_transmitter(neuron, synapse)
-                             )
+        await asyncio.gather(
+            self._create_encoder_transmitter(neuron, synapse),
+            self._create_transmitter(neuron, synapse),
+        )
 
         await self._update_type_neurons(neuron)
 
@@ -66,32 +71,51 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
         try:
             return self._encoder_transmitters[neuron]
         except KeyError:
-            raise TransmitterNotFound("Transmitter for {} does not exist.".format(neuron))
+            raise TransmitterNotFound(f"Transmitter for {neuron} does not exist.")
 
-    async def _get_encoder_transmitters(self, data: U) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
+    async def _get_encoder_transmitters(
+        self, data: U
+    ) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
         try:
             neurons = await self._get_neurons(data)
         except NeuronNotFound:
-            raise TransmitterNotFound("Transmitter for {} does not exist.".format(type(data).__name__))
+            raise TransmitterNotFound(
+                f"Transmitter for {type(data).__name__} does not exist."
+            )
         return (self._get_encoder_transmitter(neuron) for neuron in neurons)
 
-    async def react_decode(self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]):
+    async def react_decode(
+        self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]
+    ):
         synapse = await self.get_synapse(neuron)
         await synapse.update_receptors(
-            (create_decoder_receptor(reactants=reactants, decoder=neuron.decode, loop=self._loop),)
+            (
+                create_decoder_receptor(
+                    reactants=reactants, decoder=neuron.decode, loop=self._loop
+                ),
+            )
         )
 
     async def transmit_encode(self, data, reaction_id: Optional[UUID] = None):
         encoder_transmitters = await self._get_encoder_transmitters(data)
 
         return await asyncio.gather(
-            *(encoder_transmitter(data, reaction_id) for encoder_transmitter in encoder_transmitters),
-            loop=self._loop)
+            *(
+                encoder_transmitter(data, reaction_id)
+                for encoder_transmitter in encoder_transmitters
+            ),
+            loop=self._loop,
+        )
 
-    async def adapt(self, neuron: Neuron[U],
-                    reactants: Optional[Iterable[Reactant]] = None,
-                    decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None):
+    async def adapt(
+        self,
+        neuron: Neuron[U],
+        reactants: Optional[Iterable[Reactant]] = None,
+        decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None,
+    ):
         if decoded_reactants:
             await self.react_decode(neuron, decoded_reactants)
 
-        return await super(GanglionExternalBase, self).adapt(neuron, reactants=reactants)
+        return await super(GanglionExternalBase, self).adapt(
+            neuron, reactants=reactants
+        )

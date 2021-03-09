@@ -23,10 +23,10 @@ def get_primary_ip():
     # noinspection PyBroadException
     try:
         # doesn't even have to be reachable
-        _socket.connect(('10.255.255.255', 1))
+        _socket.connect(("10.255.255.255", 1))
         ip_address = _socket.getsockname()[0]
     except Exception:
-        ip_address = '127.0.0.1'
+        ip_address = "127.0.0.1"
     finally:
         _socket.close()
 
