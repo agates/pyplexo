@@ -22,7 +22,7 @@ from uuid import UUID
 
 from pyrsistent import plist
 
-from plexo.typing import E, U, Decoder
+from plexo.typing import Decoder, E, U
 from plexo.typing.reactant import DecodedReactant, Reactant
 
 

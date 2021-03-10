@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Iterable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Optional
 from uuid import UUID
 
 from typing_extensions import Protocol

@@ -21,7 +21,6 @@ from plexo.schema.plexo_promise import PlexoPromise
 from plexo.schema.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_rejection import PlexoRejection
 
-
 plexo_approval_codec = CapnpyCodec(PlexoApproval)
 plexo_heartbeat_codec = CapnpyCodec(PlexoHeartbeat)
 plexo_preparation_codec = CapnpyCodec(PlexoPreparation)

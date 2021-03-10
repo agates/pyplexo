@@ -15,9 +15,9 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-from plexo.neuron.neuron import Neuron
 from plexo.exceptions import SynapseExists
 from plexo.ganglion.internal import GanglionInternalBase
+from plexo.neuron.neuron import Neuron
 from plexo.synapse.inproc import SynapseInproc
 
 

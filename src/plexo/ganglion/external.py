@@ -22,9 +22,9 @@ from uuid import UUID
 from pyrsistent import pmap
 from pyrsistent.typing import PMap
 
-from plexo.neuron.neuron import Neuron
-from plexo.exceptions import TransmitterNotFound, NeuronNotFound
+from plexo.exceptions import NeuronNotFound, TransmitterNotFound
 from plexo.ganglion.internal import GanglionInternalBase
+from plexo.neuron.neuron import Neuron
 from plexo.receptor import create_decoder_receptor
 from plexo.synapse.base import SynapseBase
 from plexo.transmitter import create_encoder_transmitter

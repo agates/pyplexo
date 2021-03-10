@@ -16,7 +16,7 @@
 from typing import Generic, Type
 
 from plexo.namespace.namespace import Namespace
-from plexo.typing import U, E
+from plexo.typing import E, U
 from plexo.typing.codec import Codec
 
 

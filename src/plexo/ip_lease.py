@@ -15,7 +15,7 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 from pyrsistent import pmap
 
-from plexo.exceptions import IpNotFound, IpLeaseExists, IpNotLeased, IpsExhausted
+from plexo.exceptions import IpLeaseExists, IpNotFound, IpNotLeased, IpsExhausted
 from plexo.typing import IPAddress, IPNetwork
 
 

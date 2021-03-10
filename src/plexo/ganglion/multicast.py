@@ -29,34 +29,25 @@ from uuid import UUID
 from pyrsistent import plist, pmap, pvector
 from pyrsistent.typing import PMap
 
-from plexo.codec.plexo_codec import (
-    plexo_approval_codec,
-    plexo_heartbeat_codec,
-    plexo_preparation_codec,
-    plexo_promise_codec,
-    plexo_proposal_codec,
-    plexo_rejection_codec,
-)
 from plexo.exceptions import (
-    ProposalPromiseNotMade,
-    ProposalNotLatest,
-    PreparationRejection,
     ConsensusNotReached,
-    SynapseExists,
     IpLeaseExists,
+    PreparationRejection,
+    ProposalNotLatest,
+    ProposalPromiseNotMade,
     SynapseDoesNotExist,
+    SynapseExists,
 )
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.ip_lease import IpLeaseManager
-from plexo.namespace import plexo_namespace
 from plexo.neuron.neuron import Neuron
 from plexo.neuron.plexo_neuron import (
+    approval_neuron,
     heartbeat_neuron,
     preparation_neuron,
     promise_neuron,
-    rejection_neuron,
     proposal_neuron,
-    approval_neuron,
+    rejection_neuron,
 )
 from plexo.schema.plexo_approval import PlexoApproval
 from plexo.schema.plexo_heartbeat import PlexoHeartbeat
@@ -66,7 +57,7 @@ from plexo.schema.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_rejection import PlexoRejection
 from plexo.synapse.zeromq import SynapseZmqEPGM
 from plexo.timer import Timer
-from plexo.typing import U, IPAddress, IPNetwork
+from plexo.typing import IPAddress, IPNetwork, U
 from plexo.typing.reactant import DecodedReactant, Reactant
 
 
@@ -172,7 +163,9 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         instance_id = self.instance_id
         try:
             half_interval = self.heartbeat_interval_seconds / 2
-            random_sleep_time = random.random() * half_interval + half_interval
+            random_sleep_time = (  # nosec - This is not security related
+                random.random() * half_interval + half_interval
+            )
         except Exception as e:
             logging.error(e)
             random_sleep_time = self.heartbeat_interval_seconds
@@ -471,8 +464,9 @@ class GanglionPlexoMulticast(GanglionExternalBase):
             if approval.instance_id == self.instance_id:
                 logging.debug(
                     "GanglionPlexoMulticast:{}:"
-                    "Approval instance_id is from current instance. Canceling timer"
-                    .format(self.instance_id)
+                    "Approval instance_id is from current instance. Canceling timer".format(
+                        self.instance_id
+                    )
                 )
 
                 async with self._proposal_timers_lock:
@@ -632,8 +626,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         half_num_peers = self._num_peers / 2
         logging.debug(
             "GanglionPlexoMulticast:{}:_get_address_from_consensus:{}:"
-            "num_peers: {}, half_num_peers: {}, num_promises: {}, num_rejections: {}"
-            .format(
+            "num_peers: {}, half_num_peers: {}, num_promises: {}, num_rejections: {}".format(
                 self.instance_id,
                 preparation,
                 self._num_peers,
@@ -774,8 +767,9 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         if current_multicast_address == multicast_address:
             logging.debug(
                 "GanglionPlexoMulticast:{}:update_synapse_with_address:"
-                "Synapse for type {} already exists with correct multicast_address {}"
-                .format(self.instance_id, name, multicast_address)
+                "Synapse for type {} already exists with correct multicast_address {}".format(
+                    self.instance_id, name, multicast_address
+                )
             )
             return current_synapse
         else:
@@ -831,8 +825,9 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         else:
             logging.debug(
                 "GanglionPlexoMulticast:{}:create_or_update_synapse_by_name:"
-                "Synapse for type {} does not exist, creating with multicast_address {}"
-                .format(self.instance_id, name, multicast_address)
+                "Synapse for type {} does not exist, creating with multicast_address {}".format(
+                    self.instance_id, name, multicast_address
+                )
             )
             return await self.create_synapse_with_address(name, multicast_address)
 

@@ -16,16 +16,16 @@
 import asyncio
 import itertools
 from typing import Any, Iterable, Optional, Set, Tuple
+from uuid import UUID, uuid4
 from weakref import WeakKeyDictionary
-from uuid import uuid4, UUID
 
-from pyrsistent import pset, PSet
-from plexo.ganglion.internal import GanglionInternalBase
+from pyrsistent import PSet, pset
 from returns.curry import partial
 
-from plexo.neuron.neuron import Neuron
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.ganglion.inproc import GanglionInproc
+from plexo.ganglion.internal import GanglionInternalBase
+from plexo.neuron.neuron import Neuron
 from plexo.typing import E
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import Reactant

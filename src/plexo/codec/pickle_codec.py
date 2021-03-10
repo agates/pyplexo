@@ -13,7 +13,7 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-import pickle
+import pickle  # nosec - Pickle is entirely optional in this library
 
 from plexo.typing import E
 from plexo.typing.codec import Codec
@@ -26,4 +26,4 @@ class PickleCodec(Codec):
         return pickle.dumps(data)
 
     def decode(self, data: E):
-        return pickle.loads(data)
+        return pickle.loads(data)  # nosec - Pickle is entirely optional in this library

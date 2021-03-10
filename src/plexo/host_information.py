@@ -31,17 +31,3 @@ def get_primary_ip():
         _socket.close()
 
     return ip_address
-
-
-def get_hashed_primary_ip():
-    return hashlib.sha1(get_primary_ip().encode("UTF-8")).digest()
-
-
-def get_machine_id():
-    with open("/etc/machine-id", "rb") as machine_id_file:
-        machine_id_hex = machine_id_file.read()
-    return machine_id_hex.rstrip()
-
-
-def get_hashed_machine_id():
-    return hashlib.sha1(get_machine_id()).digest()

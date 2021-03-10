@@ -23,7 +23,7 @@ from uuid import UUID
 from pyrsistent import plist
 
 from plexo.synapse.base import SynapseBase
-from plexo.typing import U, Encoder
+from plexo.typing import Encoder, U
 
 
 def create_encoder_transmitter(

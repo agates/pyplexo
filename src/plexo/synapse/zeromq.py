@@ -16,7 +16,7 @@
 import asyncio
 import logging
 from asyncio.futures import Future
-from typing import Iterable, Any, Tuple, Set, Optional
+from typing import Any, Iterable, Optional, Set, Tuple
 from uuid import UUID
 
 import zmq

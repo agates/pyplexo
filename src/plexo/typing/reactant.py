@@ -13,11 +13,10 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Callable, Coroutine, Any, Optional
+from typing import Any, Callable, Coroutine, Optional
 from uuid import UUID
 
 from plexo.typing import U
-
 
 DecodedReactant = Callable[[U, Optional[UUID]], Coroutine[Any, Any, Any]]
 Reactant = Callable[[Any, Optional[UUID]], Coroutine[Any, Any, Any]]

@@ -15,14 +15,14 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Iterable, Type, Optional
+from typing import Any, Callable, Iterable, Optional, Type
 from uuid import UUID
 
 from pyrsistent import pdeque, pmap, pset
 from pyrsistent.typing import PDeque, PMap, PSet
 
+from plexo.exceptions import NeuronNotFound, SynapseExists, TransmitterNotFound
 from plexo.neuron.neuron import Neuron
-from plexo.exceptions import SynapseExists, NeuronNotFound, TransmitterNotFound
 from plexo.receptor import create_receptor
 from plexo.synapse.base import SynapseBase
 from plexo.transmitter import create_transmitter

@@ -5,8 +5,9 @@ verify_ssl = true
 
 [dev-packages]
 plexo = {editable = true, path="."}
+bandit = "*"
 black = "*"
-flake8 = "*"
+isort = "*"
 mypy = ">=0.812"
 pytest = "*"
 pytest-asyncio = "*"
@@ -14,7 +15,6 @@ pytest-cov = "*"
 pytest-mock = "*"
 pytest-mypy = "*"
 tox = "*"
-wemake-python-styleguide = "*"
 
 [packages]
 capnpy = "~=0.8"

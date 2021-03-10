@@ -13,8 +13,8 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from ipaddress import IPv4Address, IPv6Address, IPv4Network, IPv6Network
-from typing import Union, Callable, TypeVar
+from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
+from typing import Callable, TypeVar, Union
 
 E = bytes
 U = TypeVar("U")

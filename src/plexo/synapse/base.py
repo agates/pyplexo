@@ -18,7 +18,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Iterable, Optional
 from uuid import UUID
 
-from pyrsistent import pset, pdeque, PDeque
+from pyrsistent import PDeque, pdeque, pset
 
 from plexo.typing.receptor import Receptor
 

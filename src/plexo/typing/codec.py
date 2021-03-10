@@ -14,6 +14,7 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 from abc import abstractmethod
+
 from typing_extensions import Protocol
 
 from plexo.typing import E
