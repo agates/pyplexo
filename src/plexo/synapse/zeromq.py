@@ -149,3 +149,11 @@ class SynapseZmqEPGM(SynapseBase):
                     f"SynapseZmqEPGM:{topic}:_recv_loop: {e}", stack_info=True
                 )
                 continue
+
+
+class SynapseZmqRouter(SynapseBase):
+    def __init__(
+        self, topic: str, receptors: Iterable[DecodedReceptor] = (), loop=None
+    ) -> None:
+
+        pass
