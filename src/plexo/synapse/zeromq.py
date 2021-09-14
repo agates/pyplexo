@@ -39,7 +39,7 @@ class SynapseZmqEPGM(SynapseBase):
         receptors: Iterable[DecodedReceptor] = (),
         loop=None,
     ) -> None:
-        super(SynapseZmqEPGM, self).__init__(topic, receptors, loop=loop)
+        super().__init__(topic, receptors, loop=loop)
 
         if not bind_interface:
             bind_interface = get_primary_ip()
@@ -74,7 +74,7 @@ class SynapseZmqEPGM(SynapseBase):
 
     def close(self):
         try:
-            super(SynapseZmqEPGM, self).close()
+            super().close()
         finally:
             if self._socket_sub:
                 self._socket_sub.close()
@@ -86,7 +86,7 @@ class SynapseZmqEPGM(SynapseBase):
         self._startup(multicast_address)
 
     async def update_receptors(self, receptors: Iterable[DecodedReceptor]):
-        await super(SynapseZmqEPGM, self).update_receptors(receptors)
+        await super().update_receptors(receptors)
         self._start_recv_loop_if_needed()
 
     def _create_socket_pub(self):

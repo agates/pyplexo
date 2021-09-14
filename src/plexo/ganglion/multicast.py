@@ -116,7 +116,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         proposal_timeout_seconds: int = 5,
         loop=None,
     ) -> None:
-        super(GanglionPlexoMulticast, self).__init__(loop=loop)
+        super().__init__(loop=loop)
         self.bind_interface = bind_interface
         self.multicast_cidr = multicast_cidr
         self.port = port
@@ -834,7 +834,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def react_decode_ignore_startup(
         self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]
     ):
-        return await super(GanglionPlexoMulticast, self).react_decode(neuron, reactants)
+        return await super().react_decode(neuron, reactants)
 
     async def react_decode(
         self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]
@@ -843,7 +843,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         return await self.react_decode_ignore_startup(neuron, reactants)
 
     async def react_ignore_startup(self, neuron: Neuron, reactants: Iterable[Reactant]):
-        return await super(GanglionPlexoMulticast, self).react(neuron, reactants)
+        return await super().react(neuron, reactants)
 
     async def react(self, neuron: Neuron, reactants: Iterable[Reactant]):
         await self.wait_startup()
@@ -852,16 +852,14 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def transmit_encode_ignore_startup(
         self, data, reaction_id: Optional[UUID] = None
     ):
-        return await super(GanglionPlexoMulticast, self).transmit_encode(
-            data, reaction_id
-        )
+        return await super().transmit_encode(data, reaction_id)
 
     async def transmit_encode(self, data, reaction_id: Optional[UUID] = None):
         await self.wait_startup()
         return await self.transmit_encode_ignore_startup(data, reaction_id)
 
     async def transmit_ignore_startup(self, data, reaction_id: Optional[UUID] = None):
-        return await super(GanglionPlexoMulticast, self).transmit(data, reaction_id)
+        return await super().transmit(data, reaction_id)
 
     async def transmit(self, data, reaction_id: Optional[UUID] = None):
         await self.wait_startup()

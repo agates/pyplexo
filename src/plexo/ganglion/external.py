@@ -34,7 +34,7 @@ from plexo.typing.reactant import DecodedReactant, Reactant
 
 class GanglionExternalBase(GanglionInternalBase, ABC):
     def __init__(self, loop=None):
-        super(GanglionExternalBase, self).__init__(loop=loop)
+        super().__init__(loop=loop)
         self._encoder_transmitters: PMap[Neuron, partial[Coroutine]] = pmap({})
         self._encoder_transmitters_lock = asyncio.Lock()
 
@@ -116,6 +116,4 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
         if decoded_reactants:
             await self.react_decode(neuron, decoded_reactants)
 
-        return await super(GanglionExternalBase, self).adapt(
-            neuron, reactants=reactants
-        )
+        return await super().adapt(neuron, reactants=reactants)
