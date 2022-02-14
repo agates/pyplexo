@@ -14,18 +14,18 @@
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
-from typing import Any, Optional
+from typing import Optional
 from uuid import UUID
 
 from plexo.synapse.base import SynapseBase
+from plexo.typing import UnencodedSignal
 
 
 class SynapseInproc(SynapseBase):
-    async def transmit(self, data: Any, reaction_id: Optional[UUID] = None):
+    async def transmit(self, data: UnencodedSignal, reaction_id: Optional[UUID] = None):
         try:
             return await asyncio.gather(
                 *(receptor(data, reaction_id) for receptor in self.receptors),
-                loop=self._loop,
             )
         except ValueError:
             # Got empty list, continue

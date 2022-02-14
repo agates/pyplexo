@@ -28,6 +28,7 @@ from uuid import UUID
 
 from pyrsistent import plist, pmap, pvector
 from pyrsistent.typing import PMap
+from zmq import ZMQError
 
 from plexo.exceptions import (
     ConsensusNotReached,
@@ -57,7 +58,7 @@ from plexo.schema.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_rejection import PlexoRejection
 from plexo.synapse.zeromq import SynapseZmqEPGM
 from plexo.timer import Timer
-from plexo.typing import IPAddress, IPNetwork, U
+from plexo.typing import IPAddress, IPNetwork, UnencodedSignal, Signal
 from plexo.typing.reactant import DecodedReactant, Reactant
 
 
@@ -116,7 +117,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         proposal_timeout_seconds: int = 5,
         loop=None,
     ) -> None:
-        super().__init__(loop=loop)
+        super().__init__()
         self.bind_interface = bind_interface
         self.multicast_cidr = multicast_cidr
         self.port = port
@@ -140,24 +141,24 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         self._num_peers = 0
 
         self._proposals: PMap = pmap()
-        self._proposals_lock = asyncio.Lock(loop=loop)
+        self._proposals_lock = asyncio.Lock()
 
         self._preparation_timers: PMap = pmap()
-        self._preparation_timers_lock = asyncio.Lock(loop=loop)
+        self._preparation_timers_lock = asyncio.Lock()
 
         self._preparation_promises: PMap = pmap()
-        self._preparation_promises_lock = asyncio.Lock(loop=loop)
+        self._preparation_promises_lock = asyncio.Lock()
         self._preparation_rejections: PMap = pmap()
-        self._preparation_rejections_lock = asyncio.Lock(loop=loop)
+        self._preparation_rejections_lock = asyncio.Lock()
 
         self._proposal_timers: PMap = pmap()
-        self._proposal_timers_lock = asyncio.Lock(loop=loop)
+        self._proposal_timers_lock = asyncio.Lock()
 
         self._proposal_approvals: PMap = pmap()
-        self._proposal_approvals_lock = asyncio.Lock(loop=loop)
+        self._proposal_approvals_lock = asyncio.Lock()
 
         self._startup_done = False
-        asyncio.ensure_future(self._startup(), loop=loop)
+        # asyncio.ensure_future(self._startup())#, loop=loop)
 
     async def _heartbeat_loop(self):
         instance_id = self.instance_id
@@ -492,50 +493,58 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                         type_proposal_key
                     )
 
-    async def _startup(self):
-        await self.create_synapse_with_reserved_address(
-            heartbeat_neuron, ReservedMulticastAddress.Heartbeat
-        )
-        await self.adapt_ignore_startup(
-            heartbeat_neuron, decoded_reactants=(self._heartbeat_reaction,)
-        )
-        self._add_task(self._loop.create_task(self._heartbeat_loop()))
-        self._add_task(self._loop.create_task(self._num_peers_loop()))
+    async def startup(self):
+        try:
+            await self.create_synapse_with_reserved_address(
+                heartbeat_neuron, ReservedMulticastAddress.Heartbeat
+            )
+            await self.adapt_ignore_startup(
+                heartbeat_neuron, decoded_reactants=(self._heartbeat_reaction,)
+            )
+            self._add_task(asyncio.create_task(self._heartbeat_loop()))
+            self._add_task(asyncio.create_task(self._num_peers_loop()))
 
-        neuron_reserved_addresses: Iterable[Tuple[Neuron, ReservedMulticastAddress]] = (
-            (preparation_neuron, ReservedMulticastAddress.Preparation),
-            (promise_neuron, ReservedMulticastAddress.Promise),
-            (rejection_neuron, ReservedMulticastAddress.Rejection),
-            (proposal_neuron, ReservedMulticastAddress.Proposal),
-            (approval_neuron, ReservedMulticastAddress.Approval),
-        )
+            neuron_reserved_addresses: Iterable[
+                Tuple[Neuron, ReservedMulticastAddress]
+            ] = (
+                (preparation_neuron, ReservedMulticastAddress.Preparation),
+                (promise_neuron, ReservedMulticastAddress.Promise),
+                (rejection_neuron, ReservedMulticastAddress.Rejection),
+                (proposal_neuron, ReservedMulticastAddress.Proposal),
+                (approval_neuron, ReservedMulticastAddress.Approval),
+            )
 
-        neuron_reactions = (
-            (preparation_neuron, self._preparation_reaction),
-            (promise_neuron, self._promise_reaction),
-            (rejection_neuron, self._rejection_reaction),
-            (proposal_neuron, self._proposal_reaction),
-            (approval_neuron, self._approval_reaction),
-        )
+            neuron_reactions = (
+                (preparation_neuron, self._preparation_reaction),
+                (promise_neuron, self._promise_reaction),
+                (rejection_neuron, self._rejection_reaction),
+                (proposal_neuron, self._proposal_reaction),
+                (approval_neuron, self._approval_reaction),
+            )
 
-        await asyncio.wait(
-            [
-                self.create_synapse_with_reserved_address(neuron, reserved_address)
-                for neuron, reserved_address in neuron_reserved_addresses
-            ]
-        )
+            await asyncio.wait(
+                [
+                    self.create_synapse_with_reserved_address(neuron, reserved_address)
+                    for neuron, reserved_address in neuron_reserved_addresses
+                ]
+            )
 
-        await asyncio.wait(
-            [
-                self.adapt_ignore_startup(
-                    neuron, decoded_reactants=(cast(DecodedReactant, reactant),)
-                )
-                for neuron, reactant in neuron_reactions
-            ]
-        )
+            await asyncio.wait(
+                [
+                    self.adapt_ignore_startup(
+                        neuron, decoded_reactants=(cast(DecodedReactant, reactant),)
+                    )
+                    for neuron, reactant in neuron_reactions
+                ]
+            )
 
-        await asyncio.sleep(self.heartbeat_interval_seconds)
-        self._startup_done = True
+            await asyncio.sleep(self.heartbeat_interval_seconds)
+            self._startup_done = True
+        except ZMQError as e:
+            logging.error(
+                f"GanglionPlexoMulticast:startup: epgm not supported on this system: {e}",
+                stack_info=True,
+            )
 
     async def wait_startup(self):
         heartbeat_interval_seconds = self.heartbeat_interval_seconds
@@ -745,7 +754,6 @@ class GanglionPlexoMulticast(GanglionExternalBase):
             multicast_address=multicast_address,
             bind_interface=self.bind_interface,
             port=self.port,
-            loop=self._loop,
         )
         async with self._synapses_lock:
             self._synapses = self._synapses.set(name, synapse)
@@ -832,12 +840,16 @@ class GanglionPlexoMulticast(GanglionExternalBase):
             return await self.create_synapse_with_address(name, multicast_address)
 
     async def react_decode_ignore_startup(
-        self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]
+        self,
+        neuron: Neuron[UnencodedSignal],
+        reactants: Iterable[DecodedReactant[UnencodedSignal]],
     ):
         return await super().react_decode(neuron, reactants)
 
     async def react_decode(
-        self, neuron: Neuron[U], reactants: Iterable[DecodedReactant[U]]
+        self,
+        neuron: Neuron[UnencodedSignal],
+        reactants: Iterable[DecodedReactant[UnencodedSignal]],
     ):
         await self.wait_startup()
         return await self.react_decode_ignore_startup(neuron, reactants)
@@ -850,18 +862,22 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         return await self.react_ignore_startup(neuron, reactants)
 
     async def transmit_encode_ignore_startup(
-        self, data, reaction_id: Optional[UUID] = None
+        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
     ):
         return await super().transmit_encode(data, reaction_id)
 
-    async def transmit_encode(self, data, reaction_id: Optional[UUID] = None):
+    async def transmit_encode(
+        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
+    ):
         await self.wait_startup()
         return await self.transmit_encode_ignore_startup(data, reaction_id)
 
-    async def transmit_ignore_startup(self, data, reaction_id: Optional[UUID] = None):
+    async def transmit_ignore_startup(
+        self, data: Signal, reaction_id: Optional[UUID] = None
+    ):
         return await super().transmit(data, reaction_id)
 
-    async def transmit(self, data, reaction_id: Optional[UUID] = None):
+    async def transmit(self, data: Signal, reaction_id: Optional[UUID] = None):
         await self.wait_startup()
         return await self.transmit_ignore_startup(data, reaction_id)
 
@@ -869,7 +885,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         self,
         neuron: Neuron,
         reactants: Optional[Iterable[Reactant]] = None,
-        decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None,
+        decoded_reactants: Optional[Iterable[DecodedReactant[UnencodedSignal]]] = None,
     ):
         if reactants:
             await self.react_ignore_startup(neuron, reactants)
@@ -880,9 +896,9 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
     async def adapt(
         self,
-        neuron: Neuron[U],
+        neuron: Neuron[UnencodedSignal],
         reactants: Optional[Iterable[Reactant]] = None,
-        decoded_reactants: Optional[Iterable[DecodedReactant[U]]] = None,
+        decoded_reactants: Optional[Iterable[DecodedReactant[UnencodedSignal]]] = None,
     ):
         await self.wait_startup()
         return await self.adapt_ignore_startup(neuron, reactants, decoded_reactants)

@@ -17,12 +17,10 @@ from abc import abstractmethod
 
 from typing_extensions import Protocol
 
-from plexo.typing import E
+from plexo.typing import EncodedSignal
 
 
 class Codec(Protocol):
-    name: str
-
     def __str__(self):
         return self.name
 
@@ -30,9 +28,14 @@ class Codec(Protocol):
         return hash(self.name)
 
     @abstractmethod
-    def encode(self, data) -> E:
+    def encode(self, data) -> EncodedSignal:
         ...
 
     @abstractmethod
-    def decode(self, data: E):
+    def decode(self, data: EncodedSignal):
+        ...
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
         ...

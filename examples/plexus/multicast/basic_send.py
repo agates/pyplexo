@@ -16,11 +16,15 @@
 import asyncio
 import ipaddress
 import logging
+from timeit import default_timer as timer
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
+from plexo.exceptions import TransmitterNotFound
 from plexo.ganglion.multicast import GanglionPlexoMulticast
 from plexo.namespace.namespace import Namespace
+from plexo.plexus import Plexus
+
 
 test_multicast_cidr = ipaddress.ip_network("239.255.0.0/16")
 test_port = 5561
@@ -30,35 +34,48 @@ class Foo:
     message: str
 
 
-async def _foo_reaction(data: Foo, _):
-    logging.info(f"Received Foo.string: {data.message}")
+async def _foo_reaction(f: Foo, _):
+    logging.info(f"Received Foo.string: {f.message}")
 
 
-def run(loop=None):
+async def send_foo_hello_str(plexus: Plexus):
+    i = 1
+    foo = Foo()
+    while True:
+        start_time = timer()
+        foo.message = f"Hello, Plexo+Inproc {i} …"
+        logging.info(f"Sending Foo with message: {foo.message}")
+        try:
+            await plexus.transmit(foo)
+        except TransmitterNotFound as e:
+            logging.error(e)
+        i += 1
+        await asyncio.sleep(1 - (start_time - timer()))
+
+
+def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    if not loop:  # pragma: no cover
-        loop = asyncio.new_event_loop()
-
-    ganglion = GanglionPlexoMulticast(
+    multicast_ganglion = GanglionPlexoMulticast(
         multicast_cidr=test_multicast_cidr,
         port=test_port,
         heartbeat_interval_seconds=10,
     )
+    plexus = Plexus(ganglia=(multicast_ganglion,))
     namespace = Namespace(["plexo", "test"])
     foo_coder = Neuron(Foo, namespace, PickleCodec())
 
-    asyncio.run(ganglion.adapt(foo_coder, decoded_reactants=[_foo_reaction]))
+    asyncio.run(
+        asyncio.wait(
+            [
+                plexus.adapt(foo_coder, reactants=[_foo_reaction]),
+                multicast_ganglion.startup(),
+            ]
+        )
+    )
+    asyncio.run(send_foo_hello_str(plexus))
 
-    if not loop.is_running():  # pragma: no cover
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            loop.close()
-
-    ganglion.close()
+    plexus.close()
 
 
 if __name__ == "__main__":

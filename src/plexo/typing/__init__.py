@@ -16,9 +16,10 @@
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from typing import Callable, TypeVar, Union
 
-E = bytes
-U = TypeVar("U")
-Decoder = Callable[[E], U]
-Encoder = Callable[[U], E]
+EncodedSignal = bytes
+UnencodedSignal = TypeVar("UnencodedSignal")
+Signal = Union[EncodedSignal, UnencodedSignal]
+Decoder = Callable[[EncodedSignal], UnencodedSignal]
+Encoder = Callable[[UnencodedSignal], EncodedSignal]
 IPAddress = Union[IPv4Address, IPv6Address]
 IPNetwork = Union[IPv4Network, IPv6Network]

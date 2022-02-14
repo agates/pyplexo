@@ -15,18 +15,17 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional
 from uuid import UUID
 
 from pyrsistent import PDeque, pdeque, pset
 
+from plexo.typing import Signal
 from plexo.typing.receptor import Receptor
 
 
 class SynapseBase(ABC):
-    def __init__(
-        self, topic: str, receptors: Iterable[Receptor] = (), loop=None
-    ) -> None:
+    def __init__(self, topic: str, receptors: Iterable[Receptor] = ()) -> None:
         self.topic = topic
         self.topic_bytes = topic.encode("UTF-8")
 
@@ -34,11 +33,6 @@ class SynapseBase(ABC):
         self._receptors_write_lock = asyncio.Lock()
 
         self._tasks: PDeque = pdeque()
-
-        if not loop:
-            loop = asyncio.get_event_loop()
-
-        self._loop = loop
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
@@ -67,5 +61,5 @@ class SynapseBase(ABC):
             self._receptors = self._receptors.update(receptors)
 
     @abstractmethod
-    async def transmit(self, data: Any, reaction_id: Optional[UUID] = None):
+    async def transmit(self, data: Signal, reaction_id: Optional[UUID] = None):
         ...

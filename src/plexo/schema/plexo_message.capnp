@@ -1,4 +1,4 @@
-@0xeed5242d4faed181
+@0xeed5242d4faed181;
 
 struct PlexoMessage {
     typeName @0 :Text;

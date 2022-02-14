@@ -32,7 +32,7 @@ async def _foo_reaction(f: Foo, _):
     logging.info(f"Received Foo.string: {f.message}")
 
 
-async def send_foo_hello_str(ganglion):
+async def send_foo_hello_str(ganglion: GanglionInproc):
     i = 1
     foo = Foo()
     while True:
@@ -47,26 +47,15 @@ async def send_foo_hello_str(ganglion):
         await asyncio.sleep(1 - (start_time - timer()))
 
 
-def run(loop=None):
+def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    if not loop:  # pragma: no cover
-        loop = asyncio.new_event_loop()
-
-    ganglion = GanglionInproc(loop=loop)
+    ganglion = GanglionInproc()
     namespace = Namespace(["plexo", "test"])
     foo_coder = Neuron(Foo, namespace, PickleCodec())
 
-    loop.run_until_complete(ganglion.adapt(foo_coder, reactants=[_foo_reaction]))
-    loop.create_task(send_foo_hello_str(ganglion))
-
-    if not loop.is_running():  # pragma: no cover
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
-            loop.close()
+    asyncio.run(ganglion.adapt(foo_coder, reactants=[_foo_reaction]))
+    asyncio.run(send_foo_hello_str(ganglion))
 
     ganglion.close()
 

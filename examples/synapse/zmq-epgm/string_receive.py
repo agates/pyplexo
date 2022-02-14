@@ -56,7 +56,6 @@ def run(loop=None):
         multicast_address=test_ip_address,
         port=test_port,
         receptors=(receptor,),
-        loop=loop,
     )
 
     if not loop.is_running():  # pragma: no cover

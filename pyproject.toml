@@ -1,10 +1,68 @@
+[tool.poetry]
+name = "plexo"
+version = "1.0.0"
+readme = "README.md"
+description = "Decentralized event coordination"
+authors = ["Alecks Gates <agates@mail.agates.io>"]
+license = "LGPL-3.0-or-later"
+homepage = "gitlab.com/agates/pyplexo/"
+repository = "gitlab.com/agates/pyplexo/"
+classifiers = [
+    "Environment :: Console",
+    "Framework :: AsyncIO",
+    "Framework :: Pytest",
+    "Development Status :: 3 - Alpha",
+    "Fntended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: Adaptive Technologies",
+    "Topic :: Home Automation",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+build = "build.py"
+include = ["src/plexo/schema/*.py", "src/plexo/schema/*.so"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+capnpy = "^=0.9.0"
+pyrsistent = "^=0.18.0"
+pyzmq = "^=22.1.0"
+returns = "^=0.18.0"
+typing_extensions = "^=3.7"
+
+[tool.poetry.dev-dependencies]
+bandit = "^=1.7.0"
+black = "^=22.1.0"
+isort = "^=5.8.0"
+mypy = "^=0.931"
+pytest = "^=6.2.4"
+pytest-asyncio = "^=0.16.0"
+pytest-cov = "^=3.0.0"
+pytest-mock = "*"
+pytest-mypy = "*"
+pytest-timeout = "^=2.0.2"
+
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0", "capnpy"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.black]
-target-version = ['py37']
+target-version = ['py37', 'py38', 'py39', 'py310']
 
 [tool.isort]
 profile = "black"
 multi_line_output = 3
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests",
+]

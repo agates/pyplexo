@@ -15,7 +15,7 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import itertools
-from typing import Any, Iterable, Optional, Set, Tuple
+from typing import Iterable, Optional, Set, Tuple
 from uuid import UUID, uuid4
 from weakref import WeakKeyDictionary
 
@@ -26,15 +26,15 @@ from plexo.ganglion.external import GanglionExternalBase
 from plexo.ganglion.inproc import GanglionInproc
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.neuron.neuron import Neuron
-from plexo.typing import E
+from plexo.typing import EncodedSignal, UnencodedSignal, Signal
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import Reactant
 
 
 class Plexus(Ganglion):
-    def __init__(self, ganglia: Iterable[Ganglion] = (), loop=None):
+    def __init__(self, ganglia: Iterable[Ganglion] = ()):
         ganglia = pset(ganglia)
-        self.inproc_ganglion: GanglionInternalBase = GanglionInproc(loop=loop)
+        self.inproc_ganglion: GanglionInternalBase = GanglionInproc()
 
         self._external_ganglia = pset(
             ganglion
@@ -77,7 +77,10 @@ class Plexus(Ganglion):
             pass
 
     async def _internal_reaction(
-        self, current: Ganglion, data: Any, reaction_id: Optional[UUID] = None
+        self,
+        current: Ganglion,
+        data: UnencodedSignal,
+        reaction_id: Optional[UUID] = None,
     ):
         if reaction_id is None:
             reaction_id = uuid4()
@@ -111,7 +114,7 @@ class Plexus(Ganglion):
     async def _external_internal_reaction(
         self,
         current: GanglionExternalBase,
-        data: Any,
+        data: UnencodedSignal,
         reaction_id: Optional[UUID] = None,
     ):
         if reaction_id is None:
@@ -140,7 +143,10 @@ class Plexus(Ganglion):
             pass
 
     async def _external_external_reaction(
-        self, current: GanglionExternalBase, data: E, reaction_id: Optional[UUID] = None
+        self,
+        current: GanglionExternalBase,
+        data: EncodedSignal,
+        reaction_id: Optional[UUID] = None,
     ):
         if reaction_id is None:
             reaction_id = uuid4()
@@ -235,7 +241,7 @@ class Plexus(Ganglion):
     async def react(self, neuron: Neuron, reactants: Iterable[Reactant]):
         return await self.inproc_ganglion.react(neuron, reactants)
 
-    async def transmit(self, data, reaction_id: Optional[UUID] = None):
+    async def transmit(self, data: Signal, reaction_id: Optional[UUID] = None):
         return await self.inproc_ganglion.transmit(data, reaction_id)
 
     async def adapt(
@@ -244,4 +250,4 @@ class Plexus(Ganglion):
         if reactants:
             await self.react(neuron, reactants)
 
-        return await self.update_transmitter(neuron)
+        await self.update_transmitter(neuron)

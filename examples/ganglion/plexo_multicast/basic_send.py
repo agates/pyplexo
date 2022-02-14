@@ -32,7 +32,7 @@ class Foo:
     message: str
 
 
-async def send_foo_hello_str(ganglion):
+async def send_foo_hello_str(ganglion: GanglionPlexoMulticast):
     i = 1
     foo = Foo()
     while True:
@@ -57,12 +57,11 @@ def run(loop=None):
         multicast_cidr=test_multicast_cidr,
         port=test_port,
         heartbeat_interval_seconds=10,
-        loop=loop,
     )
     namespace = Namespace(["plexo", "test"])
     foo_coder = Neuron(Foo, namespace, PickleCodec())
-    loop.run_until_complete(ganglion.adapt(foo_coder))
-    loop.create_task(send_foo_hello_str(ganglion))
+    asyncio.run(ganglion.adapt(foo_coder))
+    asyncio.run(send_foo_hello_str(ganglion))
 
     if not loop.is_running():  # pragma: no cover
         try:

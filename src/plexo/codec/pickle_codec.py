@@ -15,15 +15,19 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import pickle  # nosec - Pickle is entirely optional in this library
 
-from plexo.typing import E
+from plexo.typing import EncodedSignal
 from plexo.typing.codec import Codec
 
 
 class PickleCodec(Codec):
-    name = "pickle"
+    _name = "pickle"
 
-    def encode(self, data) -> E:
+    def encode(self, data: object) -> EncodedSignal:
         return pickle.dumps(data)
 
-    def decode(self, data: E):
+    def decode(self, data: EncodedSignal):
         return pickle.loads(data)  # nosec - Pickle is entirely optional in this library
+
+    @property
+    def name(self) -> str:
+        return self._name
