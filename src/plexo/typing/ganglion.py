@@ -22,6 +22,7 @@ from uuid import UUID
 from typing_extensions import Protocol
 
 from plexo.neuron.neuron import Neuron
+from plexo.typing import Signal
 
 if TYPE_CHECKING:
     # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
@@ -38,7 +39,7 @@ class Ganglion(Protocol):
         ...
 
     @abstractmethod
-    async def transmit(self, data, reaction_id: Optional[UUID] = None):
+    async def transmit(self, data: Signal, reaction_id: Optional[UUID] = None):
         ...
 
     @abstractmethod

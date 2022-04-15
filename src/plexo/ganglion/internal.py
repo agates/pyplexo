@@ -15,7 +15,7 @@
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Iterable, Optional, Type
+from typing import Iterable, Optional, Type
 from uuid import UUID
 
 from pyrsistent import pdeque, pmap, pset
@@ -26,26 +26,20 @@ from plexo.neuron.neuron import Neuron
 from plexo.receptor import create_receptor
 from plexo.synapse.base import SynapseBase
 from plexo.transmitter import create_transmitter
-from plexo.typing import U
+from plexo.typing import UnencodedSignal, Signal
+from plexo.typing.transmitter import Transmitter
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import Reactant
 
 
 class GanglionInternalBase(Ganglion, ABC):
-    def __init__(self, loop=None):
+    def __init__(self):
         self._tasks: PDeque = pdeque()
-
-        if not loop:
-            loop = asyncio.get_event_loop()
-
-        self._loop = loop
 
         self._synapses: PMap[str, SynapseBase] = pmap({})
         self._synapses_lock = asyncio.Lock()
 
-        self._transmitters: PMap[Neuron, Callable[[Any, Optional[UUID]], Any]] = pmap(
-            {}
-        )
+        self._transmitters: PMap[Neuron, Transmitter] = pmap({})
         self._transmitters_lock = asyncio.Lock()
 
         self._type_neurons: PMap[Type, PSet[Neuron]] = pmap({})
@@ -72,7 +66,7 @@ class GanglionInternalBase(Ganglion, ABC):
         ...
 
     @abstractmethod
-    async def _create_synapse(self, neuron: Neuron) -> SynapseBase:
+    async def _create_synapse(self, neuron: Neuron[UnencodedSignal]) -> SynapseBase:
         ...
 
     async def get_synapse_by_name(self, name: str):
@@ -84,36 +78,42 @@ class GanglionInternalBase(Ganglion, ABC):
 
         return self._synapses[name]
 
-    async def get_synapse(self, neuron: Neuron):
+    async def get_synapse(self, neuron: Neuron[UnencodedSignal]):
         name = neuron.name
         return await self.get_synapse_by_name(name)
 
-    async def _update_type_neurons(self, neuron: Neuron):
+    async def _update_type_neurons(self, neuron: Neuron[UnencodedSignal]):
         async with self._type_neurons_lock:
             try:
-                type_neurons: PSet[Neuron] = self._type_neurons[neuron.type]
+                type_neurons: PSet[Neuron[UnencodedSignal]] = self._type_neurons[
+                    neuron.type
+                ]
             except KeyError:
                 type_neurons = pset()
             type_neurons = type_neurons.add(neuron)
             self._type_neurons = self._type_neurons.set(neuron.type, type_neurons)
 
-    async def _create_transmitter(self, neuron: Neuron, synapse: SynapseBase):
+    async def _create_transmitter(
+        self, neuron: Neuron[UnencodedSignal], synapse: SynapseBase
+    ):
         async with self._transmitters_lock:
             try:
                 return self._transmitters[neuron]
             except KeyError:
-                transmitter = create_transmitter((synapse,), loop=self._loop)
+                transmitter = create_transmitter((synapse,))
                 self._transmitters = self._transmitters.set(neuron, transmitter)
                 return transmitter
 
-    async def create_transmitter(self, neuron: Neuron, synapse: SynapseBase):
+    async def create_transmitter(
+        self, neuron: Neuron[UnencodedSignal], synapse: SynapseBase
+    ):
         transmitter = await self._create_transmitter(neuron, synapse)
 
         await self._update_type_neurons(neuron)
 
         return transmitter
 
-    async def update_transmitter(self, neuron: Neuron):
+    async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
         synapse = await self.get_synapse(neuron)
         await self._create_transmitter(neuron, synapse)
 
@@ -126,19 +126,19 @@ class GanglionInternalBase(Ganglion, ABC):
             except KeyError:
                 raise NeuronNotFound(f"Neuron for {_type.__name__} does not exist.")
 
-    async def _get_neurons(self, data: U) -> PSet[Neuron[U]]:
+    async def _get_neurons(
+        self, data: UnencodedSignal
+    ) -> PSet[Neuron[UnencodedSignal]]:
         _type = type(data)
         return await self._get_neurons_by_type(_type)
 
-    def _get_transmitter(self, neuron: Neuron):
+    def _get_transmitter(self, neuron: Neuron[UnencodedSignal]):
         try:
             return self._transmitters[neuron]
         except KeyError:
             raise TransmitterNotFound(f"Transmitter for {neuron} does not exist.")
 
-    async def _get_transmitters(
-        self, data: U
-    ) -> Iterable[Callable[[U, Optional[UUID]], Any]]:
+    async def _get_transmitters(self, data: Signal):
         try:
             neurons = await self._get_neurons(data)
         except NeuronNotFound:
@@ -147,24 +147,25 @@ class GanglionInternalBase(Ganglion, ABC):
             )
         return (self._get_transmitter(neuron) for neuron in neurons)
 
-    async def react(self, neuron: Neuron, reactants: Iterable[Reactant]):
+    async def react(
+        self, neuron: Neuron[UnencodedSignal], reactants: Iterable[Reactant]
+    ):
         synapse = await self.get_synapse(neuron)
-        await synapse.update_receptors(
-            (create_receptor(reactants=reactants, loop=self._loop),)
-        )
+        await synapse.update_receptors((create_receptor(reactants=reactants),))
 
-    async def transmit(self, data, reaction_id: Optional[UUID] = None):
+    async def transmit(self, data: UnencodedSignal, reaction_id: Optional[UUID] = None):
         transmitters = await self._get_transmitters(data)
 
-        return await asyncio.gather(
-            *(transmitter(data, reaction_id) for transmitter in transmitters),
-            loop=self._loop,
+        return await asyncio.wait(
+            [transmitter(data, reaction_id) for transmitter in transmitters]
         )
 
     async def adapt(
-        self, neuron: Neuron, reactants: Optional[Iterable[Reactant]] = None
+        self,
+        neuron: Neuron[UnencodedSignal],
+        reactants: Optional[Iterable[Reactant]] = None,
     ):
         if reactants:
             await self.react(neuron, reactants)
 
-        return await self.update_transmitter(neuron)
+        await self.update_transmitter(neuron)

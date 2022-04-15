@@ -18,14 +18,15 @@ import ipaddress
 import logging
 from timeit import default_timer as timer
 
-from plexo.synapse.zeromq import SynapseZmqEPGM
+from plexo.synapse.zeromq import SynapseZmqPubSubEPGM
 from plexo.transmitter import create_encoder_transmitter
+from plexo.typing.transmitter import EncoderTransmitter
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
 test_port = 5561
 
 
-async def send_hello_str(transmitter):
+async def send_hello_str(transmitter: EncoderTransmitter):
     i = 1
     while True:
         start_time = timer()
@@ -42,10 +43,9 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    synapse = SynapseZmqEPGM(
-        "example_string", multicast_address=test_ip_address, port=test_port, loop=loop
+    synapse = SynapseZmqPubSubEPGM(
+        "example_string", multicast_address=test_ip_address, port=test_port
     )
-    # pyright: reportGeneralTypeIssues=false
     transmitter = create_encoder_transmitter((synapse,), str.encode)
 
     loop.create_task(send_hello_str(transmitter))

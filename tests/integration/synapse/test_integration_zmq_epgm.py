@@ -20,7 +20,7 @@ import ipaddress
 import pytest
 
 from plexo.receptor import create_decoder_receptor
-from plexo.synapse.zeromq import SynapseZmqEPGM
+from plexo.synapse.zeromq import SynapseZmqPubSubEPGM
 from plexo.transmitter import transmit_encode
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
@@ -46,7 +46,7 @@ async def test_zmq_epgm_receptor(event_loop):
     receptor = create_decoder_receptor(
         reactants=(receptor_queue,), decoder=decode_json_bytes
     )
-    synapse = SynapseZmqEPGM(
+    synapse = SynapseZmqPubSubEPGM(
         "test",
         multicast_address=test_ip_address,
         port=test_port,

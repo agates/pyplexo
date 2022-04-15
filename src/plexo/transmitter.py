@@ -17,42 +17,41 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional
 from uuid import UUID
 
 from pyrsistent import plist
 
 from plexo.synapse.base import SynapseBase
-from plexo.typing import Encoder, U
+from plexo.typing import Encoder, UnencodedSignal, Signal
+from plexo.typing.transmitter import EncoderTransmitter, Transmitter
 
 
 def create_encoder_transmitter(
-    synapses: Iterable[SynapseBase], encoder: Encoder, loop=None
-):
-    return partial(transmit_encode, plist(synapses), encoder, loop=loop)
+    synapses: Iterable[SynapseBase], encoder: Encoder
+) -> EncoderTransmitter:
+    return partial(transmit_encode, plist(synapses), encoder)
 
 
-def create_transmitter(synapses: Iterable[SynapseBase], loop=None):
-    return partial(transmit, plist(synapses), loop=loop)
+def create_transmitter(synapses: Iterable[SynapseBase]) -> Transmitter:
+    return partial(transmit, plist(synapses))
 
 
 async def transmit(
     synapses: Iterable[SynapseBase],
-    data: Any,
+    data: Signal,
     reaction_id: Optional[UUID] = None,
-    loop=None,
 ):
     return await asyncio.gather(
-        *(synapse.transmit(data, reaction_id) for synapse in synapses), loop=loop
+        *(synapse.transmit(data, reaction_id) for synapse in synapses)
     )
 
 
 async def transmit_encode(
     synapses: Iterable[SynapseBase],
-    encoder: Encoder[U],
-    data: U,
+    encoder: Encoder[UnencodedSignal],
+    data: UnencodedSignal,
     reaction_id: Optional[UUID] = None,
-    loop=None,
 ):
     encoded = encoder(data)
-    return await transmit(synapses, encoded, reaction_id, loop=loop)
+    return await transmit(synapses, encoded, reaction_id)

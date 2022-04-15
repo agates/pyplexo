@@ -15,49 +15,74 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 import logging
+import os
+from dataclasses import dataclass
+from functools import partial
+from ipaddress import IPv4Address
 from timeit import default_timer as timer
+from uuid import UUID
 
 from plexo.codec.pickle_codec import PickleCodec
+from plexo.ganglion.tcp_pubsub import GanglionZmqTcpPubSub
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
-from plexo.ganglion.inproc import GanglionInproc
 from plexo.namespace.namespace import Namespace
+from plexo.plexus import Plexus
 
 
+test_port_pub = 5572
+
+
+@dataclass
 class Foo:
     message: str
+    message_id: UUID
+    message_num: int
+    node_id: str
 
 
-async def _foo_reaction(f: Foo, _):
-    logging.info(f"Received Foo.string: {f.message}")
+@dataclass
+class Bar:
+    foo_message_id: UUID
+    node_id: str
 
 
-async def send_foo_hello_str(ganglion: GanglionInproc):
-    i = 1
-    foo = Foo()
+async def _foo_reaction(plexus: Plexus, foo: Foo, _):
+    logging.info(f"Received Foo: {foo}")
+    try:
+        bar = Bar(foo_message_id=foo.message_id, node_id=os.path.basename(__file__))
+        logging.info(f"Replying with: {bar}")
+        await plexus.transmit(bar)
+    except TransmitterNotFound as e:
+        logging.error(e)
+
+
+async def wait_until_cancelled():
     while True:
         start_time = timer()
-        foo.message = f"Hello, Plexo+Inproc {i} …"
-        logging.info(f"Sending Foo with message: {foo.message}")
-        try:
-            await ganglion.transmit(foo)
-        except TransmitterNotFound as e:
-            logging.error(e)
-        i += 1
         await asyncio.sleep(1 - (start_time - timer()))
+
+
+async def run_async(foo_coder, bar_coder, plexus):
+    await plexus.adapt(foo_coder, reactants=[partial(_foo_reaction, plexus)])
+    await plexus.adapt(bar_coder)
+    await wait_until_cancelled()
 
 
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    ganglion = GanglionInproc()
+    multicast_ganglion = GanglionZmqTcpPubSub(
+        port_pub=test_port_pub, peers=[(IPv4Address("192.168.1.157"), 5571)]
+    )
+    plexus = Plexus(ganglia=(multicast_ganglion,))
     namespace = Namespace(["plexo", "test"])
     foo_coder = Neuron(Foo, namespace, PickleCodec())
+    bar_coder = Neuron(Bar, namespace, PickleCodec())
 
-    asyncio.run(ganglion.adapt(foo_coder, reactants=[_foo_reaction]))
-    asyncio.run(send_foo_hello_str(ganglion))
+    asyncio.run(run_async(foo_coder, bar_coder, plexus))
 
-    ganglion.close()
+    plexus.close()
 
 
 if __name__ == "__main__":

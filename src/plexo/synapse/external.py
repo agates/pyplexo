@@ -13,29 +13,26 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-from abc import abstractmethod
+from typing import Optional, Iterable
+from uuid import UUID
 
-from typing_extensions import Protocol
+import zmq
+from zmq.asyncio import Socket
 
+from plexo.synapse.base import SynapseBase
 from plexo.typing import EncodedSignal
+from plexo.typing.receptor import Receptor
 
 
-class Codec(Protocol):
-    def __str__(self):
-        return self.name
+class SynapseExternal(SynapseBase):
+    def __init__(
+        self, topic: str, socket_pub: Socket, receptors: Iterable[Receptor] = ()
+    ) -> None:
+        super().__init__(topic, receptors)
 
-    def __hash__(self):
-        return hash(self.name)
+        self._socket_pub: Socket = socket_pub
 
-    @abstractmethod
-    def encode(self, data) -> EncodedSignal:
-        ...
-
-    @abstractmethod
-    def decode(self, data: EncodedSignal):
-        ...
-
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        ...
+    async def transmit(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+        if self._socket_pub is not None:
+            await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
+            await self._socket_pub.send(data)

@@ -17,44 +17,42 @@ from __future__ import annotations
 
 import asyncio
 from functools import partial
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional
 from uuid import UUID
 
 from pyrsistent import plist
 
-from plexo.typing import Decoder, E, U
+from plexo.typing import Decoder, EncodedSignal, UnencodedSignal, Signal
 from plexo.typing.reactant import DecodedReactant, Reactant
+from plexo.typing.receptor import Receptor, DecoderReceptor
 
 
 def create_decoder_receptor(
-    reactants: Iterable[DecodedReactant[U]], decoder: Decoder[U], loop=None
-):
-    return partial(transduce_decode, plist(reactants), decoder, loop=loop)
+    reactants: Iterable[DecodedReactant[UnencodedSignal]],
+    decoder: Decoder[UnencodedSignal],
+) -> DecoderReceptor:
+    return partial(transduce_decode, plist(reactants), decoder)
 
 
-def create_receptor(reactants: Iterable[Reactant], loop=None):
-    return partial(transduce, plist(reactants), loop=loop)
+def create_receptor(reactants: Iterable[Reactant]) -> Receptor:
+    return partial(transduce, plist(reactants))
 
 
 async def transduce(
     reactants: Iterable[Reactant],
-    data: Any,
+    data: Signal,
     reaction_id: Optional[UUID] = None,
-    loop=None,
 ):
-    return await asyncio.gather(
-        *(reactant(data, reaction_id) for reactant in reactants), loop=loop
-    )
+    return await asyncio.wait([reactant(data, reaction_id) for reactant in reactants])
 
 
 async def transduce_decode(
-    reactants: Iterable[DecodedReactant[U]],
-    decoder: Decoder[U],
-    data: E,
+    reactants: Iterable[DecodedReactant[UnencodedSignal]],
+    decoder: Decoder[UnencodedSignal],
+    data: EncodedSignal,
     reaction_id: Optional[UUID] = None,
-    loop=None,
 ):
     decoded = decoder(data)
-    return await asyncio.gather(
-        *(reactant(decoded, reaction_id) for reactant in reactants), loop=loop
+    return await asyncio.wait(
+        [reactant(decoded, reaction_id) for reactant in reactants]
     )

@@ -13,10 +13,19 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from typing import Any, Callable, Coroutine, Optional
+from typing import Coroutine, Optional, Protocol
 from uuid import UUID
 
-from plexo.typing import U
+from plexo.typing import EncodedSignal, Signal
 
-DecodedReceptor = Callable[[U, Optional[UUID]], Coroutine[Any, Any, Any]]
-Receptor = Callable[[Any, Optional[UUID]], Coroutine[Any, Any, Any]]
+
+class DecoderReceptor(Protocol):
+    def __call__(
+        self, data: EncodedSignal, reaction_id: Optional[UUID] = None
+    ) -> Coroutine:
+        ...
+
+
+class Receptor(Protocol):
+    def __call__(self, data: Signal, reaction_id: Optional[UUID] = None) -> Coroutine:
+        ...
