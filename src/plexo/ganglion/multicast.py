@@ -56,7 +56,7 @@ from plexo.schema.plexo_preparation import PlexoPreparation
 from plexo.schema.plexo_promise import PlexoPromise
 from plexo.schema.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_rejection import PlexoRejection
-from plexo.synapse.zeromq import SynapseZmqEPGM
+from plexo.synapse.zeromq import SynapseZmqPubSubEPGM
 from plexo.timer import Timer
 from plexo.typing import IPAddress, IPNetwork, UnencodedSignal, Signal
 from plexo.typing.reactant import DecodedReactant, Reactant
@@ -115,7 +115,6 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         port: int = 5560,
         heartbeat_interval_seconds: int = 30,
         proposal_timeout_seconds: int = 5,
-        loop=None,
     ) -> None:
         super().__init__()
         self.bind_interface = bind_interface
@@ -749,7 +748,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
         self.try_lease_address(multicast_address)
 
-        synapse: SynapseZmqEPGM = SynapseZmqEPGM(
+        synapse: SynapseZmqPubSubEPGM = SynapseZmqPubSubEPGM(
             topic=name,
             multicast_address=multicast_address,
             bind_interface=self.bind_interface,
@@ -769,7 +768,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         if name not in self._synapses:
             raise SynapseDoesNotExist(f"Synapse for {name} does not exist.")
 
-        current_synapse = cast(SynapseZmqEPGM, self._synapses[name])
+        current_synapse = cast(SynapseZmqPubSubEPGM, self._synapses[name])
         current_multicast_address = current_synapse.multicast_address
 
         if current_multicast_address == multicast_address:

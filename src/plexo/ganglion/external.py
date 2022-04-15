@@ -99,11 +99,11 @@ class GanglionExternalBase(GanglionInternalBase, ABC):
     ):
         encoder_transmitters = await self._get_encoder_transmitters(data)
 
-        return await asyncio.gather(
-            *(
+        return await asyncio.wait(
+            [
                 encoder_transmitter(data, reaction_id)
                 for encoder_transmitter in encoder_transmitters
-            ),
+            ],
         )
 
     async def adapt(

@@ -19,7 +19,7 @@ import logging
 from timeit import default_timer as timer
 from typing import ByteString
 
-from plexo.synapse.zeromq import SynapseZmqEPGM
+from plexo.synapse.zeromq import SynapseZmqPubSubEPGM
 from plexo.receptor import create_decoder_receptor
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
@@ -51,7 +51,7 @@ def run(loop=None):
         loop = asyncio.new_event_loop()
 
     receptor = create_decoder_receptor(reactants=(print_handler,), decoder=bytes_decode)
-    synapse = SynapseZmqEPGM(
+    synapse = SynapseZmqPubSubEPGM(
         "example_string",
         multicast_address=test_ip_address,
         port=test_port,

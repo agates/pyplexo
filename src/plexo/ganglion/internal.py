@@ -156,8 +156,8 @@ class GanglionInternalBase(Ganglion, ABC):
     async def transmit(self, data: UnencodedSignal, reaction_id: Optional[UUID] = None):
         transmitters = await self._get_transmitters(data)
 
-        return await asyncio.gather(
-            *(transmitter(data, reaction_id) for transmitter in transmitters)
+        return await asyncio.wait(
+            [transmitter(data, reaction_id) for transmitter in transmitters]
         )
 
     async def adapt(

@@ -18,7 +18,7 @@ import ipaddress
 import logging
 from timeit import default_timer as timer
 
-from plexo.synapse.zeromq import SynapseZmqEPGM
+from plexo.synapse.zeromq import SynapseZmqPubSubEPGM
 from plexo.transmitter import create_encoder_transmitter
 from plexo.typing.transmitter import EncoderTransmitter
 
@@ -43,7 +43,7 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
-    synapse = SynapseZmqEPGM(
+    synapse = SynapseZmqPubSubEPGM(
         "example_string", multicast_address=test_ip_address, port=test_port
     )
     transmitter = create_encoder_transmitter((synapse,), str.encode)

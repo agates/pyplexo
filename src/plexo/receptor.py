@@ -43,9 +43,7 @@ async def transduce(
     data: Signal,
     reaction_id: Optional[UUID] = None,
 ):
-    return await asyncio.gather(
-        *(reactant(data, reaction_id) for reactant in reactants)
-    )
+    return await asyncio.wait([reactant(data, reaction_id) for reactant in reactants])
 
 
 async def transduce_decode(
@@ -55,6 +53,6 @@ async def transduce_decode(
     reaction_id: Optional[UUID] = None,
 ):
     decoded = decoder(data)
-    return await asyncio.gather(
-        *(reactant(decoded, reaction_id) for reactant in reactants)
+    return await asyncio.wait(
+        [reactant(decoded, reaction_id) for reactant in reactants]
     )

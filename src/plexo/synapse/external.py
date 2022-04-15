@@ -13,20 +13,26 @@
 #
 #  You should have received a copy of the GNU Affero General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-import asyncio
-from typing import Optional
+from typing import Optional, Iterable
 from uuid import UUID
 
+import zmq
+from zmq.asyncio import Socket
+
 from plexo.synapse.base import SynapseBase
-from plexo.typing import UnencodedSignal
+from plexo.typing import EncodedSignal
+from plexo.typing.receptor import Receptor
 
 
-class SynapseInproc(SynapseBase):
-    async def transmit(self, data: UnencodedSignal, reaction_id: Optional[UUID] = None):
-        try:
-            return await asyncio.wait(
-                [receptor(data, reaction_id) for receptor in self.receptors],
-            )
-        except ValueError:
-            # Got empty list, continue
-            pass
+class SynapseExternal(SynapseBase):
+    def __init__(
+        self, topic: str, socket_pub: Socket, receptors: Iterable[Receptor] = ()
+    ) -> None:
+        super().__init__(topic, receptors)
+
+        self._socket_pub: Socket = socket_pub
+
+    async def transmit(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+        if self._socket_pub is not None:
+            await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
+            await self._socket_pub.send(data)
