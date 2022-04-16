@@ -16,7 +16,7 @@
 
 
 class NeuronNotFound(KeyError):
-    """Raise when a coder does not exist in a ganglion"""
+    """Raise when a Neuron does not exist in a ganglion"""
 
 
 class ConsensusNotReached(RuntimeError):

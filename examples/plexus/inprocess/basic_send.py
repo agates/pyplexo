@@ -52,9 +52,9 @@ def run():
 
     plexus = Plexus()
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Neuron(Foo, namespace, PickleCodec())
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
-    asyncio.run(plexus.adapt(foo_coder, reactants=[_foo_reaction]))
+    asyncio.run(plexus.adapt(foo_neuron, reactants=[_foo_reaction]))
     asyncio.run(send_foo_hello_str(plexus))
     plexus.close()
 

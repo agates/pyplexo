@@ -63,12 +63,12 @@ def run():
     )
     plexus = Plexus(ganglia=(multicast_ganglion,))
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Neuron(Foo, namespace, PickleCodec())
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
     asyncio.run(
         asyncio.wait(
             [
-                plexus.adapt(foo_coder, reactants=[_foo_reaction]),
+                plexus.adapt(foo_neuron, reactants=[_foo_reaction]),
                 multicast_ganglion.startup(),
             ]
         )

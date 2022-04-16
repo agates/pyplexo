@@ -59,8 +59,8 @@ def run(loop=None):
         heartbeat_interval_seconds=10,
     )
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Neuron(Foo, namespace, PickleCodec())
-    asyncio.run(ganglion.adapt(foo_coder))
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
+    asyncio.run(ganglion.adapt(foo_neuron))
     asyncio.run(send_foo_hello_str(ganglion))
 
     if not loop.is_running():  # pragma: no cover

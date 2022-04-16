@@ -71,9 +71,9 @@ async def send_foo_hello_str(plexus: Plexus):
         await asyncio.sleep(1 - (start_time - timer()))
 
 
-async def run_async(foo_coder, bar_coder, plexus: Plexus):
-    await plexus.adapt(foo_coder)
-    await plexus.adapt(bar_coder, reactants=[_bar_reaction])
+async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
+    await plexus.adapt(foo_neuron)
+    await plexus.adapt(bar_neuron, reactants=[_bar_reaction])
     await send_foo_hello_str(plexus)
 
 
@@ -85,10 +85,10 @@ def run():
     )
     plexus = Plexus(ganglia=(multicast_ganglion,))
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Neuron(Foo, namespace, PickleCodec())
-    bar_coder = Neuron(Bar, namespace, PickleCodec())
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
+    bar_neuron = Neuron(Bar, namespace, PickleCodec())
 
-    asyncio.run(run_async(foo_coder, bar_coder, plexus))
+    asyncio.run(run_async(foo_neuron, bar_neuron, plexus))
 
     plexus.close()
 

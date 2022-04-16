@@ -63,9 +63,9 @@ async def wait_until_cancelled():
         await asyncio.sleep(1 - (start_time - timer()))
 
 
-async def run_async(foo_coder, bar_coder, plexus):
-    await plexus.adapt(foo_coder, reactants=[partial(_foo_reaction, plexus)])
-    await plexus.adapt(bar_coder)
+async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
+    await plexus.adapt(foo_neuron, reactants=[partial(_foo_reaction, plexus)])
+    await plexus.adapt(bar_neuron)
     await wait_until_cancelled()
 
 
@@ -77,10 +77,10 @@ def run():
     )
     plexus = Plexus(ganglia=(multicast_ganglion,))
     namespace = Namespace(["plexo", "test"])
-    foo_coder = Neuron(Foo, namespace, PickleCodec())
-    bar_coder = Neuron(Bar, namespace, PickleCodec())
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
+    bar_neuron = Neuron(Bar, namespace, PickleCodec())
 
-    asyncio.run(run_async(foo_coder, bar_coder, plexus))
+    asyncio.run(run_async(foo_neuron, bar_neuron, plexus))
 
     plexus.close()
 
