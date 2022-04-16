@@ -114,6 +114,7 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
 
         logging.debug(f"GanglionZmqTcpPubSub:Creating synapse for type {name}")
 
+        # if self._socket_pub is not None:
         synapse: SynapseExternal = SynapseExternal(
             topic=name, socket_pub=self._socket_pub
         )

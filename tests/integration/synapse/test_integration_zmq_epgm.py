@@ -51,7 +51,6 @@ async def test_zmq_epgm_receptor(event_loop):
         multicast_address=test_ip_address,
         port=test_port,
         receptors=(receptor,),
-        loop=event_loop,
     )
 
     await asyncio.sleep(0.1)
