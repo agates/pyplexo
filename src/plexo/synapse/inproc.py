@@ -14,20 +14,19 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-import asyncio
 from typing import Optional
 from uuid import UUID
 
-from plexo.synapse.base import SynapseBase
+from plexo.neuron.neuron import Neuron
+from plexo.synapse.base import SynapseInternalBase
 from plexo.typing import UnencodedSignal
 
 
-class SynapseInproc(SynapseBase):
-    async def transmit(self, data: UnencodedSignal, reaction_id: Optional[UUID] = None):
-        try:
-            return await asyncio.wait(
-                [receptor(data, reaction_id) for receptor in self.receptors],
-            )
-        except ValueError:
-            # Got empty list, continue
-            pass
+class SynapseInproc(SynapseInternalBase):
+    async def transmit(
+        self,
+        data: UnencodedSignal,
+        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        reaction_id: Optional[UUID] = None,
+    ):
+        return await self.transduce(data, reaction_id)

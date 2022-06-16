@@ -49,7 +49,7 @@ def run(loop=None):
     namespace = Namespace(["plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
-    asyncio.run(ganglion.adapt(foo_neuron, decoded_reactants=[_foo_reaction]))
+    asyncio.run(ganglion.adapt(foo_neuron, raw_reactants=[_foo_reaction]))
 
     if not loop.is_running():  # pragma: no cover
         try:

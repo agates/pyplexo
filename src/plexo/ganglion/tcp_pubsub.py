@@ -28,9 +28,10 @@ from plexo.exceptions import SynapseExists
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
-from plexo.synapse.external import SynapseExternal
+from plexo.synapse.zeromq_basic import SynapseZmqBasic
 from plexo.typing import UnencodedSignal, IPAddress
-from plexo.typing.reactant import DecodedReactant, Reactant
+from plexo.typing.reactant import Reactant, RawReactant
+from plexo.typing.synapse import SynapseExternal
 
 
 class GanglionZmqTcpPubSub(GanglionExternalBase):
@@ -109,24 +110,24 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
 
         return self._socket_sub
 
-    async def _create_synapse_by_name(self, name: str):
+    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedSignal], name: str):
         if name in self._synapses:
             raise SynapseExists(f"Synapse for {name} already exists.")
 
         logging.debug(f"GanglionZmqTcpPubSub:Creating synapse for type {name}")
 
-        # if self._socket_pub is not None:
-        synapse: SynapseExternal = SynapseExternal(
-            topic=name, socket_pub=self._socket_pub
-        )
+        if self._socket_pub is not None:
+            synapse: SynapseZmqBasic = SynapseZmqBasic(
+                neuron=neuron, socket_pub=self._socket_pub
+            )
 
-        async with self._synapses_lock:
-            self._synapses = self._synapses.set(name, synapse)
+            async with self._synapses_lock:
+                self._synapses = self._synapses.set(name, synapse)
 
-        return synapse
+            return synapse
 
-    async def _create_synapse(self, neuron: Neuron):
-        return await self._create_synapse_by_name(neuron.name)
+    async def _create_synapse(self, neuron: Neuron[UnencodedSignal]):
+        return await self._create_synapse_by_name(neuron, neuron.name)
 
     async def _start_recv_loop_if_needed(self):
         async with self._recv_loop_running_lock:
@@ -150,10 +151,10 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
         while True:
             try:
                 name, data = await self.socket_sub.recv_multipart()
-                synapse = await self.get_synapse_by_name(name.decode("UTF-8"))
-                await asyncio.wait(
-                    [receptor(data, None) for receptor in synapse.receptors]
+                synapse: SynapseExternal = await self.get_synapse_by_name(
+                    name.decode("UTF-8")
                 )
+                await synapse.transduce(data)
             except AttributeError:
                 # Error/exit if the socket no longer exists
                 async with self._recv_loop_running_lock:
@@ -170,11 +171,9 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
     async def adapt(
         self,
         neuron: Neuron[UnencodedSignal],
-        reactants: Optional[Iterable[Reactant]] = None,
-        decoded_reactants: Optional[Iterable[DecodedReactant[UnencodedSignal]]] = None,
+        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
+        raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
     ):
-        await super().adapt(
-            neuron, reactants=reactants, decoded_reactants=decoded_reactants
-        )
+        await super().adapt(neuron, reactants=reactants, raw_reactants=raw_reactants)
 
         await self._start_recv_loop_if_needed()

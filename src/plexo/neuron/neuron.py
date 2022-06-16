@@ -29,6 +29,9 @@ class Neuron(Codec, Generic[UnencodedSignal]):
         self.namespace: Namespace = namespace
         self.codec = codec
 
+    def __eq__(self, other):
+        return self.name == other.name
+
     def __str__(self):
         return self.name
 
@@ -38,7 +41,7 @@ class Neuron(Codec, Generic[UnencodedSignal]):
     def encode(self, data: UnencodedSignal) -> EncodedSignal:
         return self.codec.encode(data)
 
-    def decode(self, data: EncodedSignal):
+    def decode(self, data: EncodedSignal) -> UnencodedSignal:
         return self.codec.decode(data)
 
     @property

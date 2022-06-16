@@ -23,23 +23,21 @@ from uuid import UUID
 from typing_extensions import Protocol
 
 from plexo.neuron.neuron import Neuron
-from plexo.typing import UnencodedSignal
+from plexo.typing import UnencodedSignal, EncodedSignal
 
 if TYPE_CHECKING:
     # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
-    from plexo.typing.reactant import Reactant
+    from plexo.typing.reactant import Reactant, RawReactant
 
 
-class Ganglion(Protocol):
+class SynapseInternal(Protocol[UnencodedSignal]):
     @abstractmethod
-    async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
         ...
 
     @abstractmethod
-    async def react(
-        self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]],
+    async def transduce(
+        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
     ):
         ...
 
@@ -53,10 +51,31 @@ class Ganglion(Protocol):
         ...
 
     @abstractmethod
-    async def adapt(
+    def close(self):
+        ...
+
+
+class SynapseExternal(Protocol[UnencodedSignal]):
+    @abstractmethod
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+        ...
+
+    @abstractmethod
+    async def add_raw_reactants(
+        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+    ):
+        ...
+
+    @abstractmethod
+    async def transduce(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+        ...
+
+    @abstractmethod
+    async def transmit(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
+        data: EncodedSignal,
+        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        reaction_id: Optional[UUID] = None,
     ):
         ...
 

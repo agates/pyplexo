@@ -17,43 +17,110 @@
 from __future__ import annotations
 
 import asyncio
-from functools import partial
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Generic
 from uuid import UUID
 
-from pyrsistent import plist
+from pyrsistent import pset, pvector
+from pyrsistent.typing import PVector
 
-from plexo.typing import Decoder, EncodedSignal, UnencodedSignal, Signal
-from plexo.typing.reactant import DecodedReactant, Reactant
-from plexo.typing.receptor import Receptor, DecoderReceptor
-
-
-def create_decoder_receptor(
-    reactants: Iterable[DecodedReactant[UnencodedSignal]],
-    decoder: Decoder[UnencodedSignal],
-) -> DecoderReceptor:
-    return partial(transduce_decode, plist(reactants), decoder)
+from plexo.neuron.neuron import Neuron
+from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing.reactant import Reactant, RawReactant
 
 
-def create_receptor(reactants: Iterable[Reactant]) -> Receptor:
-    return partial(transduce, plist(reactants))
+class Receptor(Generic[UnencodedSignal]):
+    def __init__(
+        self,
+        neuron: Neuron[UnencodedSignal],
+        reactants: Iterable[Reactant[UnencodedSignal]] = (),
+    ):
+        self.neuron = neuron
+        self._reactants = pvector(pset(reactants))
+        self._reactants_write_lock = asyncio.Lock()
+
+    @property
+    def reactants(self) -> PVector[Reactant[UnencodedSignal]]:
+        return self._reactants
+
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+        async with self._reactants_write_lock:
+            self._reactants = pvector(pset(self._reactants).update(reactants))
+
+    async def remove_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+        async with self._reactants_write_lock:
+            self._reactants = pvector(pset(self._reactants).difference(reactants))
+
+    async def transduce(
+        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
+    ):
+        neuron = self.neuron
+        try:
+            return await asyncio.wait(
+                [reactant(data, neuron, reaction_id) for reactant in self.reactants]
+            )
+        except ValueError:
+            # Got empty list, continue
+            pass
 
 
-async def transduce(
-    reactants: Iterable[Reactant],
-    data: Signal,
-    reaction_id: Optional[UUID] = None,
-):
-    return await asyncio.wait([reactant(data, reaction_id) for reactant in reactants])
+class DecoderReceptor(Generic[UnencodedSignal]):
+    def __init__(
+        self,
+        neuron: Neuron[UnencodedSignal],
+        reactants: Iterable[Reactant[UnencodedSignal]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
+    ):
+        self.neuron = neuron
+        self._reactants = pvector(pset(reactants))
+        self._raw_reactants = pvector(pset(raw_reactants))
+        self._reactants_write_lock = asyncio.Lock()
 
+    @property
+    def reactants(self) -> PVector[Reactant[UnencodedSignal]]:
+        return self._reactants
 
-async def transduce_decode(
-    reactants: Iterable[DecodedReactant[UnencodedSignal]],
-    decoder: Decoder[UnencodedSignal],
-    data: EncodedSignal,
-    reaction_id: Optional[UUID] = None,
-):
-    decoded = decoder(data)
-    return await asyncio.wait(
-        [reactant(decoded, reaction_id) for reactant in reactants]
-    )
+    @property
+    def raw_reactants(self) -> PVector[RawReactant[UnencodedSignal]]:
+        return self._raw_reactants
+
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+        async with self._reactants_write_lock:
+            self._reactants = pvector(pset(self._reactants).update(reactants))
+
+    async def add_raw_reactants(
+        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+    ):
+        async with self._reactants_write_lock:
+            self._raw_reactants = pvector(
+                pset(self._raw_reactants).update(raw_reactants)
+            )
+
+    async def remove_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+        async with self._reactants_write_lock:
+            self._reactants = pvector(pset(self._reactants).difference(reactants))
+
+    async def remove_raw_reactants(
+        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+    ):
+        async with self._reactants_write_lock:
+            self._raw_reactants = pvector(
+                pset(self._raw_reactants).difference(raw_reactants)
+            )
+
+    async def transduce(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+        neuron = self.neuron
+        try:
+            decoded_data = self.neuron.decode(data)
+            return await asyncio.gather(
+                *(
+                    reactant(decoded_data, neuron, reaction_id)
+                    for reactant in self.reactants
+                ),
+                *(
+                    raw_reactant(data, neuron, reaction_id)
+                    for raw_reactant in self.raw_reactants
+                ),
+            )
+        except ValueError:
+            # Got empty list, continue
+            pass

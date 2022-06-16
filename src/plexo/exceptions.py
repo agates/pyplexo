@@ -15,6 +15,10 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
 
+class NeuronNotAvailable(RuntimeError):
+    """Raise when a Neuron is not relevant to a type"""
+
+
 class NeuronNotFound(KeyError):
     """Raise when a Neuron does not exist in a ganglion"""
 

@@ -18,10 +18,11 @@ import asyncio
 import logging
 import os
 from dataclasses import dataclass
-from functools import partial
 from ipaddress import IPv4Address
 from timeit import default_timer as timer
 from uuid import UUID
+
+from returns.curry import partial
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.ganglion.tcp_pubsub import GanglionZmqTcpPubSub
@@ -48,7 +49,7 @@ class Bar:
     node_id: str
 
 
-async def _foo_reaction(plexus: Plexus, foo: Foo, _):
+async def _foo_reaction(plexus: Plexus, foo: Foo, _, _2):
     logging.info(f"Received Foo: {foo}")
     try:
         bar = Bar(foo_message_id=foo.message_id, node_id=os.path.basename(__file__))
@@ -61,7 +62,7 @@ async def _foo_reaction(plexus: Plexus, foo: Foo, _):
 async def wait_until_cancelled():
     while True:
         start_time = timer()
-        await asyncio.sleep(1 - (start_time - timer()))
+        await asyncio.sleep(10 - (start_time - timer()))
 
 
 async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
@@ -73,10 +74,10 @@ async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Pl
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    multicast_ganglion = GanglionZmqTcpPubSub(
+    tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
         port_pub=test_port_pub, peers=[(IPv4Address("192.168.1.157"), 5571)]
     )
-    plexus = Plexus(ganglia=(multicast_ganglion,))
+    plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))
     namespace = Namespace(["plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
     bar_neuron = Neuron(Bar, namespace, PickleCodec())

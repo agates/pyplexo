@@ -15,6 +15,7 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
 import pickle  # nosec - Pickle is entirely optional in this library
+from typing import cast
 
 from plexo.typing import EncodedSignal
 from plexo.typing.codec import Codec
@@ -27,7 +28,9 @@ class PickleCodec(Codec):
         return pickle.dumps(data)
 
     def decode(self, data: EncodedSignal):
-        return pickle.loads(data)  # nosec - Pickle is entirely optional in this library
+        return pickle.loads(
+            cast(bytes, data)
+        )  # nosec - Pickle is entirely optional in this library
 
     @property
     def name(self) -> str:

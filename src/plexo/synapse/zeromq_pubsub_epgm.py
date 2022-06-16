@@ -25,33 +25,35 @@ from zmq.asyncio import Socket
 
 from plexo.exceptions import IpAddressIsNotMulticast
 from plexo.host_information import get_primary_ip
-from plexo.synapse.base import SynapseBase
-from plexo.typing import EncodedSignal, IPAddress
-from plexo.typing.receptor import DecoderReceptor
+from plexo.neuron.neuron import Neuron
+from plexo.synapse.base import SynapseExternalBase
+from plexo.typing import EncodedSignal, IPAddress, UnencodedSignal
+from plexo.typing.reactant import Reactant, RawReactant
 
 
-class SynapseZmqPubSubEPGM(SynapseBase):
+class SynapseZmqPubSubEPGM(SynapseExternalBase):
     def __init__(
         self,
-        topic: str,
+        neuron: Neuron[UnencodedSignal],
         multicast_address: IPAddress,
         bind_interface: Optional[str] = None,
         port: int = 5560,
-        receptors: Iterable[DecoderReceptor] = (),
+        reactants: Iterable[Reactant[UnencodedSignal]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
     ) -> None:
-        super().__init__(topic, receptors)
+        super().__init__(neuron, reactants, raw_reactants)
 
         if not bind_interface:
             bind_interface = get_primary_ip()
         self.bind_interface = bind_interface
-        logging.debug(f"SynapseZmqPubSubEPGM:{topic}:bind_interface {bind_interface}")
+        logging.debug(f"SynapseZmqPubSubEPGM:{neuron}:bind_interface {bind_interface}")
         self.port = port
-        logging.debug(f"SynapseZmqPubSubEPGM:{topic}:port {port}")
+        logging.debug(f"SynapseZmqPubSubEPGM:{neuron}:port {port}")
 
         self._startup(multicast_address)
 
     def _startup(self, multicast_address: IPAddress):
-        topic = self.topic
+        topic = self.neuron.name
         self._startup_done = False
         if not multicast_address.is_multicast:
             raise IpAddressIsNotMulticast(
@@ -87,12 +89,12 @@ class SynapseZmqPubSubEPGM(SynapseBase):
         self.close()
         self._startup(multicast_address)
 
-    async def update_receptors(self, receptors: Iterable[DecoderReceptor]):
-        await super().update_receptors(receptors)
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+        await super().add_reactants(reactants)
         self._start_recv_loop_if_needed()
 
     def _create_socket_pub(self):
-        logging.debug(f"SynapseZmqPubSubEPGM:{self.topic}:Creating publisher")
+        logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Creating publisher")
         self._socket_pub = self._zmq_context.socket(zmq.PUB)
 
         # this conditional is only to satisfy mypy (I think it's a bug)
@@ -100,12 +102,12 @@ class SynapseZmqPubSubEPGM(SynapseBase):
             self._socket_pub.bind(self.connection_string)
 
     def _create_socket_sub(self):
-        logging.debug(f"SynapseZmqPubSubEPGM:{self.topic}:Creating subscription")
+        logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Creating subscription")
         self._socket_sub = self._zmq_context.socket(zmq.SUB)
 
         # this conditional is only to satisfy mypy (I think it's a bug)
         if self._socket_sub is not None:
-            self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, self.topic)
+            self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, self.neuron.name)
             self._socket_sub.connect(self.connection_string)
 
     @property
@@ -115,31 +117,34 @@ class SynapseZmqPubSubEPGM(SynapseBase):
 
         return self._socket_sub
 
-    async def transmit(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+    async def transmit(
+        self,
+        data: EncodedSignal,
+        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        reaction_id: Optional[UUID] = None,
+    ):
         if self._socket_pub is not None:
             await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
             await self._socket_pub.send(data)
 
     def _start_recv_loop_if_needed(self):
-        if len(self.receptors):
-            logging.debug(f"SynapseZmqPubSubEPGM:{self.topic}:Starting _recv_loop")
+        if len(self._receptor.reactants):
+            logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Starting _recv_loop")
             self._add_task(asyncio.create_task(self._recv_loop()))
         else:
             logging.debug(
                 "SynapseZmqPubSubEPGM:{}:Not starting _recv_loop - no receptors found".format(
-                    self.topic
+                    self.neuron
                 )
             )
 
     async def _recv_loop(self):
-        topic = self.topic
+        topic = self.neuron.name
 
         while True:
             try:
                 data = (await self.socket_sub.recv_multipart())[1]
-                await asyncio.wait(
-                    [receptor(data, None) for receptor in self.receptors]
-                )
+                await self.transduce(data)
             except AttributeError:
                 # Error/exit if the socket no longer exists
                 raise

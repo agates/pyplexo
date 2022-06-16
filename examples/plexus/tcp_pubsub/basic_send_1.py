@@ -19,7 +19,6 @@ import logging
 import os
 import uuid
 from dataclasses import dataclass
-from functools import partial
 from ipaddress import IPv4Address
 from timeit import default_timer as timer
 from uuid import UUID
@@ -49,7 +48,7 @@ class Bar:
     node_id: str
 
 
-async def _bar_reaction(bar: Bar, _):
+async def _bar_reaction(bar: Bar, _, _2):
     logging.info(f"Received Bar: {bar}")
 
 
@@ -81,10 +80,10 @@ async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Pl
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    multicast_ganglion = GanglionZmqTcpPubSub(
+    tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
         port_pub=test_port_pub, peers=[(IPv4Address("192.168.1.157"), 5572)]
     )
-    plexus = Plexus(ganglia=(multicast_ganglion,))
+    plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))
     namespace = Namespace(["plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
     bar_neuron = Neuron(Bar, namespace, PickleCodec())

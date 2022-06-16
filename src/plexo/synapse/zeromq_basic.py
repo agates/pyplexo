@@ -20,20 +20,30 @@ from uuid import UUID
 import zmq
 from zmq.asyncio import Socket
 
-from plexo.synapse.base import SynapseBase
-from plexo.typing import EncodedSignal
-from plexo.typing.receptor import Receptor
+from plexo.neuron.neuron import Neuron
+from plexo.synapse.base import SynapseExternalBase
+from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing.reactant import Reactant, RawReactant
 
 
-class SynapseExternal(SynapseBase):
+class SynapseZmqBasic(SynapseExternalBase):
     def __init__(
-        self, topic: str, socket_pub: Socket, receptors: Iterable[Receptor] = ()
+        self,
+        neuron: Neuron[UnencodedSignal],
+        socket_pub: Socket,
+        reactants: Iterable[Reactant[UnencodedSignal]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
     ) -> None:
-        super().__init__(topic, receptors)
+        super().__init__(neuron, reactants, raw_reactants)
 
         self._socket_pub: Socket = socket_pub
 
-    async def transmit(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+    async def transmit(
+        self,
+        data: EncodedSignal,
+        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        reaction_id: Optional[UUID] = None,
+    ):
         if self._socket_pub is not None:
             await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
             await self._socket_pub.send(data)

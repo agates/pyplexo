@@ -21,8 +21,8 @@ import ipaddress
 import pytest
 
 from plexo.receptor import create_decoder_receptor
-from plexo.synapse.zeromq import SynapseZmqPubSubEPGM
-from plexo.transmitter import transmit_encode
+from plexo.synapse.zeromq_pubsub_epgm import SynapseZmqPubSubEPGM
+from plexo.transmitter import transmit_external_encode
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
 test_port = 5561
@@ -51,13 +51,13 @@ async def test_zmq_epgm_receptor(event_loop):
         "test",
         multicast_address=test_ip_address,
         port=test_port,
-        receptors=(receptor,),
+        reactants=(receptor,),
     )
 
     await asyncio.sleep(0.1)
 
     foo_bar_dict = {"foo": "bar"}
-    await transmit_encode((synapse,), encode_json_bytes, foo_bar_dict)
+    await transmit_external_encode((synapse,), encode_json_bytes, foo_bar_dict)
 
     await asyncio.sleep(0.1)
 
