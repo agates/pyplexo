@@ -47,3 +47,7 @@ class Neuron(Codec, Generic[UnencodedSignal]):
     @property
     def name(self) -> str:
         return self.namespace.with_suffix((self.type.__name__, self.codec.name))
+
+    @property
+    def name_without_codec(self) -> str:
+        return self.namespace.with_suffix((self.type.__name__,))
