@@ -74,13 +74,14 @@ async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Pl
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
+    namespace = Namespace(["plexo", "test"])
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
+    bar_neuron = Neuron(Bar, namespace, PickleCodec())
+
     tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
         port_pub=test_port_pub, peers=[(IPv4Address("192.168.1.157"), 5571)]
     )
     plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))
-    namespace = Namespace(["plexo", "test"])
-    foo_neuron = Neuron(Foo, namespace, PickleCodec())
-    bar_neuron = Neuron(Bar, namespace, PickleCodec())
 
     asyncio.run(run_async(foo_neuron, bar_neuron, plexus))
 

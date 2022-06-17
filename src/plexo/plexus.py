@@ -16,6 +16,7 @@
 
 import asyncio
 import itertools
+import logging
 from asyncio import Lock
 from typing import Iterable, Optional, Set, Tuple
 from uuid import UUID, uuid4
@@ -29,15 +30,22 @@ from plexo.ganglion.external import GanglionExternalBase
 from plexo.ganglion.inproc import GanglionInproc
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.neuron.neuron import Neuron
-from plexo.typing import EncodedSignal, UnencodedSignal, Signal
+from plexo.typing import EncodedSignal, UnencodedSignal
 from plexo.typing.ganglion import Ganglion
-from plexo.typing.reactant import RawReactant, Reactant
+from plexo.typing.reactant import Reactant
 
 
 class Plexus(Ganglion):
-    def __init__(self, ganglia: Iterable[Ganglion] = ()):
+    def __init__(
+        self,
+        ganglia: Iterable[Ganglion] = (),
+        relevant_neurons: Iterable[Neuron] = (),
+        ignored_neurons: Iterable[Neuron] = (),
+    ):
         ganglia = pset(ganglia)
-        self.inproc_ganglion: GanglionInternalBase = GanglionInproc()
+        self.inproc_ganglion: GanglionInternalBase = GanglionInproc(
+            relevant_neurons=relevant_neurons, ignored_neurons=ignored_neurons
+        )
 
         self._external_ganglia = pset(
             ganglion
@@ -63,6 +71,12 @@ class Plexus(Ganglion):
             UUID, asyncio.Lock
         ] = WeakKeyDictionary()
         self._reaction_locks_lock = asyncio.Lock()
+
+        # This is a set of neurons that the Ganglion will handle
+        self._relevant_neurons: PSet[Neuron] = pset(relevant_neurons)
+
+        # This is a set of neurons that the Ganglion will ignore
+        self._ignored_neurons: PSet[Neuron] = pset(ignored_neurons)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
@@ -223,6 +237,15 @@ class Plexus(Ganglion):
             # Got empty list, continue
             pass
 
+    def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
+        if len(self._relevant_neurons) > 0 and neuron not in self._relevant_neurons:
+            return False
+
+        if len(self._ignored_neurons) > 0 and neuron in self._ignored_neurons:
+            return False
+
+        return True
+
     async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
         await self._update_neurons(neuron)
 
@@ -248,6 +271,10 @@ class Plexus(Ganglion):
         neuron: Neuron,
         reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
     ):
+        if not self.capable(neuron):
+            logging.warning(f"Plexus:adapt not capable of adapting to Neuron {neuron}")
+            return
+
         if reactants:
             await self.react(neuron, reactants)
 

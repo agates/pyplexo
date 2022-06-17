@@ -116,8 +116,12 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         port: int = 5560,
         heartbeat_interval_seconds: int = 30,
         proposal_timeout_seconds: int = 5,
+        relevant_neurons: Iterable[Neuron] = (),
+        ignored_neurons: Iterable[Neuron] = (),
     ) -> None:
-        super().__init__()
+        super().__init__(
+            relevant_neurons=relevant_neurons, ignored_neurons=ignored_neurons
+        )
         self.bind_interface = bind_interface
         self.multicast_cidr = multicast_cidr
         self.port = port

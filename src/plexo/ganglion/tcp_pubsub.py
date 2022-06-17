@@ -23,7 +23,7 @@ import zmq.asyncio
 from pyrsistent import pvector
 from zmq.asyncio import Socket
 
-from plexo.exceptions import SynapseExists
+from plexo.exceptions import SynapseExists, NeuronNotFound
 
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.host_information import get_primary_ip
@@ -40,8 +40,12 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
         bind_interface: Optional[str] = None,
         port_pub: int = 5570,
         peers: Iterable[Tuple[IPAddress, int]] = (),
+        relevant_neurons: Iterable[Neuron] = (),
+        ignored_neurons: Iterable[Neuron] = (),
     ) -> None:
-        super().__init__()
+        super().__init__(
+            relevant_neurons=relevant_neurons, ignored_neurons=ignored_neurons
+        )
         if not bind_interface:
             bind_interface = get_primary_ip()
         self.bind_interface = bind_interface
@@ -160,10 +164,12 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
                 async with self._recv_loop_running_lock:
                     self._recv_loop_running = False
                 raise
-            except asyncio.CancelledError as e:
+            except asyncio.CancelledError:
                 async with self._recv_loop_running_lock:
                     self._recv_loop_running = False
                 raise
+            except NeuronNotFound as e:
+                logging.warning(f"GanglionZmqTcpPubSub:_recv_loop: {e}")
             except Exception as e:
                 logging.error(f"GanglionZmqTcpPubSub:_recv_loop: {e}", stack_info=True)
                 continue

@@ -15,6 +15,7 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 from typing import Iterable, Optional, Type
 from uuid import UUID
@@ -30,7 +31,7 @@ from plexo.exceptions import (
 )
 from plexo.neuron.neuron import Neuron
 from plexo.transmitter import create_transmitter
-from plexo.typing import UnencodedSignal, Signal, EncodedSignal
+from plexo.typing import UnencodedSignal
 from plexo.typing.synapse import SynapseInternal
 from plexo.typing.transmitter import Transmitter
 from plexo.typing.ganglion import Ganglion
@@ -38,7 +39,11 @@ from plexo.typing.reactant import Reactant
 
 
 class GanglionInternalBase(Ganglion, ABC):
-    def __init__(self):
+    def __init__(
+        self,
+        relevant_neurons: Iterable[Neuron] = (),
+        ignored_neurons: Iterable[Neuron] = (),
+    ):
         self._tasks: PDeque = pdeque()
 
         self._synapses: PMap[str, SynapseInternal] = pmap({})
@@ -56,6 +61,12 @@ class GanglionInternalBase(Ganglion, ABC):
         # so we only map it to one Neuron
         self._name_neurons: PMap[str, Neuron] = pmap({})
         self._name_neurons_lock = asyncio.Lock()
+
+        # This is a set of neurons that the Ganglion will handle
+        self._relevant_neurons: PSet[Neuron] = pset(relevant_neurons)
+
+        # This is a set of neurons that the Ganglion will ignore
+        self._ignored_neurons: PSet[Neuron] = pset(ignored_neurons)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
@@ -139,6 +150,15 @@ class GanglionInternalBase(Ganglion, ABC):
 
         return transmitter
 
+    def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
+        if len(self._relevant_neurons) > 0 and neuron not in self._relevant_neurons:
+            return False
+
+        if len(self._ignored_neurons) > 0 and neuron in self._ignored_neurons:
+            return False
+
+        return True
+
     async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
         synapse = await self.get_synapse(neuron)
         await self._create_transmitter(neuron, synapse)
@@ -214,6 +234,12 @@ class GanglionInternalBase(Ganglion, ABC):
         neuron: Neuron[UnencodedSignal],
         reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
     ):
+        if not self.capable(neuron):
+            logging.warning(
+                f"GanglionInternalBase:adapt not capable of adapting to Neuron {neuron}"
+            )
+            return
+
         if reactants:
             await self.react(neuron, reactants)
 

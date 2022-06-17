@@ -32,6 +32,15 @@ if TYPE_CHECKING:
 
 class Ganglion(Protocol):
     @abstractmethod
+    def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
+        ...
+
+    # TODO: maybe implement this later as an optimization
+    # @abstractmethod
+    # def capable_by_name(self, neuron: Neuron[UnencodedSignal]) -> bool:
+    #    ...
+
+    @abstractmethod
     async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
         ...
 
