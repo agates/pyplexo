@@ -23,11 +23,16 @@ from plexo.typing.codec import Codec
 
 class Neuron(Codec, Generic[UnencodedSignal]):
     def __init__(
-        self, _type: Type[UnencodedSignal], namespace: Namespace, codec: Codec
+        self,
+        _type: Type[UnencodedSignal],
+        namespace: Namespace,
+        codec: Codec,
+        type_name_alias: str = None,
     ):
         self.type: Type[UnencodedSignal] = _type
         self.namespace: Namespace = namespace
         self.codec = codec
+        self.type_name_alias = type_name_alias or self.type.__name__
 
     def __eq__(self, other):
         return self.name == other.name
@@ -46,8 +51,8 @@ class Neuron(Codec, Generic[UnencodedSignal]):
 
     @property
     def name(self) -> str:
-        return self.namespace.with_suffix((self.type.__name__, self.codec.name))
+        return self.namespace.with_suffix((self.type_name_alias, self.codec.name))
 
     @property
     def name_without_codec(self) -> str:
-        return self.namespace.with_suffix((self.type.__name__,))
+        return self.namespace.with_suffix((self.type_name_alias,))
