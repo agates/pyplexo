@@ -18,6 +18,8 @@ import asyncio
 import logging
 from timeit import default_timer as timer
 
+import python_jsonschema_objects as pjs
+
 from plexo.codec.json_codec import JsonCodec
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
@@ -33,16 +35,19 @@ foo_schema = {
     "required": ["message"],
 }
 
-foo_codec = JsonCodec(foo_schema, "Foo")
+builder = pjs.ObjectBuilder(foo_schema)
+namespace = builder.build_classes()
+
+Foo = namespace["Foo"]
 
 
-async def _foo_reaction(f: foo_codec.schema_class, _, _2):
+async def _foo_reaction(f: Foo, _, _2):
     logging.info(f"Received Foo.message: {f.message}")
 
 
 async def send_foo_hello_str(plexus: Plexus):
     i = 1
-    foo = foo_codec.schema_class()
+    foo = Foo()
     while True:
         start_time = timer()
         foo.message = f"Hello, Plexo+Inproc {i} …"
@@ -58,6 +63,8 @@ async def send_foo_hello_str(plexus: Plexus):
 
 def run():
     logging.basicConfig(level=logging.DEBUG)
+
+    foo_codec = JsonCodec(Foo)
 
     plexus = Plexus()
     namespace = Namespace(["plexo", "test"])

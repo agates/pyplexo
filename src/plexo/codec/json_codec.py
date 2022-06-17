@@ -24,18 +24,21 @@ from plexo.typing.codec import Codec
 class JsonCodec(Codec):
     _name = "json"
 
-    def __init__(
-        self, json_schema: dict, schema_name: str, serialize_args: Optional[dict] = None
-    ):
+    def __init__(self, schema_class, serialize_args: Optional[dict] = None):
         if serialize_args is None:
             serialize_args = {"separators": (",", ":")}
 
         self.serialize_args = serialize_args
-        self.json_schema = json_schema
-        self.builder = pjs.ObjectBuilder(json_schema)
-        self.namespace = self.builder.build_classes()
-        self.schema_name = schema_name
-        self.schema_class = self.namespace[self.schema_name]
+        self.schema_class = schema_class
+
+    @classmethod
+    def load_from_schema(
+        cls, json_schema: dict, schema_name: str, serialize_args: Optional[dict] = None
+    ):
+        builder = pjs.ObjectBuilder(json_schema)
+        namespace = builder.build_classes()
+
+        return cls(namespace[schema_name], serialize_args=serialize_args)
 
     def encode(self, data) -> EncodedSignal:
         return data.serialize(**self.serialize_args)
