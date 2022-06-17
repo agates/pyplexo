@@ -18,28 +18,36 @@ import asyncio
 import logging
 from timeit import default_timer as timer
 
-from plexo.codec.pickle_codec import PickleCodec
+from plexo.codec.json_codec import JsonCodec
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 
+foo_schema = {
+    "title": "Foo",
+    "type": "object",
+    "properties": {
+        "message": {"type": "string"},
+    },
+    "required": ["message"],
+}
 
-class Foo:
-    message: str
+foo_codec = JsonCodec(foo_schema, "Foo")
 
 
-async def _foo_reaction(f: Foo, _):
+async def _foo_reaction(f: foo_codec.schema_class, _, _2):
     logging.info(f"Received Foo.message: {f.message}")
 
 
 async def send_foo_hello_str(plexus: Plexus):
     i = 1
-    foo = Foo()
+    foo = foo_codec.schema_class()
     while True:
         start_time = timer()
         foo.message = f"Hello, Plexo+Inproc {i} …"
         logging.info(f"Sending Foo with message: {foo.message}")
+        logging.debug(f"JSON: {foo.serialize()}")
         try:
             await plexus.transmit(foo)
         except TransmitterNotFound as e:
@@ -53,7 +61,8 @@ def run():
 
     plexus = Plexus()
     namespace = Namespace(["plexo", "test"])
-    foo_neuron = Neuron(Foo, namespace, PickleCodec())
+
+    foo_neuron = Neuron(foo_codec.schema_class, namespace, foo_codec)
 
     asyncio.run(plexus.adapt(foo_neuron, reactants=[_foo_reaction]))
     asyncio.run(send_foo_hello_str(plexus))

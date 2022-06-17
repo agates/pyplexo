@@ -38,6 +38,7 @@ pyrsistent = "^=0.18.0"
 pyzmq = "^=22.1.0"
 returns = "^=0.18.0"
 typing_extensions = "^=3.7"
+python-jsonschema-objects = "^0.4.1"
 
 [tool.poetry.dev-dependencies]
 bandit = "^=1.7.0"
