@@ -14,7 +14,7 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Generic, Type
+from typing import Generic, Type, Optional
 
 from plexo.namespace.namespace import Namespace
 from plexo.typing import EncodedSignal, UnencodedSignal
@@ -27,7 +27,7 @@ class Neuron(Codec, Generic[UnencodedSignal]):
         _type: Type[UnencodedSignal],
         namespace: Namespace,
         codec: Codec,
-        type_name_alias: str = None,
+        type_name_alias: Optional[str] = None,
     ):
         self.type: Type[UnencodedSignal] = _type
         self.namespace: Namespace = namespace
