@@ -79,7 +79,9 @@ def run():
     bar_neuron = Neuron(Bar, namespace, PickleCodec())
 
     tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
-        port_pub=test_port_pub, peers=[(IPv4Address("192.168.1.157"), 5571)]
+        port_pub=test_port_pub,
+        peers=[(IPv4Address("192.168.1.157"), 5571)],
+        allowed_codecs=(PickleCodec,),
     )
     plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))
 

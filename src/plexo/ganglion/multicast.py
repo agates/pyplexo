@@ -24,7 +24,7 @@ from enum import Enum
 from functools import reduce
 from itertools import islice
 from timeit import default_timer as timer
-from typing import Iterable, Optional, Tuple, cast
+from typing import Iterable, Optional, Tuple, cast, Type
 from uuid import UUID
 
 from pyrsistent import plist, pmap, pvector
@@ -118,9 +118,12 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         proposal_timeout_seconds: int = 5,
         relevant_neurons: Iterable[Neuron] = (),
         ignored_neurons: Iterable[Neuron] = (),
+        allowed_codecs: Iterable[Type] = (),
     ) -> None:
         super().__init__(
-            relevant_neurons=relevant_neurons, ignored_neurons=ignored_neurons
+            relevant_neurons=relevant_neurons,
+            ignored_neurons=ignored_neurons,
+            allowed_codecs=allowed_codecs,
         )
         self.bind_interface = bind_interface
         self.multicast_cidr = multicast_cidr

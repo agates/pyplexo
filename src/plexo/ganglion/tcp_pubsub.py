@@ -16,7 +16,7 @@
 
 import asyncio
 import logging
-from typing import Iterable, Optional, Tuple
+from typing import Iterable, Optional, Tuple, Type
 
 import zmq
 import zmq.asyncio
@@ -28,7 +28,7 @@ from plexo.exceptions import SynapseExists, NeuronNotFound
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
-from plexo.synapse.zeromq_basic import SynapseZmqBasic
+from plexo.synapse.zeromq_basic_pub import SynapseZmqBasicPub
 from plexo.typing import UnencodedSignal, IPAddress
 from plexo.typing.reactant import Reactant, RawReactant
 from plexo.typing.synapse import SynapseExternal
@@ -42,9 +42,12 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
         peers: Iterable[Tuple[IPAddress, int]] = (),
         relevant_neurons: Iterable[Neuron] = (),
         ignored_neurons: Iterable[Neuron] = (),
+        allowed_codecs: Iterable[Type] = (),
     ) -> None:
         super().__init__(
-            relevant_neurons=relevant_neurons, ignored_neurons=ignored_neurons
+            relevant_neurons=relevant_neurons,
+            ignored_neurons=ignored_neurons,
+            allowed_codecs=allowed_codecs,
         )
         if not bind_interface:
             bind_interface = get_primary_ip()
@@ -121,7 +124,7 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
         logging.debug(f"GanglionZmqTcpPubSub:Creating synapse for type {name}")
 
         if self._socket_pub is not None:
-            synapse: SynapseZmqBasic = SynapseZmqBasic(
+            synapse: SynapseZmqBasicPub = SynapseZmqBasicPub(
                 neuron=neuron, socket_pub=self._socket_pub
             )
 
@@ -171,7 +174,7 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
             except NeuronNotFound as e:
                 logging.warning(f"GanglionZmqTcpPubSub:_recv_loop: {e}")
             except Exception as e:
-                logging.error(f"GanglionZmqTcpPubSub:_recv_loop: {e}", stack_info=True)
+                logging.exception(f"GanglionZmqTcpPubSub:_recv_loop: {e}")
                 continue
 
     async def adapt(

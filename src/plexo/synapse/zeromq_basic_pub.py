@@ -26,7 +26,7 @@ from plexo.typing import EncodedSignal, UnencodedSignal
 from plexo.typing.reactant import Reactant, RawReactant
 
 
-class SynapseZmqBasic(SynapseExternalBase):
+class SynapseZmqBasicPub(SynapseExternalBase):
     def __init__(
         self,
         neuron: Neuron[UnencodedSignal],

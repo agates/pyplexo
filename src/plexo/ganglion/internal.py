@@ -43,6 +43,7 @@ class GanglionInternalBase(Ganglion, ABC):
         self,
         relevant_neurons: Iterable[Neuron] = (),
         ignored_neurons: Iterable[Neuron] = (),
+        allowed_codecs: Iterable[Type] = (),
     ):
         self._tasks: PDeque = pdeque()
 
@@ -67,6 +68,8 @@ class GanglionInternalBase(Ganglion, ABC):
 
         # This is a set of neurons that the Ganglion will ignore
         self._ignored_neurons: PSet[Neuron] = pset(ignored_neurons)
+
+        self._allowed_codecs: PSet[Type] = pset(allowed_codecs)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
@@ -155,6 +158,12 @@ class GanglionInternalBase(Ganglion, ABC):
             return False
 
         if len(self._ignored_neurons) > 0 and neuron in self._ignored_neurons:
+            return False
+
+        if (
+            len(self._allowed_codecs) > 0
+            and type(neuron.codec) not in self._allowed_codecs
+        ):
             return False
 
         return True
