@@ -25,6 +25,7 @@ from uuid import UUID
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.ganglion.tcp_pubsub import GanglionZmqTcpPubSub
+from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.namespace.namespace import Namespace
@@ -32,6 +33,7 @@ from plexo.plexus import Plexus
 
 
 test_port_pub = 5571
+test_port_sub = 5572
 
 
 @dataclass
@@ -68,7 +70,7 @@ async def send_foo_hello_str(plexus: Plexus):
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
-        await asyncio.sleep(1 - (start_time - timer()))
+        await asyncio.sleep(1 - (timer() - start_time))
 
 
 async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
@@ -86,7 +88,7 @@ def run():
 
     tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
         port_pub=test_port_pub,
-        peers=[(IPv4Address("192.168.1.157"), 5572)],
+        peers=[(IPv4Address(get_primary_ip()), test_port_sub)],
         relevant_neurons=(bar_neuron, foo_neuron),
     )
     plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))

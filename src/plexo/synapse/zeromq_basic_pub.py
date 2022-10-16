@@ -44,5 +44,5 @@ class SynapseZmqBasicPub(SynapseExternalBase):
         neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ):
-        if self._socket_pub is not None:
-            await self._socket_pub.send(data)
+        await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
+        await self._socket_pub.send(data)

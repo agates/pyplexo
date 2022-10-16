@@ -45,7 +45,7 @@ async def send_foo_hello_str(ganglion: GanglionInproc):
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
-        await asyncio.sleep(1 - (start_time - timer()))
+        await asyncio.sleep(1 - (timer() - start_time))
 
 
 def run():

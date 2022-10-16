@@ -95,6 +95,8 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
         # this conditional is only to satisfy mypy (I think it's a bug)
         if self._socket_pub is not None:
             self._socket_pub.bind(self.connection_string_pub)
+            self._socket_pub.setsockopt(zmq.LINGER, 0)
+            self._socket_pub.setsockopt(zmq.IMMEDIATE, 1)
 
     def _create_socket_sub(self):
         logging.debug(f"GanglionZmqTcpPubSub:Creating subscription")
@@ -104,6 +106,8 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
         if self._socket_sub is not None:
             # TODO: Maybe optimize this for specific topics, not sure if it will modify behavior
             self._socket_sub.setsockopt_string(zmq.SUBSCRIBE, "")
+            self._socket_sub.setsockopt(zmq.LINGER, 0)
+            self._socket_sub.setsockopt(zmq.IMMEDIATE, 1)
 
     def connect_to_peer(self, address: IPAddress, port: int):
         connection_string = f"tcp://{address.compressed}:{port}"
@@ -175,7 +179,6 @@ class GanglionZmqTcpPubSub(GanglionExternalBase):
                 logging.warning(f"GanglionZmqTcpPubSub:_recv_loop: {e}")
             except Exception as e:
                 logging.exception(f"GanglionZmqTcpPubSub:_recv_loop: {e}")
-                continue
 
     async def adapt(
         self,

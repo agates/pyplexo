@@ -26,6 +26,7 @@ from returns.curry import partial
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.ganglion.tcp_pubsub import GanglionZmqTcpPubSub
+from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.namespace.namespace import Namespace
@@ -33,6 +34,7 @@ from plexo.plexus import Plexus
 
 
 test_port_pub = 5572
+test_port_sub = 5571
 
 
 @dataclass
@@ -80,7 +82,7 @@ def run():
 
     tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
         port_pub=test_port_pub,
-        peers=[(IPv4Address("192.168.1.157"), 5571)],
+        peers=[(IPv4Address(get_primary_ip()), test_port_sub)],
         allowed_codecs=(PickleCodec,),
     )
     plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))
