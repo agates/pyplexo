@@ -2,7 +2,7 @@
 name = "plexo"
 version = "1.0.0"
 readme = "README.md"
-description = "Opinionated, distributed message passing"
+description = "Opinionated, reactive, schema-driven, distributed message passing"
 authors = ["Alecks Gates <agates@mail.agates.io>"]
 license = "LGPL-3.0-or-later"
 homepage = "gitlab.com/agates/pyplexo/"
