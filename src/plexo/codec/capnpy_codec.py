@@ -13,6 +13,7 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+from capnpy.struct_ import Struct
 
 from plexo.typing import EncodedSignal
 from plexo.typing.codec import Codec
@@ -22,7 +23,7 @@ class CapnpyCodec(Codec):
     _name = "capnp"
 
     def __init__(self, capnpy_struct):
-        self.capnpy_struct = capnpy_struct
+        self.capnpy_struct: Struct = capnpy_struct
 
     def encode(self, data) -> EncodedSignal:
         return self.capnpy_struct.dumps(data)

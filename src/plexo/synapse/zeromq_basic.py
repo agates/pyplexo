@@ -20,23 +20,25 @@ from uuid import UUID
 import zmq
 from zmq.asyncio import Socket
 
+from plexo.codec.plexo_codec import plexo_message_codec
 from plexo.neuron.neuron import Neuron
+from plexo.schema.plexo_message import PlexoMessage
 from plexo.synapse.base import SynapseExternalBase
 from plexo.typing import EncodedSignal, UnencodedSignal
 from plexo.typing.reactant import Reactant, RawReactant
 
 
-class SynapseZmqBasicPub(SynapseExternalBase):
+class SynapseZmqBasic(SynapseExternalBase):
     def __init__(
         self,
         neuron: Neuron[UnencodedSignal],
-        socket_pub: Socket,
+        socket: Socket,
         reactants: Iterable[Reactant[UnencodedSignal]] = (),
         raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
     ) -> None:
         super().__init__(neuron, reactants, raw_reactants)
 
-        self._socket_pub: Socket = socket_pub
+        self._socket: Socket = socket
 
     async def transmit(
         self,
@@ -44,5 +46,5 @@ class SynapseZmqBasicPub(SynapseExternalBase):
         neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ):
-        if self._socket_pub is not None:
-            await self._socket_pub.send(data)
+        message = PlexoMessage(type_name=self.topic_bytes, payload=data)
+        await self._socket.send(plexo_message_codec.encode(message))

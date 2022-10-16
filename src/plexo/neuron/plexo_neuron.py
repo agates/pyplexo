@@ -31,9 +31,10 @@ from plexo.schema.plexo_promise import PlexoPromise
 from plexo.schema.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_rejection import PlexoRejection
 
+
+approval_neuron = Neuron(PlexoApproval, plexo_namespace, plexo_approval_codec)
 heartbeat_neuron = Neuron(PlexoHeartbeat, plexo_namespace, plexo_heartbeat_codec)
 preparation_neuron = Neuron(PlexoPreparation, plexo_namespace, plexo_preparation_codec)
 promise_neuron = Neuron(PlexoPromise, plexo_namespace, plexo_promise_codec)
-rejection_neuron = Neuron(PlexoRejection, plexo_namespace, plexo_rejection_codec)
 proposal_neuron = Neuron(PlexoProposal, plexo_namespace, plexo_proposal_codec)
-approval_neuron = Neuron(PlexoApproval, plexo_namespace, plexo_approval_codec)
+rejection_neuron = Neuron(PlexoRejection, plexo_namespace, plexo_rejection_codec)

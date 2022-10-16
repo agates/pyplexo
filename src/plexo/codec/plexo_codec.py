@@ -17,13 +17,16 @@
 from plexo.codec.capnpy_codec import CapnpyCodec
 from plexo.schema.plexo_approval import PlexoApproval
 from plexo.schema.plexo_heartbeat import PlexoHeartbeat
+from plexo.schema.plexo_message import PlexoMessage
 from plexo.schema.plexo_preparation import PlexoPreparation
 from plexo.schema.plexo_promise import PlexoPromise
 from plexo.schema.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_rejection import PlexoRejection
 
+
 plexo_approval_codec = CapnpyCodec(PlexoApproval)
 plexo_heartbeat_codec = CapnpyCodec(PlexoHeartbeat)
+plexo_message_codec = CapnpyCodec(PlexoMessage)
 plexo_preparation_codec = CapnpyCodec(PlexoPreparation)
 plexo_promise_codec = CapnpyCodec(PlexoPromise)
 plexo_proposal_codec = CapnpyCodec(PlexoProposal)
