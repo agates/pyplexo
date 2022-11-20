@@ -234,8 +234,8 @@ class GanglionInternalBase(Ganglion, ABC):
     ):
         transmitters = await self._get_transmitters(data, neuron)
 
-        return await asyncio.wait(
-            [transmitter(data, neuron, reaction_id) for transmitter in transmitters]
+        return await asyncio.gather(
+            *(transmitter(data, neuron, reaction_id) for transmitter in transmitters)
         )
 
     async def adapt(

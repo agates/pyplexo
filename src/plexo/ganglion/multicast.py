@@ -550,20 +550,20 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                 (approval_neuron, self._approval_reaction),
             )
 
-            await asyncio.wait(
-                [
+            await asyncio.gather(
+                *(
                     self.create_synapse_with_reserved_address(neuron, reserved_address)
                     for neuron, reserved_address in neuron_reserved_addresses
-                ]
+                )
             )
 
-            await asyncio.wait(
-                [
+            await asyncio.gather(
+                *(
                     self.adapt_ignore_startup(
-                        neuron, reactants=(cast(Reactant, reactant),)
+                        cast(Neuron, neuron), reactants=(cast(Reactant, reactant),)
                     )
                     for neuron, reactant in neuron_reactions
-                ]
+                )
             )
 
             await asyncio.sleep(self.heartbeat_interval_seconds)

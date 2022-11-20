@@ -55,8 +55,8 @@ class Receptor(Generic[UnencodedSignal]):
     ):
         neuron = self.neuron
         try:
-            return await asyncio.wait(
-                [reactant(data, neuron, reaction_id) for reactant in self.reactants]
+            return await asyncio.gather(
+                *(reactant(data, neuron, reaction_id) for reactant in self.reactants)
             )
         except ValueError:
             # Got empty list, continue
