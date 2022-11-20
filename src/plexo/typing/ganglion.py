@@ -17,19 +17,20 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable, Optional, runtime_checkable
 from uuid import UUID
 
 from typing_extensions import Protocol
 
 from plexo.neuron.neuron import Neuron
-from plexo.typing import UnencodedSignal
+from plexo.typing import UnencodedSignal, EncodedSignal
 
 if TYPE_CHECKING:
     # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
-    from plexo.typing.reactant import Reactant
+    from plexo.typing.reactant import Reactant, RawReactant
 
 
+@runtime_checkable
 class Ganglion(Protocol):
     @abstractmethod
     def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
@@ -71,4 +72,37 @@ class Ganglion(Protocol):
 
     @abstractmethod
     def close(self):
+        ...
+
+
+class GanglionExternal(Ganglion):
+    # TODO: maybe implement this later as an optimization
+    # @abstractmethod
+    # def capable_by_name(self, neuron: Neuron[UnencodedSignal]) -> bool:
+    #    ...
+
+    @abstractmethod
+    async def react_raw(
+        self,
+        neuron: Neuron[UnencodedSignal],
+        raw_reactants: Iterable[RawReactant[UnencodedSignal]],
+    ):
+        ...
+
+    @abstractmethod
+    async def transmit_encoded(
+        self,
+        data: EncodedSignal,
+        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        reaction_id: Optional[UUID] = None,
+    ):
+        ...
+
+    @abstractmethod
+    async def adapt(
+        self,
+        neuron: Neuron[UnencodedSignal],
+        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
+        raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
+    ):
         ...

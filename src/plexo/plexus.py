@@ -18,7 +18,7 @@ import asyncio
 import itertools
 import logging
 from asyncio import Lock
-from typing import Iterable, Optional, Set, Tuple
+from typing import Iterable, Optional, Set, Tuple, Union
 from uuid import UUID, uuid4
 from weakref import WeakKeyDictionary
 
@@ -26,19 +26,18 @@ from pyrsistent import pset
 from pyrsistent.typing import PSet
 from returns.curry import partial
 
-from plexo.ganglion.external import GanglionExternalBase
 from plexo.ganglion.inproc import GanglionInproc
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.neuron.neuron import Neuron
 from plexo.typing import EncodedSignal, UnencodedSignal
-from plexo.typing.ganglion import Ganglion
+from plexo.typing.ganglion import Ganglion, GanglionExternal
 from plexo.typing.reactant import Reactant
 
 
 class Plexus(Ganglion):
     def __init__(
         self,
-        ganglia: Iterable[Ganglion] = (),
+        ganglia: Iterable[Union[Ganglion, GanglionExternal]] = (),
         relevant_neurons: Iterable[Neuron] = (),
         ignored_neurons: Iterable[Neuron] = (),
     ):
@@ -48,15 +47,13 @@ class Plexus(Ganglion):
         )
 
         self._external_ganglia = pset(
-            ganglion
-            for ganglion in ganglia
-            if isinstance(ganglion, GanglionExternalBase)
+            ganglion for ganglion in ganglia if isinstance(ganglion, GanglionExternal)
         )
         self._external_ganglia_lock = asyncio.Lock()
         self._internal_ganglia = pset(
             ganglion
             for ganglion in ganglia
-            if not isinstance(ganglion, GanglionExternalBase)
+            if not isinstance(ganglion, GanglionExternal)
         )
         self._internal_ganglia = self._internal_ganglia.add(self.inproc_ganglion)
         self._internal_ganglia_lock = asyncio.Lock()
@@ -125,7 +122,7 @@ class Plexus(Ganglion):
 
     async def _external_internal_reaction(
         self,
-        current: GanglionExternalBase,
+        current: GanglionExternal,
         data: UnencodedSignal,
         neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
@@ -151,7 +148,7 @@ class Plexus(Ganglion):
 
     async def _external_external_reaction(
         self,
-        current: GanglionExternalBase,
+        current: GanglionExternal,
         data: EncodedSignal,
         neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
@@ -187,7 +184,7 @@ class Plexus(Ganglion):
         return reaction_id, reaction_lock
 
     async def infuse_ganglion(self, ganglion: Ganglion):
-        if isinstance(ganglion, GanglionExternalBase):
+        if isinstance(ganglion, GanglionExternal):
             async with self._external_ganglia_lock:
                 self._external_ganglia = self._external_ganglia.add(ganglion)
         else:
@@ -212,7 +209,7 @@ class Plexus(Ganglion):
         new_external_neuron_ganglia = pset(
             (neuron, ganglion)
             for neuron, ganglion in new_neuron_ganglia
-            if isinstance(ganglion, GanglionExternalBase)
+            if isinstance(ganglion, GanglionExternal)
         )
         new_internal_neuron_ganglia = new_neuron_ganglia.difference(
             new_external_neuron_ganglia
