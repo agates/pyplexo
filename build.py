@@ -23,7 +23,11 @@ class SetupKwargsProxy:
 
     @property
     def capnpy_options(self):
-        return {}
+        return {
+            "include_reflection_data": True,
+            # TODO: Remove the below options once we stabilize the capnpy version
+            "version_check": False,
+        }
 
     @property
     def ext_modules(self):
