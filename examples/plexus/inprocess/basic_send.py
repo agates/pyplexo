@@ -52,7 +52,7 @@ def run():
     logging.basicConfig(level=logging.DEBUG)
 
     plexus = Plexus()
-    namespace = Namespace(["plexo", "test"])
+    namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
     asyncio.run(plexus.adapt(foo_neuron, reactants=[_foo_reaction]))

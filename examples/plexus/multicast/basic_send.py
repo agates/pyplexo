@@ -63,7 +63,7 @@ def run():
         heartbeat_interval_seconds=10,
     )
     plexus = Plexus(ganglia=(multicast_ganglion,))
-    namespace = Namespace(["plexo", "test"])
+    namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
     asyncio.run(

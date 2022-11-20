@@ -36,9 +36,9 @@ foo_schema = {
 }
 
 builder = pjs.ObjectBuilder(foo_schema)
-namespace = builder.build_classes()
+jsonschema_namespace = builder.build_classes()
 
-Foo = namespace["Foo"]
+Foo = jsonschema_namespace[foo_schema["title"]]
 
 
 async def _foo_reaction(f: Foo, _, _2):
@@ -67,7 +67,7 @@ def run():
     foo_codec = JsonCodec(Foo)
 
     plexus = Plexus()
-    namespace = Namespace(["plexo", "test"])
+    namespace = Namespace(["dev", "plexo", "test"])
 
     foo_neuron = Neuron(foo_codec.schema_class, namespace, foo_codec)
 

@@ -16,4 +16,4 @@
 
 from plexo.namespace.namespace import Namespace
 
-plexo_namespace = Namespace(["plexo"])
+plexo_namespace = Namespace(["dev", "plexo"])

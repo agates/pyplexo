@@ -82,7 +82,7 @@ async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Pl
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    namespace = Namespace(["plexo", "test"])
+    namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
     bar_neuron = Neuron(Bar, namespace, PickleCodec())
 

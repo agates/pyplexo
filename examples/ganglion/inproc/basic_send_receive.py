@@ -52,7 +52,7 @@ def run():
     logging.basicConfig(level=logging.DEBUG)
 
     ganglion = GanglionInproc()
-    namespace = Namespace(["plexo", "test"])
+    namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
     asyncio.run(ganglion.adapt(foo_neuron, reactants=[_foo_reaction]))

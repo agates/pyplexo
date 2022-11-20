@@ -46,7 +46,7 @@ def run(loop=None):
         port=test_port,
         heartbeat_interval_seconds=10,
     )
-    namespace = Namespace(["plexo", "test"])
+    namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
     asyncio.run(ganglion.adapt(foo_neuron, raw_reactants=[_foo_reaction]))
