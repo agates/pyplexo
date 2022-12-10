@@ -80,23 +80,23 @@ class GanglionInternalBase(Ganglion, ABC):
     def close(self):
         for task in self._tasks:
             task.cancel()
-        wait_coro = asyncio.wait(
-            self._tasks, timeout=3, return_when=asyncio.ALL_COMPLETED
-        )
-        try:
-            loop = asyncio.get_running_loop()
 
-            asyncio.ensure_future(
-                wait_coro,
-                loop=loop,
+        if self._tasks:
+            wait_coro = asyncio.wait(
+                self._tasks, timeout=10, return_when=asyncio.ALL_COMPLETED
             )
-        except RuntimeError:
             try:
+                loop = asyncio.get_running_loop()
+
+                future = asyncio.run_coroutine_threadsafe(wait_coro, loop)
+                # This is broken, pending https://bugs.python.org/issue42130
+                future.result(10)
+            except RuntimeError:
                 asyncio.run(wait_coro)
-            except ValueError:
+            except TimeoutError:
                 pass
-        finally:
-            self._tasks = pdeque()
+            finally:
+                self._tasks = pdeque()
 
     def _add_task(self, task):
         self._tasks = self._tasks.append(task)
