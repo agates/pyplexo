@@ -13,3 +13,45 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
+import asyncio
+from typing import Generic, Iterable, Optional
+
+from plexo.neuron.neuron import Neuron
+from plexo.typing import UnencodedSignal
+from plexo.typing.ganglion import Ganglion
+from plexo.typing.reactant import Reactant
+
+
+class Axon(Generic[UnencodedSignal]):
+    def __init__(
+        self,
+        neuron: Neuron[UnencodedSignal],
+        ganglion: Ganglion,
+    ):
+        self.neuron = neuron
+        self.ganglion = ganglion
+
+        self._startup_done = False
+
+    async def adapt(self):
+        await self.ganglion.adapt(self.neuron)
+        self._startup_done = True
+
+    async def react(
+        self,
+        reactants: Iterable[Reactant[UnencodedSignal]],
+    ):
+        if not self._startup_done:
+            await self.adapt()
+
+        return await self.ganglion.react(self.neuron, reactants)
+
+    async def transmit(
+        self,
+        data: UnencodedSignal,
+    ):
+        if not self._startup_done:
+            await self.adapt()
+
+        return await self.ganglion.transmit(data, self.neuron)
+
