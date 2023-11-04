@@ -17,44 +17,37 @@
 import asyncio
 import logging
 from timeit import default_timer as timer
+from typing import Optional
+from uuid import UUID
 
 import python_jsonschema_objects as pjs
 
+from plexo.axon import Axon
 from plexo.codec.json_codec import JsonCodec
+from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 
-foo_schema = {
-    "title": "Foo",
-    "type": "object",
-    "properties": {
-        "message": {"type": "string"},
-    },
-    "required": ["message"],
-}
 
-builder = pjs.ObjectBuilder(foo_schema)
-jsonschema_namespace = builder.build_classes()
-
-Foo = jsonschema_namespace[foo_schema["title"]]
+class Foo:
+    message: str
 
 
-async def _foo_reaction(f: Foo, _, _2):  # type: ignore
-    logging.info(f"Received Foo.message: {f.message}")  # type: ignore
+async def _foo_reaction(f: Foo, _: Neuron[Foo], _2: Optional[UUID] = None):
+    logging.info(f"Received Foo.message: {f.message}")
 
 
-async def send_foo_hello_str(plexus: Plexus, foo_neuron: Neuron[Foo]):  # type: ignore
+async def send_foo_hello_str(axon: Axon):
     i = 1
     foo = Foo()
     while True:
         start_time = timer()
         foo.message = f"Hello, Plexo+Inproc {i} …"
         logging.info(f"Sending Foo with message: {foo.message}")
-        logging.debug(f"JSON: {foo.serialize()}")
         try:
-            await plexus.transmit(foo, foo_neuron)
+            await axon.transmit(foo)
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
@@ -64,15 +57,15 @@ async def send_foo_hello_str(plexus: Plexus, foo_neuron: Neuron[Foo]):  # type: 
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    foo_codec = JsonCodec(Foo)
-
     plexus = Plexus()
     namespace = Namespace(["dev", "plexo", "test"])
 
-    foo_neuron = Neuron(foo_codec.schema_class, namespace, foo_codec)
+    foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
-    asyncio.run(plexus.adapt(foo_neuron, reactants=[_foo_reaction]))
-    asyncio.run(send_foo_hello_str(plexus, foo_neuron))
+    foo_plexus_axon = Axon(foo_neuron, plexus)
+
+    asyncio.run(foo_plexus_axon.react(reactants=[_foo_reaction]))
+    asyncio.run(send_foo_hello_str(foo_plexus_axon))
     plexus.close()
 
 

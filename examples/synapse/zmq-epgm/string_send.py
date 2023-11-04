@@ -19,15 +19,18 @@ import ipaddress
 import logging
 from timeit import default_timer as timer
 
+from plexo.codec.string_codec import StringCodec
+from plexo.namespace.namespace import Namespace
+from plexo.neuron.neuron import Neuron
 from plexo.synapse.zeromq_pubsub_epgm import SynapseZmqPubSubEPGM
 from plexo.transmitter import create_external_encoder_transmitter
-from plexo.typing.transmitter import EncoderTransmitter
+from plexo.typing.transmitter import Transmitter
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
 test_port = 5561
 
 
-async def send_hello_str(transmitter: EncoderTransmitter):
+async def send_hello_str(transmitter: Transmitter):
     i = 1
     while True:
         start_time = timer()
@@ -44,10 +47,12 @@ def run(loop=None):
     if not loop:  # pragma: no cover
         loop = asyncio.new_event_loop()
 
+    namespace = Namespace(["dev", "plexo", "test"])
+    str_neuron = Neuron(str, namespace, StringCodec())
     synapse = SynapseZmqPubSubEPGM(
-        "example_string", multicast_address=test_ip_address, port=test_port
+        str_neuron, multicast_address=test_ip_address, port=test_port
     )
-    transmitter = create_external_encoder_transmitter((synapse,), str.encode)
+    transmitter = create_external_encoder_transmitter(synapse, str.encode)
 
     loop.create_task(send_hello_str(transmitter))
 
