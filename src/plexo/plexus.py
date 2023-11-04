@@ -94,7 +94,7 @@ class Plexus(Ganglion):
         self,
         current: Ganglion,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         reaction_id, reaction_lock = await self.get_reaction_lock(reaction_id)
@@ -124,7 +124,7 @@ class Plexus(Ganglion):
         self,
         current: GanglionExternal,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         reaction_id, reaction_lock = await self.get_reaction_lock(reaction_id)
@@ -150,7 +150,7 @@ class Plexus(Ganglion):
         self,
         current: GanglionExternal,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         reaction_id, reaction_lock = await self.get_reaction_lock(reaction_id)
@@ -258,7 +258,7 @@ class Plexus(Ganglion):
     async def transmit(
         self,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         return await self.inproc_ganglion.transmit(data, neuron, reaction_id)

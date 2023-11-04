@@ -57,7 +57,7 @@ class Ganglion(Protocol):
     async def transmit(
         self,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         ...
@@ -93,7 +93,7 @@ class GanglionExternal(Ganglion):
     async def transmit_encoded(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         ...

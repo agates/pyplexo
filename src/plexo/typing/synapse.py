@@ -45,7 +45,6 @@ class SynapseInternal(Protocol[UnencodedSignal]):
     async def transmit(
         self,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ):
         ...
@@ -74,7 +73,6 @@ class SynapseExternal(Protocol[UnencodedSignal]):
     async def transmit(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ):
         ...

@@ -43,7 +43,6 @@ class SynapseZmqBasic(SynapseExternalBase):
     async def transmit(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ):
         message = PlexoMessage(type_name=self.topic_bytes, payload=data)

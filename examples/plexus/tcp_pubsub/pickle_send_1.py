@@ -17,12 +17,11 @@
 import asyncio
 import logging
 import os
+import uuid
 from dataclasses import dataclass
 from ipaddress import IPv4Address
 from timeit import default_timer as timer
 from uuid import UUID
-
-from returns.curry import partial
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.ganglion.tcp_pubsub import GanglionZmqTcpPubSub
@@ -33,8 +32,8 @@ from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 
 
-test_port_pub = 5572
-test_port_sub = 5571
+test_port_pub = 5571
+test_port_sub = 5572
 
 
 @dataclass
@@ -51,26 +50,33 @@ class Bar:
     node_id: str
 
 
-async def _foo_reaction(plexus: Plexus, foo: Foo, _, _2):
-    logging.info(f"Received Foo: {foo}")
-    try:
-        bar = Bar(foo_message_id=foo.message_id, node_id=os.path.basename(__file__))
-        logging.info(f"Replying with: {bar}")
-        await plexus.transmit(bar)
-    except TransmitterNotFound as e:
-        logging.error(e)
+async def _bar_reaction(bar: Bar, _, _2):
+    logging.info(f"Received Bar: {bar}")
 
 
-async def wait_until_cancelled():
+async def send_foo_hello_str(plexus: Plexus, foo_neuron: Neuron[Foo]):
+    i = 1
     while True:
         start_time = timer()
-        await asyncio.sleep(10 - (start_time - timer()))
+        foo = Foo(
+            message=f"Hello, Plexo+TcpPubSub {i}",
+            message_id=uuid.uuid1(),
+            message_num=i,
+            node_id=os.path.basename(__file__),
+        )
+        logging.info(f"Sending Foo: {str(foo)}")
+        try:
+            await plexus.transmit(foo, foo_neuron)
+        except TransmitterNotFound as e:
+            logging.error(e)
+        i += 1
+        await asyncio.sleep(1 - (timer() - start_time))
 
 
 async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
-    await plexus.adapt(foo_neuron, reactants=[partial(_foo_reaction, plexus)])
-    await plexus.adapt(bar_neuron)
-    await wait_until_cancelled()
+    await plexus.adapt(foo_neuron)
+    await plexus.adapt(bar_neuron, reactants=[_bar_reaction])
+    await send_foo_hello_str(plexus, foo_neuron)
 
 
 def run():
@@ -83,7 +89,7 @@ def run():
     tcp_pubsub_ganglion = GanglionZmqTcpPubSub(
         port_pub=test_port_pub,
         peers=[(IPv4Address(get_primary_ip()), test_port_sub)],
-        allowed_codecs=(PickleCodec,),
+        relevant_neurons=(bar_neuron, foo_neuron),
     )
     plexus = Plexus(ganglia=(tcp_pubsub_ganglion,))
 

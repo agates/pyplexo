@@ -30,7 +30,7 @@ messages_lock = asyncio.Lock()
 messages = {"received": 0}
 
 
-async def print_handler(data: str, _):
+async def print_handler(data: str, neuron: Neuron[str], _):
     async with messages_lock:
         messages["received"] += 1
         logging.info(

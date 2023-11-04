@@ -46,27 +46,24 @@ def create_transmitter(synapse: SynapseInternal[UnencodedSignal]) -> Transmitter
 async def transmit(
     synapse: SynapseInternal[UnencodedSignal],
     data: UnencodedSignal,
-    neuron: Optional[Neuron[UnencodedSignal]] = None,
     reaction_id: Optional[UUID] = None,
 ):
-    return await synapse.transmit(data, neuron, reaction_id)
+    return await synapse.transmit(data, reaction_id)
 
 
 async def transmit_external(
     synapse: SynapseExternal[UnencodedSignal],
     data: EncodedSignal,
-    neuron: Optional[Neuron[UnencodedSignal]] = None,
     reaction_id: Optional[UUID] = None,
 ):
-    return await synapse.transmit(data, neuron, reaction_id)
+    return await synapse.transmit(data, reaction_id)
 
 
 async def transmit_external_encode(
     synapse: SynapseExternal[UnencodedSignal],
     encoder: Encoder[UnencodedSignal],
     data: UnencodedSignal,
-    neuron: Optional[Neuron[UnencodedSignal]] = None,
     reaction_id: Optional[UUID] = None,
 ):
     encoded = encoder(data)
-    return await synapse.transmit(encoded, neuron, reaction_id)
+    return await synapse.transmit(encoded, reaction_id)

@@ -188,7 +188,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         while True:
             try:
                 logging.debug(f"GanglionPlexoMulticast:{instance_id}:Sending heartbeat")
-                await self.transmit_ignore_startup(heartbeat)
+                await self.transmit_ignore_startup(heartbeat, heartbeat_neuron)
             except Exception as e:
                 logging.error(e)
             except asyncio.CancelledError:
@@ -225,7 +225,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _heartbeat_reaction(
         self,
         heartbeat: PlexoHeartbeat,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -239,7 +239,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _preparation_reaction(
         self,
         preparation: PlexoPreparation,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -300,7 +300,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                         self.instance_id, promise
                     )
                 )
-                await self.transmit(promise)
+                await self.transmit(promise, proposal_neuron)
             else:
                 # send a rejection
                 rejection = PlexoRejection(
@@ -313,12 +313,12 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                         self.instance_id, rejection
                     )
                 )
-                await self.transmit(rejection)
+                await self.transmit(rejection, rejection_neuron)
 
     async def _promise_reaction(
         self,
         promise: PlexoPromise,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -370,7 +370,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _rejection_reaction(
         self,
         rejection: PlexoRejection,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -421,7 +421,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _proposal_reaction(
         self,
         proposal: PlexoProposal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -455,13 +455,13 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         logging.debug(
             f"GanglionPlexoMulticast:{self.instance_id}:Sending approval: {approval}"
         )
-        await self.transmit(approval)
-        await self._approval_reaction(approval)
+        await self.transmit(approval, approval_neuron)
+        await self._approval_reaction(approval, approval_neuron)
 
     async def _approval_reaction(
         self,
         approval: PlexoApproval,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -560,7 +560,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
             await asyncio.gather(
                 *(
                     self.adapt_ignore_startup(
-                        cast(Neuron, neuron), reactants=(cast(Reactant, reactant),)
+                        neuron, reactants=(cast(Reactant, reactant),)
                     )
                     for neuron, reactant in neuron_reactions
                 )
@@ -591,7 +591,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         logging.debug(
             f"GanglionPlexoMulticast:{instance_id}:Sending preparation: {preparation}"
         )
-        await self.transmit(preparation)
+        await self.transmit(preparation, preparation_neuron)
 
         return preparation
 
@@ -613,7 +613,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         logging.debug(
             f"GanglionPlexoMulticast:{instance_id}:Sending proposal: {proposal}"
         )
-        await self.transmit(proposal)
+        await self.transmit(proposal, proposal_neuron)
 
         return proposal
 
@@ -901,7 +901,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def transmit_encoded_ignore_startup(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         return await super().transmit_encoded(data, neuron, reaction_id)
@@ -909,7 +909,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def transmit_encoded(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         await self.wait_startup()
@@ -918,7 +918,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def transmit_ignore_startup(
         self,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         return await super().transmit(data, neuron, reaction_id)
@@ -926,7 +926,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def transmit(
         self,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
+        neuron: Neuron[UnencodedSignal],
         reaction_id: Optional[UUID] = None,
     ):
         await self.wait_startup()
@@ -934,7 +934,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
     async def adapt_ignore_startup(
         self,
-        neuron: Neuron,
+        neuron: Neuron[UnencodedSignal],
         reactants: Optional[Iterable[Reactant]] = None,
         raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
     ):

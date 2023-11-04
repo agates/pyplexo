@@ -25,7 +25,6 @@ class ExternalTransmitter(Protocol):
     def __call__(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ) -> Coroutine:
         ...
@@ -35,7 +34,6 @@ class Transmitter(Protocol):
     def __call__(
         self,
         data: UnencodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ) -> Coroutine:
         ...

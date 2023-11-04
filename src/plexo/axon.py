@@ -1,5 +1,5 @@
 #  pyplexo
-#  Copyright © 2018-2022  Alecks Gates
+#  Copyright © 2023  Alecks Gates
 #
 #  pyplexo is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
@@ -13,19 +13,3 @@
 #
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
-
-from typing import Optional
-from uuid import UUID
-
-from plexo.neuron.neuron import Neuron
-from plexo.synapse.base import SynapseInternalBase
-from plexo.typing import UnencodedSignal
-
-
-class SynapseInproc(SynapseInternalBase):
-    async def transmit(
-        self,
-        data: UnencodedSignal,
-        reaction_id: Optional[UUID] = None,
-    ):
-        return await self.transduce(data, reaction_id)

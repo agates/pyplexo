@@ -21,12 +21,12 @@ from plexo.neuron.neuron import Neuron
 from plexo.typing import UnencodedSignal, EncodedSignal
 
 Reactant = Callable[
-    [UnencodedSignal, Optional[Neuron[UnencodedSignal]], Optional[UUID]], Coroutine
+    [UnencodedSignal, Neuron[UnencodedSignal], Optional[UUID]], Coroutine
 ]
 
 # Neuron on the reactant is necessary for when the reactant won't
 # otherwise know the type of the data being reacted upon.
 # Without this it's impossible to understand raw binary data or what to do with it
 RawReactant = Callable[
-    [EncodedSignal, Optional[Neuron[UnencodedSignal]], Optional[UUID]], Coroutine
+    [EncodedSignal, Neuron[UnencodedSignal], Optional[UUID]], Coroutine
 ]

@@ -15,68 +15,52 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
 import asyncio
-import ipaddress
 import logging
 from timeit import default_timer as timer
+from typing import Optional
+from uuid import UUID
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
-from plexo.ganglion.multicast import GanglionPlexoMulticast
+from plexo.ganglion.inproc import GanglionInproc
 from plexo.namespace.namespace import Namespace
-from plexo.plexus import Plexus
-
-
-test_multicast_cidr = ipaddress.ip_network("239.255.0.0/16")
-test_port = 5561
 
 
 class Foo:
     message: str
 
 
-async def _foo_reaction(f: Foo, _):
+async def _foo_reaction(f: Foo, neuron: Neuron[Foo], reaction_id: Optional[UUID] = None):
     logging.info(f"Received Foo.string: {f.message}")
 
 
-async def send_foo_hello_str(plexus: Plexus):
+async def send_foo_hello_str(ganglion: GanglionInproc, foo_neuron: Neuron[Foo]):
     i = 1
     foo = Foo()
     while True:
         start_time = timer()
-        foo.message = f"Hello, Plexo+Multicast {i} …"
+        foo.message = f"Hello, Plexo+Inproc {i} …"
         logging.info(f"Sending Foo with message: {foo.message}")
         try:
-            await plexus.transmit(foo)
+            await ganglion.transmit(foo, foo_neuron)
         except TransmitterNotFound as e:
             logging.error(e)
         i += 1
-        await asyncio.sleep(1 - (start_time - timer()))
+        await asyncio.sleep(1 - (timer() - start_time))
 
 
 def run():
     logging.basicConfig(level=logging.DEBUG)
 
-    multicast_ganglion = GanglionPlexoMulticast(
-        multicast_cidr=test_multicast_cidr,
-        port=test_port,
-        heartbeat_interval_seconds=10,
-    )
-    plexus = Plexus(ganglia=(multicast_ganglion,))
+    ganglion = GanglionInproc()
     namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
 
-    asyncio.run(
-        asyncio.wait(
-            [
-                plexus.adapt(foo_neuron, reactants=[_foo_reaction]),
-                multicast_ganglion.startup(),
-            ]
-        )
-    )
-    asyncio.run(send_foo_hello_str(plexus))
+    asyncio.run(ganglion.adapt(foo_neuron, reactants=[_foo_reaction]))
+    asyncio.run(send_foo_hello_str(ganglion, foo_neuron))
 
-    plexus.close()
+    ganglion.close()
 
 
 if __name__ == "__main__":

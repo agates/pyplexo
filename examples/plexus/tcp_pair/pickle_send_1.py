@@ -17,23 +17,20 @@
 import asyncio
 import logging
 import os
+import uuid
 from dataclasses import dataclass
-from ipaddress import IPv4Address
 from timeit import default_timer as timer
 from uuid import UUID
 
-from returns.curry import partial
-
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.ganglion.tcp_pair import GanglionZmqTcpPair
-from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
 from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 
 
-test_port_connect = 5581
+test_port_bind = 5581
 
 
 @dataclass
@@ -50,34 +47,33 @@ class Bar:
     node_id: str
 
 
-perf = {"start_time": timer(), "num_messages_received": 0}
+async def _bar_reaction(bar: Bar, _, _2):
+    logging.info(f"Received Bar: {bar}")
 
 
-async def _foo_reaction(plexus: Plexus, foo: Foo, _, _2):
-    logging.info(f"Received Foo: {foo}")
-    try:
-        bar = Bar(foo_message_id=foo.message_id, node_id=os.path.basename(__file__))
-        transmit_task = asyncio.create_task(plexus.transmit(bar))
-        logging.info(f"Replying with: {bar}")
-        perf["num_messages_received"] += 1
-        logging.info(
-            f"messages/s: {perf['num_messages_received']/(timer()-perf['start_time'])}"
-        )
-        await transmit_task
-    except TransmitterNotFound as e:
-        logging.error(e)
-
-
-async def wait_until_cancelled():
+async def send_foo_hello_str(plexus: Plexus, foo_neuron: Neuron[Foo]):
+    i = 1
     while True:
         start_time = timer()
-        await asyncio.sleep(10 - (start_time - timer()))
+        foo = Foo(
+            message=f"Hello, Plexo+TcpPair {i}",
+            message_id=uuid.uuid1(),
+            message_num=i,
+            node_id=os.path.basename(__file__),
+        )
+        logging.info(f"Sending Foo: {str(foo)}")
+        try:
+            await plexus.transmit(foo, foo_neuron)
+        except TransmitterNotFound as e:
+            logging.error(e)
+        i += 1
+        await asyncio.sleep(1 - (timer() - start_time))
 
 
 async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
-    await plexus.adapt(foo_neuron, reactants=[partial(_foo_reaction, plexus)])
-    await plexus.adapt(bar_neuron)
-    await wait_until_cancelled()
+    await plexus.adapt(foo_neuron)
+    await plexus.adapt(bar_neuron, reactants=[_bar_reaction])
+    await send_foo_hello_str(plexus, foo_neuron)
 
 
 def run():
@@ -88,8 +84,8 @@ def run():
     bar_neuron = Neuron(Bar, namespace, PickleCodec())
 
     tcp_pair_ganglion = GanglionZmqTcpPair(
-        peer=(IPv4Address(get_primary_ip()), test_port_connect),
-        allowed_codecs=(PickleCodec,),
+        port=test_port_bind,
+        relevant_neurons=(bar_neuron, foo_neuron),
     )
     plexus = Plexus(ganglia=(tcp_pair_ganglion,))
 

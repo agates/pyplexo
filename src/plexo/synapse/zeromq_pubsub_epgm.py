@@ -120,7 +120,6 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
     async def transmit(
         self,
         data: EncodedSignal,
-        neuron: Optional[Neuron[UnencodedSignal]] = None,
         reaction_id: Optional[UUID] = None,
     ):
         if self._socket_pub is not None:

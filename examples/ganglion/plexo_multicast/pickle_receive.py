@@ -17,11 +17,11 @@
 import asyncio
 import ipaddress
 import logging
-from timeit import default_timer as timer
+from typing import Optional
+from uuid import UUID
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
-from plexo.exceptions import TransmitterNotFound
 from plexo.ganglion.multicast import GanglionPlexoMulticast
 from plexo.namespace.namespace import Namespace
 
@@ -33,19 +33,8 @@ class Foo:
     message: str
 
 
-async def send_foo_hello_str(ganglion: GanglionPlexoMulticast):
-    i = 1
-    foo = Foo()
-    while True:
-        start_time = timer()
-        foo.message = f"Hello, Plexo+Multicast {i} …"
-        logging.info(f"Sending Foo with message: {foo.message}")
-        try:
-            await ganglion.transmit_encode(foo)
-        except TransmitterNotFound as e:
-            logging.error(e)
-        i += 1
-        await asyncio.sleep(1 - (start_time - timer()))
+async def _foo_reaction(data: Foo, neuron: Neuron[Foo], reaction_id: Optional[UUID] = None):
+    logging.info(f"Received Foo.string: {data.message}")
 
 
 def run(loop=None):
@@ -61,8 +50,8 @@ def run(loop=None):
     )
     namespace = Namespace(["dev", "plexo", "test"])
     foo_neuron = Neuron(Foo, namespace, PickleCodec())
-    asyncio.run(ganglion.adapt(foo_neuron))
-    asyncio.run(send_foo_hello_str(ganglion))
+
+    asyncio.run(ganglion.adapt(foo_neuron, reactants=[_foo_reaction]))
 
     if not loop.is_running():  # pragma: no cover
         try:
