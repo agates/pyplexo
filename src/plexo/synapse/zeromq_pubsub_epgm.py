@@ -127,7 +127,7 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
             await self._socket_pub.send(data)
 
     def _start_recv_loop_if_needed(self):
-        if len(self._receptor.reactants):
+        if len(self._dendrite.reactants):
             logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Starting _recv_loop")
             self._add_task(asyncio.create_task(self._recv_loop()))
         else:
