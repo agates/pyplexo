@@ -28,7 +28,7 @@ from plexo.typing import EncodedSignal, UnencodedSignal
 from plexo.typing.reactant import Reactant, RawReactant
 
 
-class Receptor(Generic[UnencodedSignal]):
+class Dendrite(Generic[UnencodedSignal]):
     def __init__(
         self,
         neuron: Neuron[UnencodedSignal],
@@ -63,7 +63,7 @@ class Receptor(Generic[UnencodedSignal]):
             pass
 
 
-class DecoderReceptor(Generic[UnencodedSignal]):
+class DecoderDendrite(Generic[UnencodedSignal]):
     def __init__(
         self,
         neuron: Neuron[UnencodedSignal],
