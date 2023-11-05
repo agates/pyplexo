@@ -1,55 +1,43 @@
-_This is a **highly experimental** project in a pre-alpha state.  Use at your own risk._
+# pyplexo
 
-# Domain Type System
-The [Domain Type System] (DTS) is the first draft and implementation of the concept of a flexible 
-"decentralized type system."
+*pyplexo* is the Python implementation of *plexo*. It aims to be an opinionated, reactive, schema-driven, distributed, and
+strongly-typed message passing framework with messages as types. Any type of data interchange format is supported and
+can be transmitted both to in-process and inter-process listeners.
 
-## Goal
+## plexo
 
-The goal of the project is to allow data structures to be shared across the network by their type instead
-of server endpoints.  DTS receives a data structure and sends it to any interested parties subscribed to the data
-structure's type.
+*plexo* is an architecture in which data is transmitted across the network in a way where the receiver is able to
+understand the correct type to decode the data into. It does so by assigning type names to a predefined namespace to
+create a topic for receivers to subscribe to.
 
-It's currently used by and developed for a tiny sake brewing operation.  It has been created solely for this purpose but
-will hopefully be extended over time.
+While *plexo* is relatively stable and in production use between Python and Rust (
+see [podping.cloud](https://github.com/Podcastindex-org/podping.cloud)
+and [podping-hivewriter](https://github.com/Podcastindex-org/podping-hivewriter)), the paradigm remains experimental.
+Contributions and suggestions are encouraged.
 
-The development of this project has enabled us to plug in new hardware sensors and data logging devices without the need
-to reconfigure multiple projects across a variety of hardware.
+## Why does this exist?
 
-## Limitations
+The goal of the project is to allow data structures to be shared across the network by their type instead of server
+endpoints.  *plexo* implementations receive data structures and sends them to any interested parties subscribed to the
+data structure's type.
 
-Currently the project only works over local multicast (with a different multicast group per type).  The plan is to
-support pluggable transport implementations over other networks: TCP, HTTP, Web Sockets, and potentially other message
-passing implementations such as MQTT, ZeroMQ, nanomsg, Amazon SQS, etc.
+It was originally created and developed for a tiny sake brewing operation. The development of this project enabled us to
+plug in new hardware sensors and data logging devices without the need to reconfigure multiple projects across a variety
+of hardware.
 
-It's also tied to the [capnproto] data interchage format, though there's nothing keeping it from being data interchange
-agnostic in the future.  There's no reason it can't support the likes of [JSON], [CBOR], [Ion], [MessagePack],
-[Protocol Buffers], [XML], [Python Pickles], or even raw bytes, for example.
+This was born out of a frustration of spending too much time writing data transformation and validation layers with
+unstructured and/or weakly typed data (JSON without schemas) across multiple languages.  *plexo* tries to solve this
+problem without controlling the entire stack while avoiding protocol implementation details such as HTTP "REST" APIs.
 
-Only small data structures can be sent right now (anything that fits into a typical <1500 byte packet, minus DTS
-overhead). This is only because large amounts of data weren't needed for our purposes during development, but this will
-change in the future.
+## Examples
 
-## Running in Docker
+Check the [examples](examples) for how to use the library -- particularly [axon/inprocess](examples/axon/inprocess) for
+multiple examples of codec options and [axon/tcp_pair](examples/axon/tcp_pair) for an example of how to send a python
+class between two networked python processes with pickle. Note that, while supplying the pickle codec is required,
+the *plexus* is smart enough to avoid the expensive process of encoding/decoding for in-process receivers.
 
-As this project currently requires multicast, you either need to route multicast traffic to the appropriate docker
-interface or run the docker container with `--net=host`.
-
-The following command enables routing of the multicast CIDR block DTS will use to the default docker interface:
-
-    # ip route add 239.255.0.0/16 dev docker0
-
-Without additional setup, this will affect the container's routing to other networks (including the internet).  If this
-is problematic, check out [pipework](https://github.com/jpetazzo/pipework) for many well-tested use-cases.
-
-[pimd](https://github.com/troglobit/pimd/), a multicast router, may also be of interest.
-
-[domain type system]: https://gitlab.com/agates/domain-type-system
-[capnproto]: https://capnproto.org/
-[json]: https://json.org/
-[cbor]: http://cbor.io/
-[ion]: http://amzn.github.io/ion-docs/docs/spec.html
-[messagepack]: https://msgpack.org/
-[protocol buffers]: https://developers.google.com/protocol-buffers/
-[xml]: https://www.w3.org/XML/
-[python pickles]: https://docs.python.org/3.5/library/pickle.html
+[ganglion/plexo_multicast](examples/ganglion/plexo_multicast) provides a basic example of sending a python class
+across the network over multicast. Each type in is assigned a dedicated multicast address within the `239.255.0.0/16`
+CIDR block as a means to provide generalized, zero configuration network communication without saturating a single
+socket with unnecessary traffic. An adaptation of the Paxos consensus algorithm is used for the network to agree on
+which type is assign to which multicast group.

@@ -2,7 +2,7 @@
 name = "plexo"
 version = "1.0.0a8"
 readme = "README.md"
-description = "Opinionated, reactive, schema-driven, distributed message passing"
+description = "Opinionated, reactive, schema-driven, distributed, and strongly-typed message passing"
 authors = ["Alecks Gates <agates@mail.agates.io>"]
 license = "LGPL-3.0-or-later"
 homepage = "https://gitlab.com/agates/pyplexo/"
@@ -45,9 +45,9 @@ python-jsonschema-objects = "^0.5.0"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.0"
-black = "^22.1.0"
+black = "^23.0.0"
 isort = "^5.8.0"
-mypy = "^0.991"
+mypy = "^1.0"
 pytest = "^7.2.0"
 pytest-asyncio = "^0.20.0"
 pytest-cov = "^4.0.0"
