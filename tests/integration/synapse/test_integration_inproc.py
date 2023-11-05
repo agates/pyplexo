@@ -1,5 +1,5 @@
 #  pyplexo
-#  Copyright © 2018-2022  Alecks Gates
+#  Copyright © 2018-2023  Alecks Gates
 #
 #  pyplexo is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
@@ -19,7 +19,7 @@ from itertools import repeat
 
 import pytest
 
-from plexo.receptor import create_receptor
+from plexo.dendrite import create_receptor
 from plexo.synapse.inproc import SynapseInproc
 from plexo.transmitter import create_transmitter
 

@@ -1,5 +1,5 @@
 #  pyplexo
-#  Copyright © 2018-2022  Alecks Gates
+#  Copyright © 2018-2023  Alecks Gates
 #
 #  pyplexo is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
@@ -20,8 +20,8 @@ import ipaddress
 
 import pytest
 
-from plexo.receptor import create_decoder_receptor
-from plexo.synapse.zeromq_pubsub_epgm import SynapseZmqPubSubEPGM
+from plexo.dendrite import create_decoder_receptor
+from plexo.synapse.zeromq_plexopubsub_epgm import SynapseZmqPlexoPubSubEPGM
 from plexo.transmitter import transmit_external_encode
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
@@ -47,7 +47,7 @@ async def test_zmq_epgm_receptor(event_loop):
     receptor = create_decoder_receptor(
         reactants=(receptor_queue,), decoder=decode_json_bytes
     )
-    synapse = SynapseZmqPubSubEPGM(
+    synapse = SynapseZmqPlexoPubSubEPGM(
         "test",
         multicast_address=test_ip_address,
         port=test_port,
