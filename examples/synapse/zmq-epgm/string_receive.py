@@ -22,7 +22,7 @@ from timeit import default_timer as timer
 from plexo.codec.string_codec import StringCodec
 from plexo.namespace.namespace import Namespace
 from plexo.neuron.neuron import Neuron
-from plexo.synapse.zeromq_pubsub_epgm import SynapseZmqPubSubEPGM
+from plexo.synapse.zeromq_plexopubsub_epgm import SynapseZmqPlexoPubSubEPGM
 
 test_ip_address = ipaddress.IPv4Address("239.255.0.1")
 test_port = 5561
@@ -54,7 +54,7 @@ def run(loop=None):
 
     namespace = Namespace(["dev", "plexo", "test"])
     str_neuron = Neuron(str, namespace, StringCodec())
-    synapse = SynapseZmqPubSubEPGM(
+    synapse = SynapseZmqPlexoPubSubEPGM(
         str_neuron,
         multicast_address=test_ip_address,
         port=test_port,

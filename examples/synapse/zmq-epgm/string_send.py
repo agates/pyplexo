@@ -22,7 +22,7 @@ from timeit import default_timer as timer
 from plexo.codec.string_codec import StringCodec
 from plexo.namespace.namespace import Namespace
 from plexo.neuron.neuron import Neuron
-from plexo.synapse.zeromq_pubsub_epgm import SynapseZmqPubSubEPGM
+from plexo.synapse.zeromq_plexopubsub_epgm import SynapseZmqPlexoPubSubEPGM
 from plexo.transmitter import create_external_encoder_transmitter
 from plexo.typing.transmitter import Transmitter
 
@@ -49,7 +49,7 @@ def run(loop=None):
 
     namespace = Namespace(["dev", "plexo", "test"])
     str_neuron = Neuron(str, namespace, StringCodec())
-    synapse = SynapseZmqPubSubEPGM(
+    synapse = SynapseZmqPlexoPubSubEPGM(
         str_neuron, multicast_address=test_ip_address, port=test_port
     )
     transmitter = create_external_encoder_transmitter(synapse, str.encode)

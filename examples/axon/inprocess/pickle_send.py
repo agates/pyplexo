@@ -20,10 +20,7 @@ from timeit import default_timer as timer
 from typing import Optional
 from uuid import UUID
 
-import python_jsonschema_objects as pjs
-
 from plexo.axon import Axon
-from plexo.codec.json_codec import JsonCodec
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound

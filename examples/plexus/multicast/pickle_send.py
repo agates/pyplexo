@@ -22,7 +22,7 @@ from timeit import default_timer as timer
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
 from plexo.exceptions import TransmitterNotFound
-from plexo.ganglion.multicast import GanglionPlexoMulticast
+from plexo.ganglion.plexo_multicast import GanglionPlexoMulticast
 from plexo.namespace.namespace import Namespace
 from plexo.plexus import Plexus
 

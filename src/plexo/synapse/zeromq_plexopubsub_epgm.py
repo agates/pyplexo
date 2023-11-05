@@ -31,7 +31,7 @@ from plexo.typing import EncodedSignal, IPAddress, UnencodedSignal
 from plexo.typing.reactant import Reactant, RawReactant
 
 
-class SynapseZmqPubSubEPGM(SynapseExternalBase):
+class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
     def __init__(
         self,
         neuron: Neuron[UnencodedSignal],
@@ -46,9 +46,9 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
         if not bind_interface:
             bind_interface = get_primary_ip()
         self.bind_interface = bind_interface
-        logging.debug(f"SynapseZmqPubSubEPGM:{neuron}:bind_interface {bind_interface}")
+        logging.debug(f"SynapseZmqPlexoPubSubEPGM:{neuron}:bind_interface {bind_interface}")
         self.port = port
-        logging.debug(f"SynapseZmqPubSubEPGM:{neuron}:port {port}")
+        logging.debug(f"SynapseZmqPlexoPubSubEPGM:{neuron}:port {port}")
 
         self._startup(multicast_address)
 
@@ -61,7 +61,7 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
             )
         self.multicast_address = multicast_address
         logging.debug(
-            f"SynapseZmqPubSubEPGM:{topic}:multicast_address {multicast_address}"
+            f"SynapseZmqPlexoPubSubEPGM:{topic}:multicast_address {multicast_address}"
         )
         self._zmq_context = zmq.asyncio.Context()
         self._socket_pub: Optional[Socket] = None
@@ -70,7 +70,7 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
             self.bind_interface, multicast_address.compressed, self.port
         )
         logging.debug(
-            f"SynapseZmqPubSubEPGM:{topic}:connection_string {self.connection_string}"
+            f"SynapseZmqPlexoPubSubEPGM:{topic}:connection_string {self.connection_string}"
         )
         self._create_socket_pub()
         self._start_recv_loop_if_needed()
@@ -94,7 +94,7 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
         self._start_recv_loop_if_needed()
 
     def _create_socket_pub(self):
-        logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Creating publisher")
+        logging.debug(f"SynapseZmqPlexoPubSubEPGM:{self.neuron}:Creating publisher")
         self._socket_pub = self._zmq_context.socket(zmq.PUB)
 
         # this conditional is only to satisfy mypy (I think it's a bug)
@@ -102,7 +102,7 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
             self._socket_pub.bind(self.connection_string)
 
     def _create_socket_sub(self):
-        logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Creating subscription")
+        logging.debug(f"SynapseZmqPlexoPubSubEPGM:{self.neuron}:Creating subscription")
         self._socket_sub = self._zmq_context.socket(zmq.SUB)
 
         # this conditional is only to satisfy mypy (I think it's a bug)
@@ -128,11 +128,11 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
 
     def _start_recv_loop_if_needed(self):
         if len(self._dendrite.reactants):
-            logging.debug(f"SynapseZmqPubSubEPGM:{self.neuron}:Starting _recv_loop")
+            logging.debug(f"SynapseZmqPlexoPubSubEPGM:{self.neuron}:Starting _recv_loop")
             self._add_task(asyncio.create_task(self._recv_loop()))
         else:
             logging.debug(
-                "SynapseZmqPubSubEPGM:{}:Not starting _recv_loop - no receptors found".format(
+                "SynapseZmqPlexoPubSubEPGM:{}:Not starting _recv_loop - no receptors found".format(
                     self.neuron
                 )
             )
@@ -151,6 +151,6 @@ class SynapseZmqPubSubEPGM(SynapseExternalBase):
                 raise
             except Exception as e:
                 logging.error(
-                    f"SynapseZmqPubSubEPGM:{topic}:_recv_loop: {e}", stack_info=True
+                    f"SynapseZmqPlexoPubSubEPGM:{topic}:_recv_loop: {e}", stack_info=True
                 )
                 continue

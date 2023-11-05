@@ -22,7 +22,7 @@ from uuid import UUID
 
 from plexo.codec.pickle_codec import PickleCodec
 from plexo.neuron.neuron import Neuron
-from plexo.ganglion.multicast import GanglionPlexoMulticast
+from plexo.ganglion.plexo_multicast import GanglionPlexoMulticast
 from plexo.namespace.namespace import Namespace
 
 test_multicast_cidr = ipaddress.ip_network("239.255.0.0/16")
