@@ -16,17 +16,17 @@
 
 from typing import cast
 
-from plexo.typing import EncodedSignal
+from plexo.typing import EncodedType
 from plexo.typing.codec import Codec
 
 
 class StringCodec(Codec):
     _name = "string_UTF-8"
 
-    def encode(self, data: str) -> EncodedSignal:
+    def encode(self, data: str) -> EncodedType:
         return data.encode("UTF-8")
 
-    def decode(self, data: EncodedSignal):
+    def decode(self, data: EncodedType):
         return cast(bytes, data).decode("UTF-8")
 
     @property

@@ -19,13 +19,13 @@ from uuid import UUID
 
 from plexo.neuron.neuron import Neuron
 from plexo.synapse.base import SynapseInternalBase
-from plexo.typing import UnencodedSignal
+from plexo.typing import UnencodedType
 
 
 class SynapseInproc(SynapseInternalBase):
     async def transmit(
         self,
-        data: UnencodedSignal,
+        data: UnencodedType,
         reaction_id: Optional[UUID] = None,
     ):
         return await self.transduce(data, reaction_id)

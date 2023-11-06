@@ -17,7 +17,7 @@ from typing import Optional
 
 import python_jsonschema_objects as pjs
 
-from plexo.typing import EncodedSignal
+from plexo.typing import EncodedType
 from plexo.typing.codec import Codec
 
 
@@ -40,10 +40,10 @@ class JsonCodec(Codec):
 
         return cls(namespace[schema_name], serialize_args=serialize_args)
 
-    def encode(self, data) -> EncodedSignal:
+    def encode(self, data) -> EncodedType:
         return data.serialize(**self.serialize_args)
 
-    def decode(self, data: EncodedSignal):
+    def decode(self, data: EncodedType):
         return self.schema_class().from_json(data)
 
     @property

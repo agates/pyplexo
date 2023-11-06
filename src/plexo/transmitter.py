@@ -22,47 +22,47 @@ from uuid import UUID
 from returns.curry import partial
 
 from plexo.neuron.neuron import Neuron
-from plexo.typing import Encoder, UnencodedSignal, EncodedSignal
+from plexo.typing import Encoder, UnencodedType, EncodedType
 from plexo.typing.synapse import SynapseExternal, SynapseInternal
 from plexo.typing.transmitter import Transmitter, ExternalTransmitter
 
 
 def create_external_encoder_transmitter(
-    synapse: SynapseExternal[UnencodedSignal], encoder: Encoder
+    synapse: SynapseExternal[UnencodedType], encoder: Encoder
 ) -> Transmitter:
     return partial(transmit_external_encode, synapse, encoder)
 
 
 def create_external_transmitter(
-    synapse: SynapseExternal[UnencodedSignal],
+    synapse: SynapseExternal[UnencodedType],
 ) -> ExternalTransmitter:
     return partial(transmit_external, synapse)
 
 
-def create_transmitter(synapse: SynapseInternal[UnencodedSignal]) -> Transmitter:
+def create_transmitter(synapse: SynapseInternal[UnencodedType]) -> Transmitter:
     return partial(transmit, synapse)
 
 
 async def transmit(
-    synapse: SynapseInternal[UnencodedSignal],
-    data: UnencodedSignal,
+    synapse: SynapseInternal[UnencodedType],
+    data: UnencodedType,
     reaction_id: Optional[UUID] = None,
 ):
     return await synapse.transmit(data, reaction_id)
 
 
 async def transmit_external(
-    synapse: SynapseExternal[UnencodedSignal],
-    data: EncodedSignal,
+    synapse: SynapseExternal[UnencodedType],
+    data: EncodedType,
     reaction_id: Optional[UUID] = None,
 ):
     return await synapse.transmit(data, reaction_id)
 
 
 async def transmit_external_encode(
-    synapse: SynapseExternal[UnencodedSignal],
-    encoder: Encoder[UnencodedSignal],
-    data: UnencodedSignal,
+    synapse: SynapseExternal[UnencodedType],
+    encoder: Encoder[UnencodedType],
+    data: UnencodedType,
     reaction_id: Optional[UUID] = None,
 ):
     encoded = encoder(data)

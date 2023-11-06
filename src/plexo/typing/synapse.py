@@ -22,28 +22,28 @@ from uuid import UUID
 
 from typing_extensions import Protocol
 
-from plexo.typing import UnencodedSignal, EncodedSignal
+from plexo.typing import UnencodedType, EncodedType
 
 if TYPE_CHECKING:
     # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
     from plexo.typing.reactant import Reactant, RawReactant
 
 
-class SynapseInternal(Protocol[UnencodedSignal]):
+class SynapseInternal(Protocol[UnencodedType]):
     @abstractmethod
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         ...
 
     @abstractmethod
     async def transduce(
-        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
+        self, data: UnencodedType, reaction_id: Optional[UUID] = None
     ):
         ...
 
     @abstractmethod
     async def transmit(
         self,
-        data: UnencodedSignal,
+        data: UnencodedType,
         reaction_id: Optional[UUID] = None,
     ):
         ...
@@ -53,25 +53,25 @@ class SynapseInternal(Protocol[UnencodedSignal]):
         ...
 
 
-class SynapseExternal(Protocol[UnencodedSignal]):
+class SynapseExternal(Protocol[UnencodedType]):
     @abstractmethod
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         ...
 
     @abstractmethod
     async def add_raw_reactants(
-        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+        self, raw_reactants: Iterable[RawReactant[UnencodedType]]
     ):
         ...
 
     @abstractmethod
-    async def transduce(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+    async def transduce(self, data: EncodedType, reaction_id: Optional[UUID] = None):
         ...
 
     @abstractmethod
     async def transmit(
         self,
-        data: EncodedSignal,
+        data: EncodedType,
         reaction_id: Optional[UUID] = None,
     ):
         ...

@@ -22,17 +22,17 @@ from zmq.asyncio import Socket
 
 from plexo.neuron.neuron import Neuron
 from plexo.synapse.base import SynapseExternalBase
-from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing import EncodedType, UnencodedType
 from plexo.typing.reactant import Reactant, RawReactant
 
 
 class SynapseZmqBasicPub(SynapseExternalBase):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         socket_pub: Socket,
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
+        reactants: Iterable[Reactant[UnencodedType]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedType]] = (),
     ) -> None:
         super().__init__(neuron, reactants, raw_reactants)
 
@@ -40,8 +40,10 @@ class SynapseZmqBasicPub(SynapseExternalBase):
 
     async def transmit(
         self,
-        data: EncodedSignal,
+        data: EncodedType,
         reaction_id: Optional[UUID] = None,
     ):
+        payload = data.encode("UTF-8") if isinstance(data, str) else data
+
         await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
-        await self._socket_pub.send(data)
+        await self._socket_pub.send(payload)

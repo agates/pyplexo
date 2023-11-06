@@ -31,7 +31,7 @@ from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
 from plexo.schema.plexo_message import PlexoMessage
 from plexo.synapse.zeromq_basic import SynapseZmqBasic
-from plexo.typing import UnencodedSignal, IPAddress
+from plexo.typing import UnencodedType, IPAddress
 from plexo.typing.reactant import Reactant, RawReactant
 from plexo.typing.synapse import SynapseExternal
 
@@ -117,7 +117,7 @@ class GanglionZmqTcpPair(GanglionExternalBase):
 
         return self._socket
 
-    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedSignal], name: str):
+    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedType], name: str):
         if name in self._synapses:
             raise SynapseExists(f"Synapse for {name} already exists.")
 
@@ -130,7 +130,7 @@ class GanglionZmqTcpPair(GanglionExternalBase):
 
         return synapse
 
-    async def _create_synapse(self, neuron: Neuron[UnencodedSignal]):
+    async def _create_synapse(self, neuron: Neuron[UnencodedType]):
         return await self._create_synapse_by_name(neuron, neuron.name)
 
     async def _start_recv_loop_if_needed(self):
@@ -176,9 +176,9 @@ class GanglionZmqTcpPair(GanglionExternalBase):
 
     async def adapt(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
-        raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
+        neuron: Neuron[UnencodedType],
+        reactants: Optional[Iterable[Reactant[UnencodedType]]] = None,
+        raw_reactants: Optional[Iterable[RawReactant[UnencodedType]]] = None,
     ):
         await super().adapt(neuron, reactants=reactants, raw_reactants=raw_reactants)
 

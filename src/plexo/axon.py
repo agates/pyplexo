@@ -17,15 +17,15 @@ import asyncio
 from typing import Generic, Iterable, Optional
 
 from plexo.neuron.neuron import Neuron
-from plexo.typing import UnencodedSignal
+from plexo.typing import UnencodedType
 from plexo.typing.ganglion import Ganglion
 from plexo.typing.reactant import Reactant
 
 
-class Axon(Generic[UnencodedSignal]):
+class Axon(Generic[UnencodedType]):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         ganglion: Ganglion,
     ):
         self.neuron = neuron
@@ -39,7 +39,7 @@ class Axon(Generic[UnencodedSignal]):
 
     async def react(
         self,
-        reactants: Iterable[Reactant[UnencodedSignal]],
+        reactants: Iterable[Reactant[UnencodedType]],
     ):
         if not self._startup_done:
             await self.adapt()
@@ -48,7 +48,7 @@ class Axon(Generic[UnencodedSignal]):
 
     async def transmit(
         self,
-        data: UnencodedSignal,
+        data: UnencodedType,
     ):
         if not self._startup_done:
             await self.adapt()

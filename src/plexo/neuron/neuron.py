@@ -17,19 +17,19 @@
 from typing import Generic, Type, Optional
 
 from plexo.namespace.namespace import Namespace
-from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing import EncodedType, UnencodedType
 from plexo.typing.codec import Codec
 
 
-class Neuron(Codec, Generic[UnencodedSignal]):
+class Neuron(Codec, Generic[UnencodedType]):
     def __init__(
         self,
-        _type: Type[UnencodedSignal],
+        _type: Type[UnencodedType],
         namespace: Namespace,
         codec: Codec,
         type_name_alias: Optional[str] = None,
     ):
-        self.type: Type[UnencodedSignal] = _type
+        self.type: Type[UnencodedType] = _type
         self.namespace: Namespace = namespace
         self.codec = codec
         self.type_name_alias = type_name_alias or self.type.__name__
@@ -43,10 +43,10 @@ class Neuron(Codec, Generic[UnencodedSignal]):
     def __hash__(self):
         return hash(str(self))
 
-    def encode(self, data: UnencodedSignal) -> EncodedSignal:
+    def encode(self, data: UnencodedType) -> EncodedType:
         return self.codec.encode(data)
 
-    def decode(self, data: EncodedSignal) -> UnencodedSignal:
+    def decode(self, data: EncodedType) -> UnencodedType:
         return self.codec.decode(data)
 
     @property

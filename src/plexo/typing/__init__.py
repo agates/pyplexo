@@ -16,14 +16,13 @@
 from ipaddress import IPv4Address, IPv4Network, IPv6Address, IPv6Network
 from typing import Callable, TypeVar, Union, ByteString
 
-# If EncodedSignal is ever made into a Union,
-# python 3.10+ will be required for isinstance to work
+# python 3.10+ is required for isinstance to work on Union
 # https://peps.python.org/pep-0604/#isinstance-and-issubclass
-# EncodedSignal = Union[ByteString, str]
-EncodedSignal = ByteString
-UnencodedSignal = TypeVar("UnencodedSignal")
-Signal = Union[EncodedSignal, UnencodedSignal]
-Decoder = Callable[[EncodedSignal], UnencodedSignal]
-Encoder = Callable[[UnencodedSignal], EncodedSignal]
+# This union allows encoded data to be strings or bytes depending on the protocol
+EncodedType = Union[ByteString, str]
+UnencodedType = TypeVar("UnencodedType")
+Signal = Union[EncodedType, UnencodedType]
+Decoder = Callable[[EncodedType], UnencodedType]
+Encoder = Callable[[UnencodedType], EncodedType]
 IPAddress = Union[IPv4Address, IPv6Address]
 IPNetwork = Union[IPv4Network, IPv6Network]

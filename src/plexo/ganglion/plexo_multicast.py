@@ -59,7 +59,7 @@ from plexo.schema.plexo_multicast.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_multicast.plexo_rejection import PlexoRejection
 from plexo.synapse.zeromq_plexopubsub_epgm import SynapseZmqPlexoPubSubEPGM
 from plexo.timer import Timer
-from plexo.typing import IPAddress, IPNetwork, UnencodedSignal, EncodedSignal
+from plexo.typing import IPAddress, IPNetwork, UnencodedType, EncodedType
 from plexo.typing.reactant import Reactant, RawReactant
 
 
@@ -225,7 +225,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _heartbeat_reaction(
         self,
         heartbeat: PlexoHeartbeat,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -239,7 +239,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _preparation_reaction(
         self,
         preparation: PlexoPreparation,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -318,7 +318,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _promise_reaction(
         self,
         promise: PlexoPromise,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -370,7 +370,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _rejection_reaction(
         self,
         rejection: PlexoRejection,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -421,7 +421,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _proposal_reaction(
         self,
         proposal: PlexoProposal,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -461,7 +461,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     async def _approval_reaction(
         self,
         approval: PlexoApproval,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         logging.debug(
@@ -765,7 +765,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
                 raise e
 
     async def create_synapse_with_address(
-        self, neuron: Neuron[UnencodedSignal], name: str, multicast_address: IPAddress
+        self, neuron: Neuron[UnencodedType], name: str, multicast_address: IPAddress
     ):
         if name in self._synapses:
             raise SynapseExists(f"Synapse for {name} already exists.")
@@ -835,7 +835,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
     async def create_synapse_with_reserved_address_by_name(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         name: str,
         reserved_address: ReservedMulticastAddress,
     ):
@@ -849,7 +849,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
             neuron, neuron.name, reserved_address
         )
 
-    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedSignal], name: str):
+    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedType], name: str):
         multicast_address = await self.acquire_address_for_type(name)
         return await self.create_synapse_with_address(neuron, name, multicast_address)
 
@@ -857,7 +857,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
         return await self._create_synapse_by_name(neuron, neuron.name)
 
     async def create_or_update_synapse_with_address(
-        self, neuron: Neuron[UnencodedSignal], name: str, multicast_address: IPAddress
+        self, neuron: Neuron[UnencodedType], name: str, multicast_address: IPAddress
     ):
         if name in self._synapses:
             return await self.update_synapse_with_address(name, multicast_address)
@@ -874,42 +874,42 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
     async def react_raw_ignore_startup(
         self,
-        neuron: Neuron[UnencodedSignal],
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]],
+        neuron: Neuron[UnencodedType],
+        raw_reactants: Iterable[RawReactant[UnencodedType]],
     ):
         return await super().react_raw(neuron, raw_reactants)
 
     async def react_raw(
         self,
-        neuron: Neuron[UnencodedSignal],
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]],
+        neuron: Neuron[UnencodedType],
+        raw_reactants: Iterable[RawReactant[UnencodedType]],
     ):
         await self.wait_startup()
         return await super().react_raw(neuron, raw_reactants)
 
     async def react_ignore_startup(
-        self, neuron: Neuron, reactants: Iterable[Reactant[UnencodedSignal]]
+        self, neuron: Neuron, reactants: Iterable[Reactant[UnencodedType]]
     ):
         return await super().react(neuron, reactants)
 
     async def react(
-        self, neuron: Neuron, reactants: Iterable[Reactant[UnencodedSignal]]
+        self, neuron: Neuron, reactants: Iterable[Reactant[UnencodedType]]
     ):
         await self.wait_startup()
         return await super().react(neuron, reactants)
 
     async def transmit_encoded_ignore_startup(
         self,
-        data: EncodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: EncodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         return await super().transmit_encoded(data, neuron, reaction_id)
 
     async def transmit_encoded(
         self,
-        data: EncodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: EncodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         await self.wait_startup()
@@ -917,16 +917,16 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
     async def transmit_ignore_startup(
         self,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         return await super().transmit(data, neuron, reaction_id)
 
     async def transmit(
         self,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         await self.wait_startup()
@@ -934,17 +934,17 @@ class GanglionPlexoMulticast(GanglionExternalBase):
 
     async def adapt_ignore_startup(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reactants: Optional[Iterable[Reactant]] = None,
-        raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
+        raw_reactants: Optional[Iterable[RawReactant[UnencodedType]]] = None,
     ):
         return await super().adapt(neuron, reactants, raw_reactants)
 
     async def adapt(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         reactants: Optional[Iterable[Reactant]] = None,
-        raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
+        raw_reactants: Optional[Iterable[RawReactant[UnencodedType]]] = None,
     ):
         await self.wait_startup()
         return await super().adapt(neuron, reactants, raw_reactants)

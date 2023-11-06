@@ -27,19 +27,19 @@ from plexo.exceptions import IpAddressIsNotMulticast
 from plexo.host_information import get_primary_ip
 from plexo.neuron.neuron import Neuron
 from plexo.synapse.base import SynapseExternalBase
-from plexo.typing import EncodedSignal, IPAddress, UnencodedSignal
+from plexo.typing import EncodedType, IPAddress, UnencodedType
 from plexo.typing.reactant import Reactant, RawReactant
 
 
 class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         multicast_address: IPAddress,
         bind_interface: Optional[str] = None,
         port: int = 5560,
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
+        reactants: Iterable[Reactant[UnencodedType]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedType]] = (),
     ) -> None:
         super().__init__(neuron, reactants, raw_reactants)
 
@@ -89,7 +89,7 @@ class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
         self.close()
         self._startup(multicast_address)
 
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         await super().add_reactants(reactants)
         self._start_recv_loop_if_needed()
 
@@ -119,12 +119,14 @@ class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
 
     async def transmit(
         self,
-        data: EncodedSignal,
+        data: EncodedType,
         reaction_id: Optional[UUID] = None,
     ):
         if self._socket_pub is not None:
+            payload = data.encode("UTF-8") if isinstance(data, str) else data
+
             await self._socket_pub.send(self.topic_bytes, zmq.SNDMORE)
-            await self._socket_pub.send(data)
+            await self._socket_pub.send(payload)
 
     def _start_recv_loop_if_needed(self):
         if len(self._dendrite.reactants):

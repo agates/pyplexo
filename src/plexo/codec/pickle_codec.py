@@ -17,17 +17,17 @@
 import pickle  # nosec - Pickle is entirely optional in this library
 from typing import cast
 
-from plexo.typing import EncodedSignal
+from plexo.typing import EncodedType
 from plexo.typing.codec import Codec
 
 
 class PickleCodec(Codec):
     _name = "pickle"
 
-    def encode(self, data: object) -> EncodedSignal:
+    def encode(self, data: object) -> EncodedType:
         return pickle.dumps(data)
 
-    def decode(self, data: EncodedSignal):
+    def decode(self, data: EncodedType):
         return pickle.loads(
             cast(bytes, data)
         )  # nosec - Pickle is entirely optional in this library

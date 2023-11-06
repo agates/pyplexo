@@ -17,13 +17,13 @@
 from typing import Optional, Coroutine, Protocol
 from uuid import UUID
 
-from plexo.typing import UnencodedSignal, EncodedSignal
+from plexo.typing import UnencodedType, EncodedType
 
 
 class ExternalTransmitter(Protocol):
     def __call__(
         self,
-        data: EncodedSignal,
+        data: EncodedType,
         reaction_id: Optional[UUID] = None,
     ) -> Coroutine:
         ...
@@ -32,7 +32,7 @@ class ExternalTransmitter(Protocol):
 class Transmitter(Protocol):
     def __call__(
         self,
-        data: UnencodedSignal,
+        data: UnencodedType,
         reaction_id: Optional[UUID] = None,
     ) -> Coroutine:
         ...

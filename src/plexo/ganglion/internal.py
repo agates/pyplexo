@@ -31,7 +31,7 @@ from plexo.exceptions import (
 )
 from plexo.neuron.neuron import Neuron
 from plexo.transmitter import create_transmitter
-from plexo.typing import UnencodedSignal
+from plexo.typing import UnencodedType
 from plexo.typing.synapse import SynapseInternal
 from plexo.typing.transmitter import Transmitter
 from plexo.typing.ganglion import Ganglion
@@ -98,19 +98,19 @@ class GanglionInternalBase(Ganglion, ABC):
 
     @abstractmethod
     async def _create_synapse_by_name(
-        self, neuron: Neuron[UnencodedSignal], name: str
-    ) -> SynapseInternal[UnencodedSignal]:
+        self, neuron: Neuron[UnencodedType], name: str
+    ) -> SynapseInternal[UnencodedType]:
         ...
 
     @abstractmethod
     async def _create_synapse(
-        self, neuron: Neuron[UnencodedSignal]
-    ) -> SynapseInternal[UnencodedSignal]:
+        self, neuron: Neuron[UnencodedType]
+    ) -> SynapseInternal[UnencodedType]:
         ...
 
     async def get_synapse_by_name(
-        self, name: str, neuron: Optional[Neuron[UnencodedSignal]] = None
-    ) -> SynapseInternal[UnencodedSignal]:
+        self, name: str, neuron: Optional[Neuron[UnencodedType]] = None
+    ) -> SynapseInternal[UnencodedType]:
         if name not in self._synapses:
             try:
                 return await self._create_synapse_by_name(
@@ -121,17 +121,17 @@ class GanglionInternalBase(Ganglion, ABC):
 
         return self._synapses[name]
 
-    async def get_synapse(self, neuron: Neuron[UnencodedSignal]):
+    async def get_synapse(self, neuron: Neuron[UnencodedType]):
         name = neuron.name
         return await self.get_synapse_by_name(name, neuron)
 
-    async def _update_name_neurons(self, neuron: Neuron[UnencodedSignal]):
+    async def _update_name_neurons(self, neuron: Neuron[UnencodedType]):
         async with self._name_neurons_lock:
             if neuron.name not in self._name_neurons:
                 self._name_neurons = self._name_neurons.set(neuron.name, neuron)
 
     async def _create_transmitter(
-        self, neuron: Neuron[UnencodedSignal], synapse: SynapseInternal[UnencodedSignal]
+        self, neuron: Neuron[UnencodedType], synapse: SynapseInternal[UnencodedType]
     ):
         async with self._transmitters_lock:
             try:
@@ -142,7 +142,7 @@ class GanglionInternalBase(Ganglion, ABC):
                 return transmitter
 
     async def create_transmitter(
-        self, neuron: Neuron[UnencodedSignal], synapse: SynapseInternal[UnencodedSignal]
+        self, neuron: Neuron[UnencodedType], synapse: SynapseInternal[UnencodedType]
     ):
         transmitter = await self._create_transmitter(neuron, synapse)
 
@@ -150,7 +150,7 @@ class GanglionInternalBase(Ganglion, ABC):
 
         return transmitter
 
-    def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
+    def capable(self, neuron: Neuron[UnencodedType]) -> bool:
         if len(self._relevant_neurons) > 0 and neuron not in self._relevant_neurons:
             return False
 
@@ -165,7 +165,7 @@ class GanglionInternalBase(Ganglion, ABC):
 
         return True
 
-    async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
+    async def update_transmitter(self, neuron: Neuron[UnencodedType]):
         synapse = await self.get_synapse(neuron)
         await self._create_transmitter(neuron, synapse)
 
@@ -178,7 +178,7 @@ class GanglionInternalBase(Ganglion, ABC):
             except KeyError:
                 raise NeuronNotFound(f"Neuron for {name} does not exist.")
 
-    def _get_transmitter(self, neuron: Neuron[UnencodedSignal]):
+    def _get_transmitter(self, neuron: Neuron[UnencodedType]):
         try:
             return self._transmitters[neuron]
         except KeyError:
@@ -186,22 +186,22 @@ class GanglionInternalBase(Ganglion, ABC):
 
     async def _get_transmitters(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
     ) -> Iterable[Transmitter]:
         return (self._get_transmitter(neuron),)
 
     async def react(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]],
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]],
     ):
         synapse = await self.get_synapse(neuron)
         await synapse.add_reactants(reactants)
 
     async def transmit(
         self,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         transmitters = await self._get_transmitters(neuron)
@@ -212,8 +212,8 @@ class GanglionInternalBase(Ganglion, ABC):
 
     async def adapt(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
+        neuron: Neuron[UnencodedType],
+        reactants: Optional[Iterable[Reactant[UnencodedType]]] = None,
     ):
         if not self.capable(neuron):
             logging.warning(

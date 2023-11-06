@@ -15,7 +15,7 @@
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 from capnpy.struct_ import Struct
 
-from plexo.typing import EncodedSignal
+from plexo.typing import EncodedType
 from plexo.typing.codec import Codec
 
 
@@ -25,10 +25,10 @@ class CapnpyCodec(Codec):
     def __init__(self, capnpy_struct):
         self.capnpy_struct: Struct = capnpy_struct
 
-    def encode(self, data) -> EncodedSignal:
+    def encode(self, data) -> EncodedType:
         return self.capnpy_struct.dumps(data)
 
-    def decode(self, data: EncodedSignal):
+    def decode(self, data: EncodedType):
         return self.capnpy_struct.loads(data)
 
     @property

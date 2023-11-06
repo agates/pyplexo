@@ -29,7 +29,7 @@ from returns.curry import partial
 from plexo.ganglion.inproc import GanglionInproc
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.neuron.neuron import Neuron
-from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing import EncodedType, UnencodedType
 from plexo.typing.ganglion import Ganglion, GanglionExternal
 from plexo.typing.reactant import Reactant
 
@@ -93,8 +93,8 @@ class Plexus(Ganglion):
     async def _internal_reaction(
         self,
         current: Ganglion,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         reaction_id, reaction_lock = await self.get_reaction_lock(reaction_id)
@@ -123,8 +123,8 @@ class Plexus(Ganglion):
     async def _external_internal_reaction(
         self,
         current: GanglionExternal,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         reaction_id, reaction_lock = await self.get_reaction_lock(reaction_id)
@@ -149,8 +149,8 @@ class Plexus(Ganglion):
     async def _external_external_reaction(
         self,
         current: GanglionExternal,
-        data: EncodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: EncodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         reaction_id, reaction_lock = await self.get_reaction_lock(reaction_id)
@@ -193,7 +193,7 @@ class Plexus(Ganglion):
 
         await self._update_neuron_ganglia()
 
-    async def _update_neurons(self, neuron: Neuron[UnencodedSignal]):
+    async def _update_neurons(self, neuron: Neuron[UnencodedType]):
         async with self._neurons_lock:
             self._neurons = self._neurons.add(neuron)
 
@@ -234,7 +234,7 @@ class Plexus(Ganglion):
             # Got empty list, continue
             pass
 
-    def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
+    def capable(self, neuron: Neuron[UnencodedType]) -> bool:
         if len(self._relevant_neurons) > 0 and neuron not in self._relevant_neurons:
             return False
 
@@ -243,22 +243,22 @@ class Plexus(Ganglion):
 
         return True
 
-    async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
+    async def update_transmitter(self, neuron: Neuron[UnencodedType]):
         await self._update_neurons(neuron)
 
         return await self.inproc_ganglion.update_transmitter(neuron)
 
     async def react(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]],
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]],
     ):
         return await self.inproc_ganglion.react(neuron, reactants)
 
     async def transmit(
         self,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         return await self.inproc_ganglion.transmit(data, neuron, reaction_id)
@@ -266,7 +266,7 @@ class Plexus(Ganglion):
     async def adapt(
         self,
         neuron: Neuron,
-        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
+        reactants: Optional[Iterable[Reactant[UnencodedType]]] = None,
     ):
         if not self.capable(neuron):
             logging.warning(f"Plexus:adapt not capable of adapting to Neuron {neuron}")

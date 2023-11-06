@@ -1,6 +1,7 @@
 # pyplexo
 
-*pyplexo* is the Python implementation of *plexo*. It aims to be an opinionated, reactive, schema-driven, distributed, and
+*pyplexo* is the Python implementation of *plexo*. It aims to be an opinionated, reactive, schema-driven, distributed,
+and
 strongly-typed message passing framework with messages as types. Any type of data interchange format is supported and
 can be transmitted both to in-process and inter-process listeners.
 
@@ -33,8 +34,9 @@ problem without controlling the entire stack while avoiding protocol implementat
 
 Check the [examples](examples) for how to use the library -- particularly [axon/inprocess](examples/axon/inprocess) for
 multiple examples of codec options and [axon/tcp_pair](examples/axon/tcp_pair) for an example of how to send a python
-class between two networked python processes with pickle. Note that, while supplying the pickle codec is required,
-the *plexus* is smart enough to avoid the expensive process of encoding/decoding for in-process receivers.
+class between two networked python processes with pickle or JSON. Note that, while supplying the pickle codec is
+required, the *plexus* is smart enough to avoid the expensive process of encoding/decoding for in-process receivers;
+codecs are only used for external transmission where serialization is required.
 
 [ganglion/plexo_multicast](examples/ganglion/plexo_multicast) provides a basic example of sending a python class
 across the network over multicast. Each type in is assigned a dedicated multicast address within the `239.255.0.0/16`

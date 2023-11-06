@@ -20,11 +20,11 @@ from plexo.exceptions import SynapseExists
 from plexo.ganglion.internal import GanglionInternalBase
 from plexo.neuron.neuron import Neuron
 from plexo.synapse.inproc import SynapseInproc
-from plexo.typing import UnencodedSignal
+from plexo.typing import UnencodedType
 
 
 class GanglionInproc(GanglionInternalBase):
-    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedSignal], name: str):
+    async def _create_synapse_by_name(self, neuron: Neuron[UnencodedType], name: str):
         if name in self._synapses:
             raise SynapseExists(f"Synapse for {name} already exists.")
 

@@ -23,17 +23,17 @@ from plexo.codec.plexo_codec import plexo_message_codec
 from plexo.neuron.neuron import Neuron
 from plexo.schema.plexo_message import PlexoMessage
 from plexo.synapse.base import SynapseExternalBase
-from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing import EncodedType, UnencodedType
 from plexo.typing.reactant import Reactant, RawReactant
 
 
 class SynapseZmqBasic(SynapseExternalBase):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
+        neuron: Neuron[UnencodedType],
         socket: Socket,
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
+        reactants: Iterable[Reactant[UnencodedType]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedType]] = (),
     ) -> None:
         super().__init__(neuron, reactants, raw_reactants)
 
@@ -41,8 +41,10 @@ class SynapseZmqBasic(SynapseExternalBase):
 
     async def transmit(
         self,
-        data: EncodedSignal,
+        data: EncodedType,
         reaction_id: Optional[UUID] = None,
     ):
-        message = PlexoMessage(type_name=self.topic_bytes, payload=data)
+        payload = data.encode("UTF-8") if isinstance(data, str) else data
+
+        message = PlexoMessage(type_name=self.topic_bytes, payload=payload)
         await self._socket.send(plexo_message_codec.encode(message))

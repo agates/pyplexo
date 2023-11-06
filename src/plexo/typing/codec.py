@@ -18,7 +18,7 @@ from abc import abstractmethod
 
 from typing_extensions import Protocol
 
-from plexo.typing import EncodedSignal
+from plexo.typing import EncodedType
 
 
 class Codec(Protocol):
@@ -29,11 +29,11 @@ class Codec(Protocol):
         return hash(self.name)
 
     @abstractmethod
-    def encode(self, data) -> EncodedSignal:
+    def encode(self, data) -> EncodedType:
         ...
 
     @abstractmethod
-    def decode(self, data: EncodedSignal):
+    def decode(self, data: EncodedType):
         ...
 
     @property

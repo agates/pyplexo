@@ -23,7 +23,7 @@ from uuid import UUID
 from typing_extensions import Protocol
 
 from plexo.neuron.neuron import Neuron
-from plexo.typing import UnencodedSignal, EncodedSignal
+from plexo.typing import UnencodedType, EncodedType
 
 if TYPE_CHECKING:
     # https://www.stefaanlippens.net/circular-imports-type-hints-python.html
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 @runtime_checkable
 class Ganglion(Protocol):
     @abstractmethod
-    def capable(self, neuron: Neuron[UnencodedSignal]) -> bool:
+    def capable(self, neuron: Neuron[UnencodedType]) -> bool:
         ...
 
     # TODO: maybe implement this later as an optimization
@@ -42,22 +42,22 @@ class Ganglion(Protocol):
     #    ...
 
     @abstractmethod
-    async def update_transmitter(self, neuron: Neuron[UnencodedSignal]):
+    async def update_transmitter(self, neuron: Neuron[UnencodedType]):
         ...
 
     @abstractmethod
     async def react(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]],
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]],
     ):
         ...
 
     @abstractmethod
     async def transmit(
         self,
-        data: UnencodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: UnencodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         ...
@@ -65,8 +65,8 @@ class Ganglion(Protocol):
     @abstractmethod
     async def adapt(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
+        neuron: Neuron[UnencodedType],
+        reactants: Optional[Iterable[Reactant[UnencodedType]]] = None,
     ):
         ...
 
@@ -84,16 +84,16 @@ class GanglionExternal(Ganglion):
     @abstractmethod
     async def react_raw(
         self,
-        neuron: Neuron[UnencodedSignal],
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]],
+        neuron: Neuron[UnencodedType],
+        raw_reactants: Iterable[RawReactant[UnencodedType]],
     ):
         ...
 
     @abstractmethod
     async def transmit_encoded(
         self,
-        data: EncodedSignal,
-        neuron: Neuron[UnencodedSignal],
+        data: EncodedType,
+        neuron: Neuron[UnencodedType],
         reaction_id: Optional[UUID] = None,
     ):
         ...
@@ -101,8 +101,8 @@ class GanglionExternal(Ganglion):
     @abstractmethod
     async def adapt(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Optional[Iterable[Reactant[UnencodedSignal]]] = None,
-        raw_reactants: Optional[Iterable[RawReactant[UnencodedSignal]]] = None,
+        neuron: Neuron[UnencodedType],
+        reactants: Optional[Iterable[Reactant[UnencodedType]]] = None,
+        raw_reactants: Optional[Iterable[RawReactant[UnencodedType]]] = None,
     ):
         ...

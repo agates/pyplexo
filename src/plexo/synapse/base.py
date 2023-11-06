@@ -23,16 +23,16 @@ from pyrsistent import PDeque, pdeque
 
 from plexo.neuron.neuron import Neuron
 from plexo.dendrite import Dendrite, DecoderDendrite
-from plexo.typing import UnencodedSignal, EncodedSignal
+from plexo.typing import UnencodedType, EncodedType
 from plexo.typing.reactant import RawReactant, Reactant
 from plexo.typing.synapse import SynapseInternal, SynapseExternal
 
 
-class SynapseInternalBase(SynapseInternal[UnencodedSignal], ABC):
+class SynapseInternalBase(SynapseInternal[UnencodedType], ABC):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]] = (),
     ) -> None:
         self.neuron = neuron
         self.topic_bytes = neuron.name.encode("UTF-8")
@@ -71,21 +71,21 @@ class SynapseInternalBase(SynapseInternal[UnencodedSignal], ABC):
     def _add_task(self, task):
         self._tasks = self._tasks.append(task)
 
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         await self._dendrite.add_reactants(reactants)
 
     async def transduce(
-        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
+        self, data: UnencodedType, reaction_id: Optional[UUID] = None
     ):
         return await self._dendrite.transduce(data, reaction_id)
 
 
-class SynapseExternalBase(SynapseExternal[UnencodedSignal], ABC):
+class SynapseExternalBase(SynapseExternal[UnencodedType], ABC):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedType]] = (),
     ) -> None:
         self.neuron = neuron
         self.topic_bytes = neuron.name.encode("UTF-8")
@@ -126,13 +126,13 @@ class SynapseExternalBase(SynapseExternal[UnencodedSignal], ABC):
     def _add_task(self, task):
         self._tasks = self._tasks.append(task)
 
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         await self._dendrite.add_reactants(reactants)
 
     async def add_raw_reactants(
-        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+        self, raw_reactants: Iterable[RawReactant[UnencodedType]]
     ):
         await self._dendrite.add_raw_reactants(raw_reactants)
 
-    async def transduce(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+    async def transduce(self, data: EncodedType, reaction_id: Optional[UUID] = None):
         return await self._dendrite.transduce(data, reaction_id)

@@ -24,34 +24,34 @@ from pyrsistent import pset, pvector
 from pyrsistent.typing import PVector
 
 from plexo.neuron.neuron import Neuron
-from plexo.typing import EncodedSignal, UnencodedSignal
+from plexo.typing import EncodedType, UnencodedType
 from plexo.typing.reactant import Reactant, RawReactant
 
 
-class Dendrite(Generic[UnencodedSignal]):
+class Dendrite(Generic[UnencodedType]):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]] = (),
     ):
         self.neuron = neuron
         self._reactants = pvector(pset(reactants))
         self._reactants_write_lock = asyncio.Lock()
 
     @property
-    def reactants(self) -> PVector[Reactant[UnencodedSignal]]:
+    def reactants(self) -> PVector[Reactant[UnencodedType]]:
         return self._reactants
 
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         async with self._reactants_write_lock:
             self._reactants = pvector(pset(self._reactants).update(reactants))
 
-    async def remove_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def remove_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         async with self._reactants_write_lock:
             self._reactants = pvector(pset(self._reactants).difference(reactants))
 
     async def transduce(
-        self, data: UnencodedSignal, reaction_id: Optional[UUID] = None
+        self, data: UnencodedType, reaction_id: Optional[UUID] = None
     ):
         neuron = self.neuron
         try:
@@ -63,12 +63,12 @@ class Dendrite(Generic[UnencodedSignal]):
             pass
 
 
-class DecoderDendrite(Generic[UnencodedSignal]):
+class DecoderDendrite(Generic[UnencodedType]):
     def __init__(
         self,
-        neuron: Neuron[UnencodedSignal],
-        reactants: Iterable[Reactant[UnencodedSignal]] = (),
-        raw_reactants: Iterable[RawReactant[UnencodedSignal]] = (),
+        neuron: Neuron[UnencodedType],
+        reactants: Iterable[Reactant[UnencodedType]] = (),
+        raw_reactants: Iterable[RawReactant[UnencodedType]] = (),
     ):
         self.neuron = neuron
         self._reactants = pvector(pset(reactants))
@@ -76,38 +76,38 @@ class DecoderDendrite(Generic[UnencodedSignal]):
         self._reactants_write_lock = asyncio.Lock()
 
     @property
-    def reactants(self) -> PVector[Reactant[UnencodedSignal]]:
+    def reactants(self) -> PVector[Reactant[UnencodedType]]:
         return self._reactants
 
     @property
-    def raw_reactants(self) -> PVector[RawReactant[UnencodedSignal]]:
+    def raw_reactants(self) -> PVector[RawReactant[UnencodedType]]:
         return self._raw_reactants
 
-    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         async with self._reactants_write_lock:
             self._reactants = pvector(pset(self._reactants).update(reactants))
 
     async def add_raw_reactants(
-        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+        self, raw_reactants: Iterable[RawReactant[UnencodedType]]
     ):
         async with self._reactants_write_lock:
             self._raw_reactants = pvector(
                 pset(self._raw_reactants).update(raw_reactants)
             )
 
-    async def remove_reactants(self, reactants: Iterable[Reactant[UnencodedSignal]]):
+    async def remove_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         async with self._reactants_write_lock:
             self._reactants = pvector(pset(self._reactants).difference(reactants))
 
     async def remove_raw_reactants(
-        self, raw_reactants: Iterable[RawReactant[UnencodedSignal]]
+        self, raw_reactants: Iterable[RawReactant[UnencodedType]]
     ):
         async with self._reactants_write_lock:
             self._raw_reactants = pvector(
                 pset(self._raw_reactants).difference(raw_reactants)
             )
 
-    async def transduce(self, data: EncodedSignal, reaction_id: Optional[UUID] = None):
+    async def transduce(self, data: EncodedType, reaction_id: Optional[UUID] = None):
         neuron = self.neuron
         try:
             decoded_data = self.neuron.decode(data)
