@@ -21,5 +21,11 @@ from plexo.schema.plexo_multicast.plexo_promise import PlexoPromise
 from plexo.schema.plexo_multicast.plexo_proposal import PlexoProposal
 from plexo.schema.plexo_multicast.plexo_rejection import PlexoRejection
 
-__all__ = ['PlexoApproval', 'PlexoHeartbeat', 'PlexoPreparation', 'PlexoPromise',
-           'PlexoProposal', 'PlexoRejection']
+__all__ = [
+    "PlexoApproval",
+    "PlexoHeartbeat",
+    "PlexoPreparation",
+    "PlexoPromise",
+    "PlexoProposal",
+    "PlexoRejection",
+]

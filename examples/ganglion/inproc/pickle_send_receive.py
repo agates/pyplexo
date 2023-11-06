@@ -31,7 +31,9 @@ class Foo:
     message: str
 
 
-async def _foo_reaction(f: Foo, neuron: Neuron[Foo], reaction_id: Optional[UUID] = None):
+async def _foo_reaction(
+    f: Foo, neuron: Neuron[Foo], reaction_id: Optional[UUID] = None
+):
     logging.info(f"Received Foo.string: {f.message}")
 
 

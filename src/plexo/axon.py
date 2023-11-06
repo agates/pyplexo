@@ -54,4 +54,3 @@ class Axon(Generic[UnencodedType]):
             await self.adapt()
 
         return await self.ganglion.transmit(data, self.neuron)
-

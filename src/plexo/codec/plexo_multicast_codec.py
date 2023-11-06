@@ -14,8 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-from plexo.schema.plexo_multicast import PlexoApproval, PlexoHeartbeat, PlexoPreparation, PlexoPromise, PlexoProposal, \
-    PlexoRejection
+from plexo.schema.plexo_multicast import (
+    PlexoApproval,
+    PlexoHeartbeat,
+    PlexoPreparation,
+    PlexoPromise,
+    PlexoProposal,
+    PlexoRejection,
+)
 
 from plexo.codec.capnpy_codec import CapnpyCodec
 

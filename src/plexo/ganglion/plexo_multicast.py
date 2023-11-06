@@ -892,9 +892,7 @@ class GanglionPlexoMulticast(GanglionExternalBase):
     ):
         return await super().react(neuron, reactants)
 
-    async def react(
-        self, neuron: Neuron, reactants: Iterable[Reactant[UnencodedType]]
-    ):
+    async def react(self, neuron: Neuron, reactants: Iterable[Reactant[UnencodedType]]):
         await self.wait_startup()
         return await super().react(neuron, reactants)
 

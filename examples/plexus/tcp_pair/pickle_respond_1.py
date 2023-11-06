@@ -75,7 +75,9 @@ async def wait_until_cancelled():
 
 
 async def run_async(foo_neuron: Neuron[Foo], bar_neuron: Neuron[Bar], plexus: Plexus):
-    await plexus.adapt(foo_neuron, reactants=[partial(_foo_reaction, plexus, bar_neuron)])
+    await plexus.adapt(
+        foo_neuron, reactants=[partial(_foo_reaction, plexus, bar_neuron)]
+    )
     await plexus.adapt(bar_neuron)
     await wait_until_cancelled()
 

@@ -20,13 +20,9 @@ from uuid import UUID
 from plexo.neuron.neuron import Neuron
 from plexo.typing import UnencodedType, EncodedType
 
-Reactant = Callable[
-    [UnencodedType, Neuron[UnencodedType], Optional[UUID]], Coroutine
-]
+Reactant = Callable[[UnencodedType, Neuron[UnencodedType], Optional[UUID]], Coroutine]
 
 # Neuron on the reactant is necessary for when the reactant won't
 # otherwise know the type of the data being reacted upon.
 # Without this it's impossible to understand raw binary data or what to do with it
-RawReactant = Callable[
-    [EncodedType, Neuron[UnencodedType], Optional[UUID]], Coroutine
-]
+RawReactant = Callable[[EncodedType, Neuron[UnencodedType], Optional[UUID]], Coroutine]

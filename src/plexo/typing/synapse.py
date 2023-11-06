@@ -35,9 +35,7 @@ class SynapseInternal(Protocol[UnencodedType]):
         ...
 
     @abstractmethod
-    async def transduce(
-        self, data: UnencodedType, reaction_id: Optional[UUID] = None
-    ):
+    async def transduce(self, data: UnencodedType, reaction_id: Optional[UUID] = None):
         ...
 
     @abstractmethod

@@ -46,7 +46,9 @@ class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
         if not bind_interface:
             bind_interface = get_primary_ip()
         self.bind_interface = bind_interface
-        logging.debug(f"SynapseZmqPlexoPubSubEPGM:{neuron}:bind_interface {bind_interface}")
+        logging.debug(
+            f"SynapseZmqPlexoPubSubEPGM:{neuron}:bind_interface {bind_interface}"
+        )
         self.port = port
         logging.debug(f"SynapseZmqPlexoPubSubEPGM:{neuron}:port {port}")
 
@@ -130,7 +132,9 @@ class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
 
     def _start_recv_loop_if_needed(self):
         if len(self._dendrite.reactants):
-            logging.debug(f"SynapseZmqPlexoPubSubEPGM:{self.neuron}:Starting _recv_loop")
+            logging.debug(
+                f"SynapseZmqPlexoPubSubEPGM:{self.neuron}:Starting _recv_loop"
+            )
             self._add_task(asyncio.create_task(self._recv_loop()))
         else:
             logging.debug(
@@ -153,6 +157,7 @@ class SynapseZmqPlexoPubSubEPGM(SynapseExternalBase):
                 raise
             except Exception as e:
                 logging.error(
-                    f"SynapseZmqPlexoPubSubEPGM:{topic}:_recv_loop: {e}", stack_info=True
+                    f"SynapseZmqPlexoPubSubEPGM:{topic}:_recv_loop: {e}",
+                    stack_info=True,
                 )
                 continue

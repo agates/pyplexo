@@ -50,9 +50,7 @@ class Dendrite(Generic[UnencodedType]):
         async with self._reactants_write_lock:
             self._reactants = pvector(pset(self._reactants).difference(reactants))
 
-    async def transduce(
-        self, data: UnencodedType, reaction_id: Optional[UUID] = None
-    ):
+    async def transduce(self, data: UnencodedType, reaction_id: Optional[UUID] = None):
         neuron = self.neuron
         try:
             return await asyncio.gather(

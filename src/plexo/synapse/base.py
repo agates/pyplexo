@@ -74,9 +74,7 @@ class SynapseInternalBase(SynapseInternal[UnencodedType], ABC):
     async def add_reactants(self, reactants: Iterable[Reactant[UnencodedType]]):
         await self._dendrite.add_reactants(reactants)
 
-    async def transduce(
-        self, data: UnencodedType, reaction_id: Optional[UUID] = None
-    ):
+    async def transduce(self, data: UnencodedType, reaction_id: Optional[UUID] = None):
         return await self._dendrite.transduce(data, reaction_id)
 
 

@@ -78,10 +78,10 @@ perf = {"start_time": timer(), "num_messages_received": 0}
 
 
 async def _foo_reaction(
-        bar_plexus_axon: Axon[Bar],
-        foo: Foo,
-        neuron: Neuron[Foo],
-        reaction_id: Optional[UUID]
+    bar_plexus_axon: Axon[Bar],
+    foo: Foo,
+    neuron: Neuron[Foo],
+    reaction_id: Optional[UUID],
 ):
     logging.info(f"Received Foo: {foo.serialize()}, reaction_id: {reaction_id}")
     try:

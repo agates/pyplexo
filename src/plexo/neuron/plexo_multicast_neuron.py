@@ -14,8 +14,14 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-from plexo.codec.plexo_multicast_codec import plexo_approval_codec, plexo_heartbeat_codec, plexo_preparation_codec, \
-    plexo_promise_codec, plexo_proposal_codec, plexo_rejection_codec
+from plexo.codec.plexo_multicast_codec import (
+    plexo_approval_codec,
+    plexo_heartbeat_codec,
+    plexo_preparation_codec,
+    plexo_promise_codec,
+    plexo_proposal_codec,
+    plexo_rejection_codec,
+)
 from plexo.namespace import plexo_namespace
 from plexo.neuron.neuron import Neuron
 from plexo.schema.plexo_multicast.plexo_approval import PlexoApproval
