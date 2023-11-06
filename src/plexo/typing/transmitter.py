@@ -17,7 +17,6 @@
 from typing import Optional, Coroutine, Protocol
 from uuid import UUID
 
-from plexo.neuron.neuron import Neuron
 from plexo.typing import UnencodedSignal, EncodedSignal
 
 

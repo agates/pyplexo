@@ -14,22 +14,16 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-from plexo.codec.plexo_codec import (
-    plexo_approval_codec,
-    plexo_heartbeat_codec,
-    plexo_preparation_codec,
-    plexo_promise_codec,
-    plexo_proposal_codec,
-    plexo_rejection_codec,
-)
+from plexo.codec.plexo_multicast_codec import plexo_approval_codec, plexo_heartbeat_codec, plexo_preparation_codec, \
+    plexo_promise_codec, plexo_proposal_codec, plexo_rejection_codec
 from plexo.namespace import plexo_namespace
 from plexo.neuron.neuron import Neuron
-from plexo.schema.plexo_approval import PlexoApproval
-from plexo.schema.plexo_heartbeat import PlexoHeartbeat
-from plexo.schema.plexo_preparation import PlexoPreparation
-from plexo.schema.plexo_promise import PlexoPromise
-from plexo.schema.plexo_proposal import PlexoProposal
-from plexo.schema.plexo_rejection import PlexoRejection
+from plexo.schema.plexo_multicast.plexo_approval import PlexoApproval
+from plexo.schema.plexo_multicast.plexo_heartbeat import PlexoHeartbeat
+from plexo.schema.plexo_multicast.plexo_preparation import PlexoPreparation
+from plexo.schema.plexo_multicast.plexo_promise import PlexoPromise
+from plexo.schema.plexo_multicast.plexo_proposal import PlexoProposal
+from plexo.schema.plexo_multicast.plexo_rejection import PlexoRejection
 
 
 approval_neuron = Neuron(PlexoApproval, plexo_namespace, plexo_approval_codec)

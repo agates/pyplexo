@@ -42,13 +42,13 @@ class SetupKwargsProxy:
 
 
 schema_files = [
-    "src/plexo/schema/plexo_approval.capnp",
-    "src/plexo/schema/plexo_heartbeat.capnp",
     "src/plexo/schema/plexo_message.capnp",
-    "src/plexo/schema/plexo_preparation.capnp",
-    "src/plexo/schema/plexo_promise.capnp",
-    "src/plexo/schema/plexo_proposal.capnp",
-    "src/plexo/schema/plexo_rejection.capnp",
+    "src/plexo/schema/plexo_multicast/plexo_approval.capnp",
+    "src/plexo/schema/plexo_multicast/plexo_heartbeat.capnp",
+    "src/plexo/schema/plexo_multicast/plexo_preparation.capnp",
+    "src/plexo/schema/plexo_multicast/plexo_promise.capnp",
+    "src/plexo/schema/plexo_multicast/plexo_proposal.capnp",
+    "src/plexo/schema/plexo_multicast/plexo_rejection.capnp",
 ]
 
 

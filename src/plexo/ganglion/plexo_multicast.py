@@ -43,7 +43,7 @@ from plexo.exceptions import (
 from plexo.ganglion.external import GanglionExternalBase
 from plexo.ip_lease import IpLeaseManager
 from plexo.neuron.neuron import Neuron
-from plexo.neuron.plexo_neuron import (
+from plexo.neuron.plexo_multicast_neuron import (
     approval_neuron,
     heartbeat_neuron,
     preparation_neuron,
@@ -51,12 +51,12 @@ from plexo.neuron.plexo_neuron import (
     proposal_neuron,
     rejection_neuron,
 )
-from plexo.schema.plexo_approval import PlexoApproval
-from plexo.schema.plexo_heartbeat import PlexoHeartbeat
-from plexo.schema.plexo_preparation import PlexoPreparation
-from plexo.schema.plexo_promise import PlexoPromise
-from plexo.schema.plexo_proposal import PlexoProposal
-from plexo.schema.plexo_rejection import PlexoRejection
+from plexo.schema.plexo_multicast.plexo_approval import PlexoApproval
+from plexo.schema.plexo_multicast.plexo_heartbeat import PlexoHeartbeat
+from plexo.schema.plexo_multicast.plexo_preparation import PlexoPreparation
+from plexo.schema.plexo_multicast.plexo_promise import PlexoPromise
+from plexo.schema.plexo_multicast.plexo_proposal import PlexoProposal
+from plexo.schema.plexo_multicast.plexo_rejection import PlexoRejection
 from plexo.synapse.zeromq_plexopubsub_epgm import SynapseZmqPlexoPubSubEPGM
 from plexo.timer import Timer
 from plexo.typing import IPAddress, IPNetwork, UnencodedSignal, EncodedSignal

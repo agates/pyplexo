@@ -17,7 +17,6 @@
 from typing import Optional, Iterable
 from uuid import UUID
 
-import zmq
 from zmq.asyncio import Socket
 
 from plexo.codec.plexo_codec import plexo_message_codec

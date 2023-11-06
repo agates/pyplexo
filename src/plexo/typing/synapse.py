@@ -22,7 +22,6 @@ from uuid import UUID
 
 from typing_extensions import Protocol
 
-from plexo.neuron.neuron import Neuron
 from plexo.typing import UnencodedSignal, EncodedSignal
 
 if TYPE_CHECKING:

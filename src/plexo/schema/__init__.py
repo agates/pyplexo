@@ -14,12 +14,6 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-from plexo.schema.plexo_approval import PlexoApproval
-from plexo.schema.plexo_heartbeat import PlexoHeartbeat
-from plexo.schema.plexo_preparation import PlexoPreparation
-from plexo.schema.plexo_promise import PlexoPromise
-from plexo.schema.plexo_proposal import PlexoProposal
-from plexo.schema.plexo_rejection import PlexoRejection
+from plexo.schema.plexo_message import PlexoMessage
 
-__all__ = ['PlexoApproval', 'PlexoHeartbeat', 'PlexoPreparation', 'PlexoPromise',
-           'PlexoProposal', 'PlexoRejection']
+__all__ = ['PlexoMessage']

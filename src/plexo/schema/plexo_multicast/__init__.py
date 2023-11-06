@@ -1,5 +1,5 @@
 #  pyplexo
-#  Copyright © 2018-2023  Alecks Gates
+#  Copyright © 2023  Alecks Gates
 #
 #  pyplexo is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU Lesser General Public License as published by
@@ -14,7 +14,12 @@
 #  You should have received a copy of the GNU Lesser General Public License
 #  along with pyplexo.  If not, see <https://www.gnu.org/licenses/>.
 
-from plexo.codec.capnpy_codec import CapnpyCodec
-from plexo.schema.plexo_message import PlexoMessage
+from plexo.schema.plexo_multicast.plexo_approval import PlexoApproval
+from plexo.schema.plexo_multicast.plexo_heartbeat import PlexoHeartbeat
+from plexo.schema.plexo_multicast.plexo_preparation import PlexoPreparation
+from plexo.schema.plexo_multicast.plexo_promise import PlexoPromise
+from plexo.schema.plexo_multicast.plexo_proposal import PlexoProposal
+from plexo.schema.plexo_multicast.plexo_rejection import PlexoRejection
 
-plexo_message_codec = CapnpyCodec(PlexoMessage)
+__all__ = ['PlexoApproval', 'PlexoHeartbeat', 'PlexoPreparation', 'PlexoPromise',
+           'PlexoProposal', 'PlexoRejection']
