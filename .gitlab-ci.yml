@@ -10,7 +10,7 @@ stages:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
     - ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist
-    - auditwheel repair dist/*.whl
+    - auditwheel repair --wheel-dir dist/ dist/*.whl
     - rm dist/*manylinux_2_17_x86_64.whl
   artifacts:
     paths:
