@@ -48,7 +48,7 @@ build/sdist:
   script:
     - ${PYBIN}/python -m pip install --upgrade pip
     - ${PYBIN}/pip install poetry
-    - poetry build --format sdist
+    - ${PYBIN}/poetry build --format sdist
   artifacts:
     paths:
       - dist
