@@ -1,5 +1,6 @@
 stages:
   - build
+  - publish
 
 
 .template/build/manylinux: &template-build-manylinux
@@ -9,7 +10,7 @@ stages:
     - sh ./pre-build.sh
   script:
     - yum install -y capnproto
-    - ${PYBIN}/pip install -r poetry-core setuptools capnpy
+    - ${PYBIN}/pip install poetry-core setuptools capnpy
     - ${PYBIN}/pip wheel -w ./dist --no-deps --no-build-isolation
     - auditwheel repair wheelhouse/*.whl
   artifacts:
@@ -32,6 +33,6 @@ build/manylinux/pypy:
     PYBIN: /opt/python/pp310-pypy310_pp73/bin
 
 list_wheels:
-  stage: build
+  stage: publish
   script:
     - ls -lh wheelhouse
