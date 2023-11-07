@@ -44,6 +44,7 @@ build/manylinux/pypy:
 
 build/sdist:
   stage: build
+  image: quay.io/pypa/manylinux2014_x86_64
   script:
     - python -m pip install --upgrade pip
     - pip install poetry
@@ -52,12 +53,14 @@ build/sdist:
     paths:
       - dist
   variables:
-    PYBIN: /opt/python/pp310-pypy310_pp73/bin
+    PYBIN: /opt/python/cp311-cp311/bin
 
 list_wheels:
   stage: publish
+  image: quay.io/pypa/manylinux2014_x86_64
   script:
     - python -m pip install --upgrade pip
-    - pip freeze
     - pip install twine
-    - ls -lh dist
+    - ls -alh dist
+  variables:
+    PYBIN: /opt/python/cp311-cp311/bin
