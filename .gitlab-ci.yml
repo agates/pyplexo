@@ -62,8 +62,5 @@ list_wheels:
     - ${PYBIN}/python -m pip install --upgrade pip
     - ${PYBIN}/pip install twine
     - ls -alh dist
-  artifacts:
-    paths:
-      - dist
   variables:
     PYBIN: /opt/python/cp311-cp311/bin
