@@ -1,0 +1,37 @@
+stages:
+  - build
+
+
+.template/build/manylinux: &template-build-manylinux
+  stage: build
+  image: quay.io/pypa/manylinux2014_x86_64
+  before_script:
+    - sh ./pre-build.sh
+  script:
+    - yum install -y capnproto
+    - ${PYBIN}/pip install -r poetry-core setuptools capnpy
+    - ${PYBIN}/pip wheel -w ./dist --no-deps --no-build-isolation
+    - auditwheel repair wheelhouse/*.whl
+  artifacts:
+    paths:
+      - wheelhouse
+
+build/manylinux/3.10:
+  <<: *template-build-manylinux
+  variables:
+    PYBIN: /opt/python/cp310-cp310/bin
+
+build/manylinux/3.11:
+  <<: *template-build-manylinux
+  variables:
+    PYBIN: /opt/python/cp311-cp311/bin
+
+build/manylinux/pypy:
+  <<: *template-build-manylinux
+  variables:
+    PYBIN: /opt/python/pp310-pypy310_pp73/bin
+
+list_wheels:
+  stage: build
+  script:
+    - ls -lh wheelhouse
