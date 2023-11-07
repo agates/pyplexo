@@ -46,11 +46,13 @@ build/sdist:
   stage: build
   script:
     - python -m pip install --upgrade pip
-    - pip install poetry twine
+    - pip install poetry
     - poetry build --format sdist
   artifacts:
     paths:
       - dist
+  variables:
+    PYBIN: /opt/python/pp310-pypy310_pp73/bin
 
 list_wheels:
   stage: publish
