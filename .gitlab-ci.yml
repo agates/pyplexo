@@ -6,6 +6,7 @@ stages:
 .template/build/manylinux: &template-build-manylinux
   stage: build
   image: quay.io/pypa/manylinux2014_x86_64
+
   script:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
@@ -26,9 +27,21 @@ build/manylinux/3.11:
   variables:
     PYBIN: /opt/python/cp311-cp311/bin
 
+
+build/manylinux/3.10/arm64:
+  stage: build
+  image:
+    name: quay.io/podman/stable
+  script:
+    - podman run --rm --override-arch arm64 -t quay.io/pypa/manylinux2014_aarch64 uname -m
+    - podman run --rm --override-arch arm64 -t -v .:/io quay.io/pypa/manylinux2014_aarch64 yum install -y capnproto; ${PYBIN}/pip install poetry-core setuptools capnpy; cd /io; ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist; auditwheel repair --wheel-dir dist/ dist/*.whl; rm dist/*manylinux_2_17_aarch64.whl
+  variables:
+    PYBIN: /opt/python/cp311-cp311/bin
+
 build/manylinux/pypy:
   stage: build
   image: quay.io/pypa/manylinux2014_x86_64
+
   script:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
