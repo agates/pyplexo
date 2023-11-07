@@ -11,7 +11,7 @@ stages:
   script:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
-    - ${PYBIN}/pip wheel -w ./dist --no-deps --no-build-isolation
+    - ${PYBIN}/pip wheel . -w ./dist --no-deps --no-build-isolation
     - auditwheel repair wheelhouse/*.whl
   artifacts:
     paths:
