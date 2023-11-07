@@ -28,15 +28,24 @@ build/manylinux/3.11:
     PYBIN: /opt/python/cp311-cp311/bin
 
 
-build/manylinux/3.10/arm64:
+build/manylinux/arm64:
   stage: build
   image:
     name: quay.io/podman/stable
   script:
-    - podman run --rm --override-arch arm64 -t quay.io/pypa/manylinux2014_aarch64 uname -m
-    - podman run --rm --override-arch arm64 -t -v .:/io quay.io/pypa/manylinux2014_aarch64 sh -c "yum install -y epel-release; yum install -y capnproto; ${PYBIN}/pip install poetry-core setuptools capnpy; cd /io; ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist; auditwheel repair --wheel-dir dist/ dist/*.whl; rm dist/*manylinux_2_17_aarch64.whl"
-  variables:
-    PYBIN: /opt/python/cp311-cp311/bin
+    - podman run --rm --override-arch arm64 -t -v .:/io quay.io/pypa/manylinux2014_aarch64 sh -c "yum install -y epel-release && \
+        yum install -y capnproto && \
+        /opt/python/cp311-cp311/bin/pip install poetry-core setuptools capnpy && \
+        /opt/python/cp310-cp310/bin/pip install poetry-core setuptools capnpy && \
+        cd /io && \
+        /opt/python/cp311-cp311/bin/pip wheel . --no-deps --no-build-isolation -w dist && \
+        sh ./pre-build.sh && \
+        /opt/python/cp310-cp310/bin/pip wheel . --no-deps --no-build-isolation -w dist && \
+        auditwheel repair --wheel-dir dist/ dist/*.whl && \
+        rm dist/*manylinux_2_17_aarch64.whl"
+  artifacts:
+    paths:
+      - dist
 
 build/manylinux/pypy:
   stage: build
