@@ -35,7 +35,7 @@ build/manylinux/pypy:
     - ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w wheelhouse
     - old=$(ls -1 wheelhouse/*pp310-pypy310_pp73*.whl)
     - new=$(echo $old | sed -e 's/pp310-pypy310_pp73-manylinux_2_17_x86_64/py3-none-any/')
-    - sudo mv -v "$old" "$new"
+    - mv -v "$old" "$new"
   artifacts:
     paths:
       - wheelhouse
