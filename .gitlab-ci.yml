@@ -34,7 +34,7 @@ build/manylinux/3.10/arm64:
     name: quay.io/podman/stable
   script:
     - podman run --rm --override-arch arm64 -t quay.io/pypa/manylinux2014_aarch64 uname -m
-    - podman run --rm --override-arch arm64 -t -v .:/io quay.io/pypa/manylinux2014_aarch64 yum install -y epel-release; yum install -y capnproto; ${PYBIN}/pip install poetry-core setuptools capnpy; cd /io; ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist; auditwheel repair --wheel-dir dist/ dist/*.whl; rm dist/*manylinux_2_17_aarch64.whl
+    - podman run --rm --override-arch arm64 -t -v .:/io quay.io/pypa/manylinux2014_aarch64 sh -c "yum install -y epel-release; yum install -y capnproto; ${PYBIN}/pip install poetry-core setuptools capnpy; cd /io; ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist; auditwheel repair --wheel-dir dist/ dist/*.whl; rm dist/*manylinux_2_17_aarch64.whl"
   variables:
     PYBIN: /opt/python/cp311-cp311/bin
 
