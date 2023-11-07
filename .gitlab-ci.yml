@@ -6,13 +6,14 @@ stages:
 .template/build/manylinux: &template-build-manylinux
   stage: build
   image: quay.io/pypa/manylinux2014_x86_64
-  before_script:
-    - sh ./pre-build.sh
+  #before_script:
+  #  - sh ./pre-build.sh
   script:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
     - ${PYBIN}/pip wheel . -w ./dist --no-deps --no-build-isolation -w wheelhouse
     - auditwheel repair wheelhouse/*.whl
+    - rm wheelhouse/*manylinux_2_17_x86_64.whl
   artifacts:
     paths:
       - wheelhouse
@@ -28,7 +29,20 @@ build/manylinux/3.11:
     PYBIN: /opt/python/cp311-cp311/bin
 
 build/manylinux/pypy:
-  <<: *template-build-manylinux
+  stage: build
+  image: quay.io/pypa/manylinux2014_x86_64
+  #before_script:
+  #  - sh ./pre-build.sh
+  script:
+    - yum install -y capnproto
+    - ${PYBIN}/pip install poetry-core setuptools capnpy
+    - ${PYBIN}/pip wheel . -w ./dist --no-deps --no-build-isolation -w wheelhouse
+    - old=$(ls -1 dist/*pp310-pypy310_pp73*.whl)
+    - new=$(echo $old | sed -e 's/pp310-pypy310_pp73-manylinux_2_17_x86_64/py3-none-any/')
+    - sudo mv -v "$old" "$new"
+  artifacts:
+    paths:
+      - wheelhouse
   variables:
     PYBIN: /opt/python/pp310-pypy310_pp73/bin
 
