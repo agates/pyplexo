@@ -9,12 +9,12 @@ stages:
   script:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
-    - ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w wheelhouse
-    - auditwheel repair wheelhouse/*.whl
-    - rm wheelhouse/*manylinux_2_17_x86_64.whl
+    - ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist
+    - auditwheel repair dist/*.whl
+    - rm dist/*manylinux_2_17_x86_64.whl
   artifacts:
     paths:
-      - wheelhouse
+      - dist
 
 build/manylinux/3.10:
   <<: *template-build-manylinux
@@ -32,17 +32,30 @@ build/manylinux/pypy:
   script:
     - yum install -y capnproto
     - ${PYBIN}/pip install poetry-core setuptools capnpy
-    - ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w wheelhouse
-    - old=$(ls -1 wheelhouse/*pp310-pypy310_pp73*.whl)
+    - ${PYBIN}/pip wheel . --no-deps --no-build-isolation -w dist
+    - old=$(ls -1 dist/*pp310-pypy310_pp73*.whl)
     - new=$(echo $old | sed -e 's/pp310-pypy310_pp73-manylinux_2_17_x86_64/py3-none-any/')
     - mv -v "$old" "$new"
   artifacts:
     paths:
-      - wheelhouse
+      - dist
   variables:
     PYBIN: /opt/python/pp310-pypy310_pp73/bin
+
+build/sdist:
+  stage: build
+  script:
+    - python -m pip install --upgrade pip
+    - pip install poetry twine
+    - poetry build --format sdist
+  artifacts:
+    paths:
+      - dist
 
 list_wheels:
   stage: publish
   script:
-    - ls -lh wheelhouse
+    - python -m pip install --upgrade pip
+    - pip freeze
+    - pip install twine
+    - ls -lh dist
