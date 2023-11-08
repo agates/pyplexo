@@ -1,20 +1,21 @@
 [tool.poetry]
 name = "plexo"
-version = "1.0.0a8"
+version = "1.0.0b1"
 readme = "README.md"
 description = "Opinionated, reactive, schema-driven, distributed, and strongly-typed message passing"
 authors = ["Alecks Gates <agates@mail.agates.io>"]
 license = "LGPL-3.0-or-later"
-homepage = "https://gitlab.com/agates/pyplexo/"
-repository = "https://gitlab.com/agates/pyplexo/"
+homepage = "https://gitlab.com/plexo/pyplexo/"
+repository = "https://gitlab.com/plexo/pyplexo/"
 classifiers = [
     "Environment :: Console",
     "Framework :: AsyncIO",
     "Framework :: Pytest",
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 3 - Beta",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -36,7 +37,7 @@ script = "build.py"
 generate-setup-file = true
 
 [tool.poetry.dependencies]
-python = "^3.10.0,<3.12"
+python = "^3.9.0,<3.12"
 capnpy = { version = "^0.10.0" }
 pyrsistent = "^0.20.0"
 pyzmq = "^25.0.0"
@@ -61,7 +62,7 @@ requires = ["poetry-core>=1.0.0", "capnpy", "setuptools"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
-target-version = ['py310', 'py311']
+target-version = ['py39', 'py310', 'py311']
 
 [tool.isort]
 profile = "black"
