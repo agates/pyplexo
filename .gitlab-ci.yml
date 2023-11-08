@@ -92,8 +92,8 @@ list_wheels:
   script:
     - ${PYBIN}/python -m pip install --upgrade pip
     - ${PYBIN}/pip install twine
-    - twine upload dist/*.whl
-    - twine upload dist/*.tar.gz
+    - ${PYBIN}/twine upload dist/*.whl
+    - ${PYBIN}/twine upload dist/*.tar.gz
   variables:
     PYBIN: /opt/python/cp311-cp311/bin
     TWINE_USERNAME: ${PYPI_USERNAME}
