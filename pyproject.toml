@@ -11,7 +11,7 @@ classifiers = [
     "Environment :: Console",
     "Framework :: AsyncIO",
     "Framework :: Pytest",
-    "Development Status :: 3 - Beta",
+    "Development Status :: 4 - Beta",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
