@@ -96,5 +96,3 @@ list_wheels:
     - ${PYBIN}/twine upload dist/*.tar.gz
   variables:
     PYBIN: /opt/python/cp311-cp311/bin
-    TWINE_USERNAME: ${PYPI_USERNAME}
-    TWINE_PASSWORD: ${PYPI_TOKEN}
