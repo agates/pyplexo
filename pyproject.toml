@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "plexo"
-version = "1.0.0b1"
+version = "1.0.0"
 readme = "README.md"
 description = "Opinionated, reactive, schema-driven, distributed, and strongly-typed message passing"
 authors = ["Alecks Gates <agates@mail.agates.io>"]
@@ -11,7 +11,7 @@ classifiers = [
     "Environment :: Console",
     "Framework :: AsyncIO",
     "Framework :: Pytest",
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stabl",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
